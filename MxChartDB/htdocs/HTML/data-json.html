@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <!--<base href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/">-->
+      <title>MxChartDB Protokoll Daten</title>
+      <link rel="shortcut icon" href="../icon.png">
+      <link rel="stylesheet" type="text/css" href="css/jsonViewer.css"/>
+      <script src="libs/jsonViewer.js"></script>
+      <script src='js/data-json-lang.js'></script>
+      <script src='js/ch_utils.js'></script>
+      <script src='../constants.js'></script>
+      <script src='js/data-json.js'></script>
+      <style type="text/css">
+         body {
+         margin: 0 50px;
+         font-family: sans-serif;
+         width: 90%;
+         }
+         textarea#json-input {
+         width: 100%;
+         height: 200px;
+         }
+         pre#json-renderer {
+         border: 1px solid #aaa;
+         padding: 0.5em 1.5em;
+         }
+      </style>
+   </head>
+   <body>
+      <script>
+         console.log(window.location);
+         console.log('pathname='+window.location.pathname);
+         console.log('parameter='+window.location.search);
+      </script>          
+      <br>
+
+      <div id="notification">
+         <div id="notification-message">data-json.js nicht gefunden oder fehlerhaft!</div>
+      </div>
+
+      <!-- choose what to display -->
+      <div id="datetimepicker">
+         <br>
+         <input type="radio" id="radio_header_only" name="select_data">
+         <label id="header_only_text">Display the chart header only</label><br>
+         <input type="radio" id="radio_values_all" name="select_data">
+         <label id="values_all_text">Display all values</label><br>  
+         <input type="radio" id="radio_values_rang" name="select_data">
+         <label id="values_rang_text">Display a time interval</label><br>
+         <br><br>
+         <label id=dt_picker_title>Time Interval </label>
+         <br><br>
+         <table>
+            <tr>
+               <td>
+                  <label id=dt_picker_date>Date Start: </label>
+               </td>
+               <td>
+                  <select name="year" id="dt_picker_year">
+                  </select>
+                  -
+                  <select name="month" id="dt_picker_month">
+                  </select>
+                  -
+                  <select name="day" id="dt_picker_day">
+                  </select>
+               </td>
+            </tr>
+            <tr>
+               <td>
+                  <label id=dt_picker_time>Time Start: </label>
+               </td>
+               <td>
+                  <select name="hour" id="dt_picker_hour">
+                  </select>
+                  :
+                  <select name="minute" id="dt_picker_minute">
+                  </select>
+               </td>
+            </tr>
+            <tr>
+               <td>
+                  <label id=dt_picker_length>Interval Length: </label>
+               </td>
+               <td>
+                  <select name="interval_length" id="dt_picker_intervallength">
+                  </select>
+                  <select name="interval_type" id="dt_picker_intervaltype">
+                  </select>
+               </td>
+            </tr>
+         </table>
+         <br>
+         <div id="count_text"></div>
+         <br><br>
+         <button id="dt_picker_exec"><b>OK</b></button>
+      </div>
+
+      <!-- display result -->
+      <div id="data" style="display:none;">
+         <pre id="json-renderer"></pre>
+      </div>
+   </body>
+</html>
+

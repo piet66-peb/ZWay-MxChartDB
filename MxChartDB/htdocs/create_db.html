@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <title>MxChartDB: Install + Update</title>
+      <link rel="shortcut icon" href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/icon.png">
+
+   </head>
+   <body>
+      <h2>MxChartDB Installation and Update</h2>
+      For data storage MxChartDB uses a SQLite database engine, connected via an HTTP API.
+      <br>
+      Database and API can be installed on any system running SQLite and Python.<br>
+      The included scripts however are made for Debian based Linux systems, like 
+      Raspberry Pi OS or Ubuntu.
+      <br>
+
+      <h3>Installation Steps</h3>
+
+      <h4>A. Server-side Installation of Database and API</h4>
+      <ol start="1">
+          <li><a href="#step1">Decide where to install the database</a></li>
+          <li><a href="#step2">Installation</a></li>
+          <li><a href="#step3">Parameterization of the API</a></li>
+          <li><a href="#step4">Run the API</a></li>
+          <li><a href="#step5">User access of the API via HTTP</a></li>
+          <li><a href="#step6">Update the API</a></li>
+          <li><a href="#step7">Uninstallation of the API</a></li>
+      </ol>
+      <h4>B. Client-side Installation for ChartDB Modules and Browser Chart Viewing</h4>
+      <ol start="8">
+          <li><a href="#step8">Parameterization</a></li>
+      </ol>
+
+      <h3 id="step1">1. Decide where to install the database</h3>
+      MxChartDB uses SQLite3 as the database engine and Python3 with Flask for 
+      API. It can be installed on the ZWay server and on any computer reachable 
+      from ZWay via HTTP. It's as well installable on a Raspberry PI. But better 
+      on an USB drive or an external disk instead of the SD card.
+
+      <h3 id="step2">2. Installation</h3>
+      Choose the root folder for the API installation on the server. Ensure that the 
+      user has all necessary rights for read, write and execute.
+      <br>Copy the downloaded folder <b>HTTP_API</b> to the root folder and invoke the 
+      installation procedure:
+      <pre>
+      cd &lt;root folder&gt;/HTTP_API
+      ./install_sqlite.bash
+      </pre>
+
+      The installation procedure installs such a folder structure:
+      <div id="text">
+      <pre id="structure">
+      &lt;root folder&gt;
+              ├── HTTP_API    (folder for the database + API)
+              │   ├── 11_get_procid.bash
+              │   ├── 99_restart_API.bash
+              │   ├── constants_template.py
+              │   ├── install_sqlite.bash
+              │   ├── MxChartDB_API.bash
+              │   ├── MxChartDB_API.py
+              │   ├── params.bash
+              │   ├── requirements.txt
+              │   └── uninstall.bash
+              ├── log         (folder for API logfiles)
+              │   └── ...
+              └── python_env  (folder for local python modules)
+                  └── ...';
+      </pre>
+      </div>
+
+      <h3 id="step3">3. Parameterization of the API</h3>
+      The parameterization is done with a text editor in the file <b>constants.py</b> 
+      in the HTTP_API folder. Here you define: client-ip addresses, port, 
+      API-username, password,...
+      At least the ip addresses have to be changed. If the default port 5000 is 
+      to be changed, an entry must be made in the MxChartDB_API.bash file as well.
+      Copy or rename the file <b>constants_template.py</b> to do this.
+
+      <br><br>After each change in constants.py or MxChartDB_API.bash the API has to be restarted.
+
+      <h3 id="step4">4. Run the API</h3>
+      Start and restart the API with:
+      <pre>
+      cd &lt;root folder&gt;/HTTP_API
+      ./99_restart_API.bash
+      </pre>
+
+      Get the status of the API with:
+      <pre>
+      cd &lt;root folder&gt;/HTTP_API
+      ./11_get_procid.bash
+      </pre>
+
+      <h3 id="step5">5. User access of the API via HTTP</h3>
+      A survey of all HTTP API commands can be displayed with 
+      <b>http//:&lt;db_server&gt;:5000/</b>.
+      Also administration of the database is possible
+
+      <h3 id="step6">6. Update the API</h3>
+      Copy all files but <b>constants.py</b> of the downloded API-folder 
+      <b>HTTP_API</b> to your db installation. 
+      Check constants_template.py for any changes that may be necessary.
+      Then restart the API.
+
+      <h3 id="step7">7. Uninstallation of the API</h3>
+      Invoke the uninstallation procedure:
+      <pre>
+      cd &lt;root folder&gt;
+      ./HTTP_API/uninstall.bash
+      </pre>
+      
+      <h3 id="step8">8. Client-side installation for ChartDB modules and browser chart viewing</h3>
+      The parameterization is done with a text editor in the file <b>constants.js</b> 
+      in the ChartDB module folder <b>htdocs</b>. Here you define the access data for the db server: ip address, port, 
+      username, password,...
+
+      <br><br>To do this, copy the file <b>constants_template.js</b> to <b>constants.js</b>.
+
+      <br><br>
+
+      <script>
+          //convert to utf-8 as workaround for Zway/htdocs:
+          try {
+            var el = document.getElementById('structure');
+            var s = el.firstChild.data;
+            var fixedstring = JSON.parse(decodeURIComponent(escape(JSON.stringify(s))));
+            el.firstChild.data = fixedstring;
+          } catch(e) {
+              console.log(e.message+ ': probably no conversation necessary');
+          }
+      </script>
+   </body>
+</html>
+

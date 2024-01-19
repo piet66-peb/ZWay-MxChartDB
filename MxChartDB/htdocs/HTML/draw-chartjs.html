@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+      <meta charset="utf-8">
+      <!--<base href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/">-->
+	  <title>MxChartDB</title>
+      <link rel="shortcut icon" href="../icon.png">
+
+      <link rel=stylesheet href=css/busy_indicator.css>
+      <script src=libs/busy_indicator.min.js></script>
+
+      <script src="libs/chart.min.js"></script>
+      <script src="libs/chartjs-plugin-annotation.min.js"></script>
+
+      <script src="libs/moment-with-locales.min.js"></script>
+      <script src="libs/chartjs-adapter-moment.min.js"></script>
+
+      <script src="libs/hammer.min.js"></script> <!--only for chartjs-plugin-zoom.min.js-->
+      <script src="libs/chartjs-plugin-zoom.min.js"></script>
+
+      <script src="libs/w3color.min.js"></script>
+
+      <script src='js/draw-chartjs-lang.js'></script>
+      <script src='js/ch_utils.js'></script>
+      <script src='../constants.js'></script>
+      <script src='js/draw-chartjs.js'></script>
+
+      <style>
+        .smaller {
+            font-size: x-small;
+            text-align: center;
+        }
+      </style>
+
+      <style>
+        .fog_div{
+            display:none;
+            position:fixed;
+            top:0;
+            left:0;
+            height:100%;
+            width:100%;
+            z-index:100;
+            background-color:rgba(30,30,30,.5)}
+            #busybox.show{display:block}
+      </style>
+
+      <style>
+        /* position objects */
+        .left_right {
+            width:100%;
+            display:inline;
+            overflow: auto;
+            white-space: nowrap;
+        }
+      </style>
+
+      <style>
+        #dtpick {
+            <!--visibility: hidden;-->
+            position: absolute;
+            left: 0;
+            top: 0;
+            width:100%;
+            height:100%;
+            /*text-align:center;*/
+            z-index: 1000;
+        }
+        #dtpick div {
+            width:400px;
+            height: 360px;
+            margin: 100px auto;
+            background-color: #f2f2f2;
+            border-radius: 10px;
+            -webkit-border-radius: 10px;
+            -moz-border-radius:  10px;
+            border:1px solid #666666;
+            padding:50px;
+            /*text-align:center;*/
+            font-weight: bold;
+            font-size: 15px;
+            border: 3px solid #cccccc;
+            position: absolute;
+            left: 50%;
+            top: 160px;
+            transform: translate(-50%, -50%);
+            -ms-transform: translate(-50%, -50%);
+            -webkit-transform: translate(-50%, -50%);
+        }
+      </style>
+</head>
+<body>
+      <script>
+        console.log(window.location);
+        console.log('pathname='+window.location.pathname);
+        console.log('parameter='+window.location.search);
+      </script>          
+      <div id="htmlText"></div>
+      <div style="width:100%">
+         <canvas id="canvas"></canvas>
+      </div>
+      <div class='left_right'>
+        <div id="interval_start" style='float: left;'>Date+Time</div>
+        <div id="date_time_picker" style='text-align: center; float: none;'>
+            <button id="dtpick_calendar" onclick='datetimepicker()' 
+                    style='display:none; width:50px;'>date picker</button>
+            <div id="interval_end" style='float: right;'>Date+Time</div>
+        </div>
+      </div>
+      <br>
+
+      <div id="taskbar" style="display:inline;">
+        <button id="showComplete" style="display:none;"><b>&nbsp; &lt;&nbsp;&#x1F78F;&nbsp;&gt; &nbsp;</b></button>
+        <button id="shiftLeftLong" style="display:none;"><b>&nbsp; &lt;&lt;&nbsp;</b></button>
+        <button id="shiftLeft" style="display:none;"><b>&nbsp; &lt;&nbsp;</b></button>
+        <button id="shiftRight" style="display:none;"><b>&nbsp;&gt; &nbsp;</b></button>
+        <button id="shiftRightLong" style="display:none;"><b>&nbsp;&gt;&gt; &nbsp;</b></button>
+      </div>
+      <button id="recoverData" style="display:none;"><b>&nbsp; &gt;&nbsp;&#x1F78F;&nbsp;&lt; &nbsp;</b></button>
+      <button id="newTab" style="display:none;">New Window</button>
+      <button id="dataJSON" style="display:none;">Data</button>
+      <button id="chartIndex" style="display:none;">Chart Index</button>
+      <button id="configuration" style="display:none;">Configuration</button>
+      <button id="snapshot" style="display:none;">Snapshot</button>
+      &nbsp;&nbsp;
+      <label id=textRefresh style="display:none;">Update
+              <input type="checkbox" id="refreshCheckbox">
+      </label>
+      &nbsp;
+      <label id=textTooltip style="display:none;">Show Tooltipbox
+              <input type="checkbox" id="tooltipCheckbox">
+      </label>
+      &nbsp;
+      <label id=textShowIx style="display:none;">Show Index
+              <input type="checkbox" id="showIxCheckbox">
+      </label>
+      <br><div id="notif3" class="smaller"></div>
+
+      <hr>
+      <div id="notification"><div id="notification-message"></div></div>
+      <br><div id="notif2"></div>
+
+      <!-- busy indicator -->
+      <div id=busybox class=fog_div><div>&nbsp;</div></div>
+
+      <!-- date time picker -->
+      <div id="dtpick" style="display:none;">
+      <div id="dtpick_child" >
+        <label id="dtpick_values_text_add">uuu</label>
+        <br><br>
+        <input type="radio" id="dtpick_radio_values_rang" name="select_data">
+        <label id="dtpick_values_rang_text">Display a time interval</label><br>
+        <input type="radio" id="dtpick_radio_values_hist" name="select_data">
+        <label id="dtpick_values_hist_text">Display history values</label><br>  
+        <input type="radio" id="dtpick_radio_values_all" name="select_data">
+        <label id="dtpick_values_all_text">Display all values</label><br>  
+        <br><br>
+       
+        <table id="dtpick_table_interval" style="display:inline;">
+            <tr><th><label id=dtpick_title>Display Interval </label></th><th></th></tr>
+             <tr><th></th><th></th></tr>
+            <tr><td>
+            <label id=dtpick_date>Date Start: </label>
+        </td><td>
+            <select name="year" id="dtpick_year">
+            </select>
+            -
+            <select name="month" id="dtpick_month">
+            </select>
+            -
+            <select name="day" id="dtpick_day">
+            </select>
+        </td></tr><tr><td>
+            <label id=dtpick_time>Time Start: </label>
+        </td><td>
+            <select name="hour" id="dtpick_hour">
+            </select>
+            :
+            <select name="minute" id="dtpick_minute">
+            </select>
+        </td></tr><tr><td>
+            <label id=dtpick_length>Interval Length: </label>
+        </td><td>
+            <select name="interval_length" id="dtpick_intervallength">
+            </select>
+            <select name="interval_type" id="dtpick_intervaltype">
+            </select>
+        </td></tr></table>
+        <br><br>
+         <label id="dtpick_count_text"></label>
+        <br><br>
+        <button id="dtpick_exec"><b>OK</b></button>
+        <button id="dtpick_break" onclick='datetimepicker()'><b>Break</b></button>
+      </div>
+      </div>
+</body>
+</html>

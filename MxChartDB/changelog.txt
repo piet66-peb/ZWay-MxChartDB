@@ -1,0 +1,2 @@
+V1.1.4
+[+]button showComplete to draw-chartjs

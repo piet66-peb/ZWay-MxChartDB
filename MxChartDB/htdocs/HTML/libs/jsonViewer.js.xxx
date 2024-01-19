@@ -1,0 +1,23 @@
+#h
+#h Module:              jsonViewer.js
+#h Name:                
+#h Type:                
+#h Version:             adapted + bugs fixed 2022-02-21/peb
+#h Size:                
+#h Checksum:            
+#h Language:            
+#h License:             MIT License 
+#h Purpose:             
+#h Source:              
+#h Homepage:            
+#h Forum:               
+#h Support:             
+#h Download URL:        https://github.com/renhongl/json-viewer-js/raw/master/src/jsonViewer.js
+#h Download Time:       21. Februar 2022 09:16:02 CET
+#h Operation Systems:   
+#h Tags:                
+#h Requirements:        
+#h Key:                 
+#h Comment:             
+#h
+#h Usage:               new JsonViewer({container: document.body, data: testJson, theme: 'light', expand: true});

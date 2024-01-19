@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <!--<base href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/">-->
+      <title>MxChartDB Take Snapshot</title>
+      <link rel="shortcut icon" href="../icon.png">
+      <script src='js/take-snapshot-lang.js'></script>
+      <script src='js/ch_utils.js'></script>
+      <script src='../constants.js'></script>
+      <script src='js/take-snapshot.js'></script>
+      <style type="text/css">
+         body {
+         margin: 0 50px;
+         font-family: sans-serif;
+         width: 90%;
+         }
+         textarea#json-input {
+         width: 100%;
+         height: 200px;
+         }
+         pre#json-renderer {
+         border: 1px solid #aaa;
+         padding: 0.5em 1.5em;
+         }
+      </style>
+   </head>
+   <body>
+      <script>
+         console.log(window.location);
+         console.log('pathname='+window.location.pathname);
+         console.log('parameter='+window.location.search);
+      </script>          
+      <br>
+
+      <div id="notification">
+         <div id="notification-message">take-snapshot.js nicht gefunden oder fehlerhaft!</div>
+      </div>
+
+      <!-- choose what to display -->
+      <div id="datetimepicker">
+         <br><br>
+         <label id=kind>-------- Choose the Target --------</label>
+         <br><br>
+         <input type="radio" id="radio_header_only" name="select_data">
+         <label id="header_only_text">Display the chart header only</label><br>
+         <input type="radio" id="radio_values_all" name="select_data">
+         <label id="values_all_text">Display all values</label><br>  
+         <input type="radio" id="radio_values_rang" name="select_data">
+         <label id="values_rang_text">Display a time interval</label><br>
+         <br><br>
+         <label id=dt_picker_title>Choose the Time Interval </label>
+         <br><br>
+         <table>
+            <tr>
+               <td>
+                  <label id=start_date>Date Start: </label>
+               </td>
+               <td>
+                  <select id="start_year"></select>
+                  -
+                  <select id="start_month"></select>
+                  -
+                  <select id="start_day"></select>
+               </td>
+            </tr>
+            <tr>
+               <td>
+                  <label id=start_time>Time Start: </label>
+               </td>
+               <td>
+                  <select id="start_hour"></select>
+                  :
+                  <select id="start_minute"></select>
+               </td>
+            </tr>
+            <tr>
+               <td>
+                  <label id=end_date>Date End: </label>
+               </td>
+               <td>
+                  <select id="end_year"></select>
+                  -
+                  <select id="end_month"></select>
+                  -
+                  <select id="end_day"></select>
+               </td>
+            </tr>
+            <tr>
+               <td>
+                  <label id=end_time>Time End: </label>
+               </td>
+               <td>
+                  <select id="end_hour"></select>
+                  :
+                  <select id="end_minute"></select>
+               </td>
+            </tr>
+         </table>
+         <br>
+         <div id="count_text"></div>
+         <br><br>
+         <label id=target>-------- Choose the Target --------</label>
+         <br><br>
+         <table>
+            <tr>
+               <td>
+                    <label id=dbase_target_txt>Target Database: </label>
+               </td>
+               <td>
+                    <input id="dbase_target" size="40">      
+               </td>
+            </tr>
+            <tr>
+               <td>
+                    <label id=chartId_target_txt>Target Chart Id: </label>
+               </td>
+               <td>
+                    <input id="chartId_target" size="40">      
+               </td>
+            </tr>
+         </table>
+         <br><br>
+         <button id="start_exec"><b>OK</b></button>
+      </div>
+   </body>
+</html>
+

@@ -1,0 +1,30 @@
+<!DOCTYPE HTML> 
+<html> 
+   <head>
+      <meta charset="utf-8">
+      <title>Free Space</title>
+      <link rel="shortcut icon" href="../MxChartDB/htdocs/icon.png">
+   </head> 
+   <body>   
+       <h1>Free space in database files</h1>
+       In SQLite, when you delete or update data, the space it occupied 
+       in the database file is not immediately reclaimed. Instead, the 
+       space is added to the free-list and made available for reuse by new data.
+       <br><br>
+       It would be inefficient to return these pages to the operating system 
+       only to reassign them later. And in practice, deleting a lot of data 
+       doesn't usually happen during normal operation. 
+       <br><br>
+       In exceptional cases, there may be a reason to reorganize the database 
+       file.  Sqlite therefore provides the command
+       <a href='https://www.sqlite.org/lang_vacuum.html'>vacuum</a> 
+       <br><br>
+       The HTTP API command <b>&lt;db&gt;/rebuild_db</b> executes it.
+       <br><br>
+       It's not yet testet!!
+       Use at your own risk. It is recommended to stop all applications
+       and make a backup before.
+   </body>   
+</html>
+
+
