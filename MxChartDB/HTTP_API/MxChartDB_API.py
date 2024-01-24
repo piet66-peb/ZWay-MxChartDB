@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V1.7.0 2024-01-18/peb
+#h Version:      V1.7.0 2024-01-22/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -114,7 +114,7 @@ import constants
 
 MODULE = 'MxChartDB_API.py'
 VERSION = 'V1.7.0'
-WRITTEN = '2024-01-18/peb'
+WRITTEN = '2024-01-22/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -145,6 +145,7 @@ FORBIDDEN = 403
 NOT_FOUND = 404
 DB_ERROR = 900
 REDIRECTED = 302
+REDIRECT_PRESERVE = 307
 UNAUTHORIZED = 401
 NOT_ALLOWED = 405
 INTERNAL_ERROR = 500
@@ -480,7 +481,7 @@ def count_entries(dbase, table):
 
 # We may need this redirection cause html can't read parameters when invoked
 # within a modal window
-@app.route('/HTML/<module>/<chart_id>')
+@app.route('/HTML/<module>/<chart_id>', methods=["GET"])
 def route_html(module, chart_id):
     '''route: redirect html page'''
     app.logger.info(request)
@@ -502,11 +503,12 @@ def route_html(module, chart_id):
     else:
         url += 'draw-chartjs.html?chartId='+chart_id
     app.logger.info('url='+url)
-    return redirect(url, code=REDIRECTED)
+    return redirect(url, code=REDIRECT_PRESERVE)
+    #return redirect(url, code=REDIRECTED)
 
 # We need this redirection cause html can't read parameters when invoked within
 # a modal window
-@app.route('/HTML_MODAL/<module>/<chart_id>')
+@app.route('/HTML_MODAL/<module>/<chart_id>', methods=["GET"])
 def route_html_modal(module, chart_id):
     '''route: construct start html page for modal window'''
     app.logger.info(request)
@@ -573,7 +575,7 @@ def route_html_modal(module, chart_id):
 
 #----- API ------------------------------------------------------------------
 
-@app.route('/')
+@app.route('/', methods=["GET"])
 def route_api_commands():
     '''route: show api commands in a html page'''
     app.logger.info(request)
@@ -701,7 +703,7 @@ def route_api_commands():
               """
     return html
 
-@app.route('/ADMIN')
+@app.route('/ADMIN', methods=["GET"])
 def route_api_admin():
     '''route: call ADMIN page in browser'''
     app.logger.info(request)

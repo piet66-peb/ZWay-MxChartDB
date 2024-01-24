@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-01-18/peb
+//h Version:      V2.1.0 2024-01-23/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -24,7 +24,7 @@
 
 /*jshint esversion: 5 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils, constants */
+/*globals ch_utils */
 'use strict';
 
 //-----------
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='draw-chartjs.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-01-18/peb';
+var WRITTEN='2024-01-23/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //-----------
@@ -71,7 +71,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
    var chartLastValues;
    var sensorsOnlyChange;
    var completeValuesReceived = false;
-   var ts_first, ts_last;
+   var ts_first;    //least stored ts
+   var ts_last;     //last stored ts
 
    var config_data_datasets_save = [];
    var fill100 = {};   //to fill completely from top to bottom (98+99)
@@ -383,35 +384,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
    }
 
    //get constants.js parameters
-   var snapshots_possible = false;
-   var api, ip, hostname, port, snapshotAdmin, errtext;
-   try {
-       port = constants.port;
-       ip = constants.browser_client.ip;
-       hostname = constants.browser_client.hostname;
-       snapshotAdmin = constants.browser_client.snapshots.admin_required;
-   } catch(err) {
-       errtext = err;
+   var consts = ch_utils.evalConstants();
+   if (typeof consts === 'string') {
+       ch_utils.displayMessage(0, consts);
    }
-   if (!errtext) {
-       if (!ip && !hostname) {
-           errtext = 'constants.js: no ip/hostname defined, break,';
-       } else
-       if (!port) {
-           errtext = 'constants.js: port defined, break,';
-       } else
-       if (snapshotAdmin === undefined) {
-           errtext = 'constants.js: admin_required not defined, break,';
-       }
-   }
-   if (errtext) {
-       ch_utils.displayMessage(0, errtext);
-       alert(errtext);
-   } else {
-       snapshots_possible = true;
-       api = (ip || hostname)+':'+port;
-       console.log('api='+api);
-   }
+   var api = consts.api;
+   var snapshots_possible = consts.snapshots_possible;
+   var snapshotAdmin = consts.snapshots.admin_required;
 
    chartId = chartId.replace('__', '.');
    var chartIdDisp = chartId;
@@ -463,7 +442,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
    //======= function definitions ===========================
 
    function main(request_mode, from, to) {
-       console.log(' main(request_mode, from, to) '+request_mode+', '+from+', '+to);
        if (request_mode !== 'REQUEST_UPDATE') {
            tsLastHeader = 0;
            tsLastValues = 0;
@@ -471,14 +449,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
        step = 0;
        startRun = Date.now();
 
-       console.log('>>> program_control(request_mode, from, to) '+request_mode+', '+from+', '+to);
        program_control(request_mode, from, to);
    } //main
    
    //check API version
    function check_API_version(version_least) {
        url = 'http://'+api+'/version';
-       console.log(url);
        ch_utils.ajax_get(url, success);
        function success(data) {
            var version_string = data.VERSION;
@@ -509,7 +485,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
    
    //program control
    function program_control(request_mode, from, to) {
-       console.log(step+':  program_control(request_mode, from, to) '+request_mode+', '+from+', '+to);
        //console.log('program_control: '+(Date.now()-startRun)/1000+' sec, step='+step+', request_mode='+request_mode);
        step++;
        switch (step) {
@@ -583,7 +558,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
    function count_chart_entries(request_mode, from, to) {
        var chartIdDisp = chartIdDB+'.'+chartIdBase;
        var url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/count';
-       console.log(url);
        ch_utils.ajax_get(url, success);
        function success(data) {
            db_count = data[0];
@@ -598,7 +572,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
    function read_first_ts(request_mode, from, to) {
        var chartIdDisp = chartIdDB+'.'+chartIdBase;
        url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/select_first_ts?raw=yes';
-       console.log(url);
        ch_utils.ajax_get(url, success, fail, no_data);
        function success(data) {
            ts_first = data;
@@ -625,7 +598,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
    function read_last_ts(request_mode, from, to) {
        var chartIdDisp = chartIdDB+'.'+chartIdBase;
        url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/select_last_ts?raw=yes';
-       console.log(url);
        ch_utils.ajax_get(url, success, fail, no_data);
        function success(data) {
            ts_last = data;
@@ -653,7 +625,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
    function read_header(request_mode, from, to) {
        //console.log('read_header tsLastHeader old', tsLastHeader);
        url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'_Header/select_next?ts='+tsLastHeader;
-       console.log(url);
        ch_utils.ajax_get(url, success, fail, 31);
        function success(data) {
            vLog.chartHeader = data[data.length - 1];
@@ -664,17 +635,32 @@ document.addEventListener("DOMContentLoaded", function(event) {
    
            //get data
            document.title = vLog.chartHeader.chartId;
-   
-           //if no error
-           if (vLog.chartHeader.errText <= 0 || 
-               vLog.chartHeader.chartId !== chartId) {  //cloned chart
+  
+           var errText = vLog.chartHeader.errText || 0;
+           console.log('errText='+errText);
+           var errChart;
+           if (errText !== 0) {
+               if (isNaN(errText)) {
+                   var errSplit = errText.split(':');
+                   errText = errSplit[1];
+                   console.log('errText='+errText);
+                   errChart = errSplit[0];
+                   console.log('errChart='+errChart);
+                   if (errChart && errChart !== chartIdDisp) {
+                       errText = 0;
+                       console.log('errText='+errText);
+                  }
+               }
+           }
+
+           if (errText <= 0) {
                //*** call read_values
                program_control(request_mode, from, to);
            } else {
                doRefresh = false;
                showTooltipBox = false;
                showShowIx = false;
-               buildErrorHTML(vLog.chartHeader.errText);
+               buildErrorHTML(errText-0);
            }
        } //success
       
@@ -718,7 +704,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
        } else {
             url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/select_next?ts='+tsLastValues;
        }
-       console.log(url);
        ch_utils.ajax_get(url, success, fail, no_data);
 
        function success(data) {
@@ -1854,7 +1839,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.buttonText('dataJSON', 2);
     
             //date time picker:
-            ch_utils.buttonVisible('dtpick_calendar', true);
             ch_utils.buttonText('dtpick_calendar', 3);
             ch_utils.buttonText('dtpick_title', 18);
             ch_utils.buttonText('dtpick_date', 19);
@@ -1862,15 +1846,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.buttonText('dtpick_length', 21);
             ch_utils.buttonText('dtpick_exec', 22);
             ch_utils.buttonText('dtpick_break', 23);
-            ch_utils.buttonText('dtpick_values_all_text', 27);
-            ch_utils.buttonText('dtpick_values_rang_text', 28);
-            ch_utils.buttonText('dtpick_values_text_add', 29);
-            ch_utils.buttonText('dtpick_values_hist_text', 30);
-            if (!document.getElementById('dtpick_radio_values_all').checked &&
-                !document.getElementById('dtpick_radio_values_rang').checked &&
-                !document.getElementById('dtpick_radio_values_hist').checked) {
-               document.getElementById('dtpick_radio_values_rang').checked = true;
-            }
             
             ch_utils.buttonVisible('recoverData', true);
             ch_utils.buttonVisible('shiftLeftLong', true);
@@ -1880,10 +1855,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.buttonVisible('showComplete', true);
             ch_utils.buttonVisible('chartIndex', true);
             if (isModal) {
+                ch_utils.buttonVisible('dtpick_calendar', false);
                 ch_utils.buttonVisible('newTab', true);
                 ch_utils.buttonVisible('snapshot', false);
             }
             if (!isModal) {
+                ch_utils.buttonVisible('dtpick_calendar', true);
                 ch_utils.buttonVisible('dataJSON', true);
                 if (snapshots_possible && (snapshotAdmin === false  || isAdmin)) {
                     ch_utils.buttonVisible('snapshot', true);
@@ -1921,6 +1898,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
 
     function buildErrorHTML(errTextNo) {
+        console.log(errTextNo);
         ch_utils.buttonText('dataJSON', 2);
         ch_utils.buttonText('chartIndex', 13);
         ch_utils.buttonText('configuration', 1);
@@ -2132,24 +2110,19 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //config_datepicker_list
 
     function config_datepicker() {
-          if (ch_utils.isChecked('dtpick_radio_values_rang') ||
-              ch_utils.isChecked('dtpick_radio_values_hist')) {
-            config_datepicker_numeric("dtpick_month", 1, 12, true);
-            config_datepicker_numeric("dtpick_day", 1, 31, true);
-            config_datepicker_numeric("dtpick_hour", 0, 23, true);
-            config_datepicker_numeric("dtpick_minute", 0, 59, true);
-            config_datepicker_numeric("dtpick_intervallength", 1, 20, false);
-    
-            var yearStart = new Date(ts_first).getFullYear();
-            var yearEnd = new Date().getFullYear();
-            config_datepicker_numeric("dtpick_year", yearStart, yearEnd, false);
-    
-            var list = ch_utils.buildMessage(ixButtonTextBase+7);
-            config_datepicker_list("dtpick_intervaltype", list, 2);
-            ch_utils.buttonVisible("dtpick_table_interval", true);
-        } else {
-            ch_utils.buttonVisible("dtpick_table_interval", false);
-        }
+        config_datepicker_numeric("dtpick_month", 1, 12, true);
+        config_datepicker_numeric("dtpick_day", 1, 31, true);
+        config_datepicker_numeric("dtpick_hour", 0, 23, true);
+        config_datepicker_numeric("dtpick_minute", 0, 59, true);
+        config_datepicker_numeric("dtpick_intervallength", 1, 20, false);
+
+        var yearStart = new Date(ts_first).getFullYear();
+        var yearEnd = new Date().getFullYear();
+        config_datepicker_numeric("dtpick_year", yearStart, yearEnd, false);
+
+        var list = ch_utils.buildMessage(ixButtonTextBase+7);
+        config_datepicker_list("dtpick_intervaltype", list, 2);
+        ch_utils.buttonVisible("dtpick_table_interval", true);
 
         if (db_count === 0) {
             ch_utils.displayMessageDiv('dtpick_count_text', 36);
@@ -2171,18 +2144,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     document.getElementById('dtpick_calendar').onclick = function() {
         datetimepicker_visibility();
     }; //dtpick_calendar
-
-    document.getElementById('dtpick_radio_values_all').onclick = function() {
-            config_datepicker();
-    }; //dtpick_radio_values_all
-
-    document.getElementById('dtpick_radio_values_rang').onclick = function() {
-            config_datepicker();
-    }; //dtpick_radio_values_rang
-
-    document.getElementById('dtpick_radio_values_hist').onclick = function() {
-            config_datepicker();
-    }; //dtpick_radio_values_hist
 
     document.getElementById('dtpick_break').onclick = function() {
         datetimepicker_visibility();
@@ -2228,21 +2189,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     document.getElementById('dtpick_exec').onclick = function() {
         datetimepicker_visibility();
 
-        var radio_values_all = ch_utils.isChecked('dtpick_radio_values_all');
-        //console.log('radio_values_all='+radio_values_all);
-        if (radio_values_all) {
-            requestPrevious(0);
-            return;
-        }
-
-        var radio_values_rang = ch_utils.isChecked('dtpick_radio_values_rang');
-        //console.log('radio_values_rang='+radio_values_rang);
-        var radio_values_hist = ch_utils.isChecked('dtpick_radio_values_hist');
-        //console.log('radio_values_hist='+radio_values_hist);
-        if (!radio_values_rang && !radio_values_hist) {
-            return;
-        }
-
         var year_value = document.getElementById('dtpick_year').value;
         var month_value= document.getElementById('dtpick_month').value;
         var day_value= document.getElementById('dtpick_day').value;
@@ -2257,23 +2203,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         var newLength = length_value * type_length * 1000;
         var newEnd = newStart + newLength;
 
-        if (radio_values_rang) {
-            if (newStart >= startTime) {
-                startRun = Date.now();
-                do_zoom(newStart, newEnd);
-            } else
-            if (completeValuesReceived) {
-                startRun = Date.now();
-                do_zoom(newStart, newEnd);
-            } else {
-                requestPrevious(newStart, newEnd);
-            }
-        } else 
+        var radio_values_hist = true;
         if (radio_values_hist) {
-            document.getElementById("dtpick_radio_values_all").disabled = true;
-            document.getElementById("dtpick_radio_values_rang").disabled = true;
-            document.getElementById("dtpick_values_all_text").style.color = 'gray';
-            document.getElementById("dtpick_values_rang_text").style.color = 'gray';
             ch_utils.buttonVisible("taskbar", false);
             ch_utils.buttonVisible("textRefresh", false);
             ch_utils.buttonVisible("refreshCheckbox", false);
@@ -2389,9 +2320,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
     function requestInterval(from, to) {
         //console.log('requestInterval: from='+from+' to='+to);
         console.log('requestInterval: from='+ch_utils.userTime(from)+' to='+ch_utils.userTime(to));
+        ch_utils.buttonVisible("refreshCheckbox", false);
+        doRefresh = false;
+        setRefreshInterval(doRefresh);
         startRun = Date.now();
         busyi.show();
         vLog = {};
+        startTime = undefined;
+        endTime = undefined;
         isZoomed = false;
         tsLastHeader = 0;
         tsLastValues = 0;
@@ -2433,17 +2369,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //console.log('requesting previous data from '+from+'...');
         if (from > 0) {
             url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/select_range?from='+(from-1)+'&to='+(startTime-1);
-            console.log(url);
             console.log('requestPrevious: from='+ch_utils.userTime((from-1))+
                                         ' to='+ch_utils.userTime((startTime-1)));
-            console.log(url);
             ch_utils.ajax_get(url, success_previous, fail_previous, nodata_previous);
         } else {
             url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/select_range?from='+from+'&to='+(startTime-1);
-            console.log(url);
             console.log('requestPrevious: from='+ch_utils.userTime((from-1))+
                                         ' to='+ch_utils.userTime((startTime-1)));
-            console.log(url);
             ch_utils.ajax_get(url, success_complete, fail_previous, nodata_previous);
         }
     } //requestPrevious
@@ -2597,25 +2529,31 @@ document.addEventListener("DOMContentLoaded", function(event) {
             //set interval
             if (!IntervalId) {
                 IntervalId = setInterval(updateChart, 1 * 60 *1000); //once a minute
+                //console.log('updateChart interval set');
             }
         } else {
             //remove interval
             if (IntervalId) {
                 clearInterval(IntervalId);
                 IntervalId = undefined;
+                //console.log('updateChart interval removed');
             }
         }
     } //setRefreshInterval
 
     function updateChart() {
         if (!ch_utils.isPageHidden() && ch_utils.isVisible("refreshCheckbox")) {
+            //console.log('1 REQUEST_UPDATE');
             main('REQUEST_UPDATE');
         }
     } //updateChart
 
     function handleVisibilityChange() {
         setRefreshInterval(!document[hidden] && showRefresh && doRefresh);
-        if (!document[hidden] && showRefresh && doRefresh || isAdmin) {
+        //if (!document[hidden] && showRefresh && doRefresh || isAdmin) {
+        if (!document[hidden] && showRefresh && doRefresh &&
+            ch_utils.isVisible("refreshCheckbox")) {
+            //console.log('2 REQUEST_UPDATE');
             main('REQUEST_UPDATE');
         }
     } //handleVisibilityChange

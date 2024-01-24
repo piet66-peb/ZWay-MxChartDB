@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-01-17/peb
+//h Version:      V2.1.0 2024-01-23/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V2.1.0 2024-01-09/peb [+]other database 
 //h Copyright:    (C) piet66 2022
@@ -21,7 +21,7 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 5 */
-/*globals $, ch_utils, JsonViewer, html_params, constants */
+/*globals $, ch_utils, JsonViewer, html_params */
 'use strict';
 
 //-----------
@@ -29,7 +29,7 @@
 //-----------
 var MODULE='data-json.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-01-17/peb';
+var WRITTEN='2024-01-23/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------
@@ -74,30 +74,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
 
     //get constants.js parameters
-    var snapshots_possible = false;
-    var api, ip, hostname, port, errtext;
-    try {
-        port = constants.port;
-        ip = constants.browser_client.ip;
-        hostname = constants.browser_client.hostname;
-    } catch(err) {
-        errtext = err;
+    var consts = ch_utils.evalConstants();
+    if (typeof consts === 'string') {
+       ch_utils.displayMessage(0, consts);
     }
-    if (!errtext) {
-        if (!ip && !hostname) {
-            errtext = 'constants.js: no ip/hostname defined, break,';
-        } else
-        if (!port) {
-            errtext = 'constants.js: port defined, break,';
-        }
-    }
-    if (errtext) {
-        ch_utils.displayMessage(0, errtext);
-        alert(errtext);
-    } else {
-        api = (ip || hostname)+':'+port;
-        console.log('api='+api);
-    }
+    var api = consts.api;
 
     document.title = chartIdDisp;
     ch_utils.displayMessage(0, chartIdDisp);
@@ -249,7 +230,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
         vLog = {chartHeader: {},
                 chartValues: []};
         url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'_Header/select_next';
-        console.log(url);
         ch_utils.ajax_get(url, success, fail, 4);
         function success(data) {
             vLog.chartHeader = data[data.length - 1];
@@ -296,7 +276,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
         } else {
             url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/select_range?from='+ts_start;
         }
-        console.log(url);
         ch_utils.ajax_get(url, success, fail, no_data);
         function success(data) {
             vLog.chartValues = data;

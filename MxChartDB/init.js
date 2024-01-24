@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.0 2024-01-18/peb
+//h Version:      V2.0.0 2024-01-22/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -33,13 +33,13 @@
 //-----------
 //var MODULE='init.js';
 //var VERSION='V2.0.0';
-//var WRITTEN='2024-01-18/peb';
+//var WRITTEN='2024-01-22/peb';
 
 //-----------
 //b Functions
 //-----------
 var init = function (self) {
-    var chartHeader       = null;
+    var chartHeaderBuild  = null;
     var storeNewValueData = null;
     var globalData        = null;
     var doWhenChanged     = null;
@@ -82,7 +82,16 @@ var init = function (self) {
         }
         self.info('self.constants.ip', self.constants.ip, 
                   'self.constants.hostname', self.constants.hostname);
-        
+
+        if (self.constants.hasOwnProperty('browser_client')) {
+            if (self.constants.browser_client.ip) {
+                self.constants.ip_browser = self.constants.browser_client.ip;
+            }
+            if (self.constants.browser_client.hostname) {
+                self.constants.hostname_browser = self.constants.browser_client.hostname;
+            }
+        }
+         
         //b check configuration
         //---------------------
         self.err = undefined;
@@ -180,11 +189,12 @@ var init = function (self) {
                           self.log(response.data);
                           if (isVersionOK(response.data.VERSION.substr(1), 
                                            self.LEAST_API_VERSION.substr(1))) {
-                            check_create_default_db();
+                              check_create_default_db();
                           } else {
                               self.notifyError(response.data.MODULE+' version too old'+
                                               '<br>current: '+response.data.VERSION+
                                               '<br>required: '+self.LEAST_API_VERSION);
+                              check_create_default_db();
                           }
                       }, 
                       function(response) {
@@ -581,7 +591,11 @@ var init = function (self) {
         if (self.database === self.databaseIndex) {
             db_chartId = self.config.chartId;
         }
-        self.chartUrl = 'http://'+self.api+':'+self.constants.port+
+        //define intxhartUrl:
+        var api_browser = self.constants.ip_browser || 
+                            self.constants.hostname_browser ||
+                            self.api;
+        self.chartUrl = 'http://'+api_browser+':'+self.constants.port+
                         '/HTML_MODAL/MxChartDB/'+db_chartId;
     
         self.log(self.chartUrl);
@@ -619,14 +633,14 @@ var init = function (self) {
     //h Purpose:      
     //h
     //h-------------------------------------------------------------------------------
-    function compareHeaderData (chartHeaderCurr) {
+    function compareHeaderData (chartHeaderStored) {
         self.log('*** compareHeaderData');
     
         //b build new chart header data (=>build_chart_header)
         //----------------------------------------------------
         self.now = Date.now();
-        chartHeader = build_chart_header();
-        self.log('chartHeader', chartHeader);
+        chartHeaderBuild = build_chart_header();
+        self.log('chartHeaderBuild', chartHeaderBuild);
     
         //b data control
         //--------------
@@ -652,31 +666,31 @@ var init = function (self) {
         var DEVICES_ADDED = 3;
         var storeNewHeaderData, removeOldValueData;
     
-        var chartHeaderCurrStringified;
+        var chartHeaderStoredStringified;
         var chartHeaderStringified;
-        if (chartHeaderCurr)  {
-            self.log('chartHeader.chartDevices', chartHeader.chartDevices);
-            self.log('chartHeaderCurr', chartHeaderCurr);
-            chartHeaderCurr.Timestamp = chartHeader.Timestamp;
-            chartHeaderCurr.chartDevicesNew = [];
-            chartHeaderCurr.errText = 0;
-            chartHeaderCurrStringified = JSON.stringify(chartHeaderCurr);
-            chartHeaderStringified     = JSON.stringify(chartHeader);
-            self.log('chartHeaderCurr.chartDevices', chartHeaderCurr.chartDevices);
+        if (chartHeaderStored)  {
+            self.log('chartHeaderBuild.chartDevices', chartHeaderBuild.chartDevices);
+            self.log('chartHeaderStored', chartHeaderStored);
+            chartHeaderStored.Timestamp = chartHeaderBuild.Timestamp;
+            chartHeaderStored.chartDevicesNew = [];
+            chartHeaderStored.errText = 0;
+            chartHeaderStoredStringified = JSON.stringify(chartHeaderStored);
+            chartHeaderStringified     = JSON.stringify(chartHeaderBuild);
+            self.log('chartHeaderStored.chartDevices', chartHeaderStored.chartDevices);
         }
 
         //b if no requested header data received
         //--------------------------------------
-        if (!chartHeaderCurr)  {
+        if (!chartHeaderStored)  {
             storeNewHeaderData = true;
             removeOldValueData = false;
             storeNewValueData  = true;
         } else
         //b else if header not changed
         //----------------------------
-        if (chartHeaderCurrStringified === chartHeaderStringified)  {
+        if (chartHeaderStoredStringified === chartHeaderStringified)  {
             self.log('headerdata not changed');
-            storeNewHeaderData = false;
+            storeNewHeaderData = true;
             removeOldValueData = false;
             storeNewValueData  = true;
         } else
@@ -687,8 +701,8 @@ var init = function (self) {
     
             //b if device list not changed
             //----------------------------
-            var chartDevicesCurr = JSON.stringify(chartHeaderCurr.chartDevices);
-            var chartDevicesNew = JSON.stringify(chartHeader.chartDevices);
+            var chartDevicesCurr = JSON.stringify(chartHeaderStored.chartDevices);
+            var chartDevicesNew = JSON.stringify(chartHeaderBuild.chartDevices);
             if (chartDevicesCurr === chartDevicesNew) {
                 self.log('devices not changed');
                 removeOldValueData = false;
@@ -697,7 +711,10 @@ var init = function (self) {
             //b else if device list changed
             //-----------------------------
             if (chartDevicesCurr !== chartDevicesNew) {
-                self.log('devices changed');
+                self.info('device list changed !!!');
+
+                var db_chartId = self.database+'.'+self.config.chartId;
+
                 //b if 'delete old value data if changed'
                 //---------------------------------------
                 if (doWhenChanged === 'remove') {
@@ -710,34 +727,34 @@ var init = function (self) {
                     removeOldValueData = false;
                     storeNewValueData  = false;
     
-                    chartHeaderCurr.chartDevicesNew = chartHeader.chartDevices;
+                    chartHeaderStored.chartDevicesNew = chartHeaderBuild.chartDevices;
                     //b if devices removed
                     //--------------------
-                    if (chartHeader.chartDevices.length < chartHeaderCurr.chartDevices.length) {
-                        chartHeaderCurr.errText = DEVICES_REMOVED;
+                    if (chartHeaderBuild.chartDevices.length < chartHeaderStored.chartDevices.length) {
+                        chartHeaderStored.errText = db_chartId+':'+DEVICES_REMOVED;
                     } else
                     //b else if devices added
                     //-----------------------
-                    if (chartHeader.chartDevices.length > chartHeaderCurr.chartDevices.length) {
-                        chartHeaderCurr.errText = DEVICES_ADDED;
+                    if (chartHeaderBuild.chartDevices.length > chartHeaderStored.chartDevices.length) {
+                        chartHeaderStored.errText = db_chartId+':'+DEVICES_ADDED;
                     } else {
                     //b else if devices changed
                     //-------------------------
-                        chartHeaderCurr.errText = DEVICES_CHANGED;
+                        chartHeaderStored.errText = db_chartId+':'+DEVICES_CHANGED;
                     }
-                    chartHeader = chartHeaderCurr;
+                    chartHeaderBuild = chartHeaderStored;
                 } else
                 //b else if 'continue chart when changed'
                 //---------------------------------------
                 if (doWhenChanged === 'continue') {
                     //b if devices removed
                     //--------------------
-                    if (chartHeader.chartDevices.length < chartHeaderCurr.chartDevices.length) {
+                    if (chartHeaderBuild.chartDevices.length < chartHeaderStored.chartDevices.length) {
                         removeOldValueData = false;
                         storeNewValueData  = false;
     
-                        chartHeaderCurr.chartDevicesNew = chartHeader.chartDevices;
-                        chartHeaderCurr.errText = DEVICES_REMOVED;
+                        chartHeaderStored.chartDevicesNew = chartHeaderBuild.chartDevices;
+                        chartHeaderStored.errText = db_chartId+':'+DEVICES_REMOVED;
                     //b else
                     //------
                     } else {
@@ -761,7 +778,7 @@ var init = function (self) {
                         function() {
                             self.log('table '+self.tableNameValues+' old data removed');
                             if (storeNewHeaderData) {
-                                self.store_table_data(self.tableNameHeader, ts, chartHeader, callback, ts);
+                                self.store_table_data(self.tableNameHeader, ts, chartHeaderBuild, callback, ts);
                             } else {
                                 callback();
                             }
@@ -774,7 +791,7 @@ var init = function (self) {
         if (storeNewHeaderData) {
             //b exchange header
             //-----------------
-            self.store_table_data(self.tableNameHeader, ts, chartHeader, 
+            self.store_table_data(self.tableNameHeader, ts, chartHeaderBuild, 
                                     callback, ts);
         //b else
         //------

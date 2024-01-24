@@ -13,10 +13,10 @@ var constants = {
 
     // 2. for the Z-Way MxChartDB apps:
     zway_app: {
-        //ip address respectively hostname of the db_server,
-        //seen from the zway_server
+        //ip address respectively hostname of the db server system,
+        //seen from the zway_server system
         //ip: '127.0.0.1',    
-        hostname: "localhost",      //localhost: if db server = zway server
+        hostname: "localhost",      //localhost: if db server system = zway server system
 
         //reaction on communication fault:
         retry_init_min: 5,          //retry initialization after n minutes
@@ -25,8 +25,8 @@ var constants = {
 
     // 3. for the browser clients:
     browser_client: {
-        //ip address respectively hostname of the db_server,
-        //seen from the zway_server (localhost not possible)
+        //ip address respectively hostname of the db server system,
+        //seen from the client pc (localhost not possible)
         //ip: '192.168.178.22',    
         hostname: "db_server",
 

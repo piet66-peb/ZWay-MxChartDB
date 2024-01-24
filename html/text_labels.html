@@ -1,0 +1,46 @@
+<!DOCTYPE HTML> 
+<html> 
+   <head>
+      <meta charset="utf-8">
+      <title>Text Labels</title>
+      <link rel="shortcut icon" href="../MxChartDB/htdocs/icon.png">
+   </head> 
+   <body>   
+       <h1>Create a Y-axis labeled with texts or images</h1>
+       By default, MxChartDB uses linear Cartesian axes.
+       <br><br>
+       Additionally, it is also possible to define Y-axes with text labels 
+       or even with icons.
+       <br><br>
+       For each sensor, you can decide what type of labels to use. 
+       The software automatically sets the type based on the sensor value: 
+       <ul>
+           <li>number labels for number values
+           </li>
+           <li>text/icon labels for text values. 
+           </li>
+       </ul>
+       You can mix different kinds of Y-axes in a graph, but you can't mix
+       them for one sensor.
+       <br><br>
+       Proceeding for text/icon axes:
+       <ul>
+           <li>Make sure, that all sensor values are of type 'text'. If necessary, 
+               change the type with sensor arithmetic.
+           </li>
+           <li>Add the list of valid text labels to the 'Text Labels' field.
+               The order in this field defines the order on the Y-axis.
+               Additional commas create gaps on the axis.
+               You can embellish the output by using emoticons.
+           </li>
+           <li>You can replace the text labels with images. Define then in the
+               'Replace Text Labels with Icons' field. Make sure that the images
+               have a 1:1 equivalent in the  'Text Labels' field.
+           </li>
+       </ul>
+       If you have number and text axes on a page, they are combined into one 
+       graph, unless the text axis has only two items. In this case, the 
+       software creates a separate narrow graph at the bottom of the page.
+   </body>   
+</html>
+

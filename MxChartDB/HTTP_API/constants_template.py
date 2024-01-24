@@ -27,16 +27,18 @@ PASSWORD = 'secret'
 ####     only enable temporarily if really necessary
 ####     all remote client hosts in whitelist can use that
 ####
-ALLOW_WRITE_WITH_GET = True
+#ALLOW_WRITE_WITH_GET = True
 # default: False, no write acces via GET command
 # if True: you are asked to login with username/password
 
 ####
 #### allow Cross-Origin Resource Sharing for clients writing to database
+#### with POST command (used by Administrator)
 #### commenting this line disables write access for remote clients
 #### recommendation: restrict CORS_HOST to the ZWay server
+#### Cross-Origin doesn't work with localhost, use the real ip instead!
 ####
-CORS_HOST = ["http://localhost:8083", "http://192.168.178.22:8083"]
+CORS_HOST = ["http://192.168.178.22:8083"]
 # default: no write access for MxChartDB browser pages
 
 ####

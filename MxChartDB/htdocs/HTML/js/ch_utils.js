@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.1 2024-01-12/peb
+//h Version:      V1.0.1 2024-01-23/peb
 //v History:      V1.0.0 2022-01-02/peb first version
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
@@ -29,7 +29,7 @@
 //-----------
 var MODULE='ch-utils.js';
 var VERSION='V1.0.1';
-var WRITTEN='2024-01-12/peb';
+var WRITTEN='2024-01-23/peb';
 
 //-----------
 //b Functions
@@ -40,6 +40,7 @@ var ch_utils = {
     isAdminOld: null,
     url: null,
     urlOld: null,
+    userpass: null,
 
     //workaround for server issue:
     //convert from charset ISO-8859-1 to utf-8
@@ -72,6 +73,56 @@ var ch_utils = {
             });
         });
     }, //convertMessagesToUTF8
+
+    evalConstants: function () {
+        var consts = {
+            username: btoa(constants.username),
+            password: btoa(constants.password),
+            userpass: btoa(constants.username+':'+constants.password),
+            ip:       constants.ip,
+            hostname: constants.hostname,
+            port:     constants.port,
+            index:    {},
+            admin:    {},
+            snapshots:{},
+            snapshots_possible: false,
+        };
+        if (constants.hasOwnProperty('browser_client')) {
+            var cbc = constants.browser_client;
+            if (cbc.ip) {
+                consts.ip = cbc.ip;
+            }
+            if (cbc.hostname) {
+                consts.hostname = cbc.hostname;
+            }
+            if (cbc.hasOwnProperty('index')) {
+                consts.index =  cbc.index;
+            }
+            if (cbc.hasOwnProperty('admin')) {
+                consts.admin =  cbc.admin;
+            }
+            if (cbc.hasOwnProperty('snapshots')) {
+                consts.snapshots = cbc.snapshots;
+                if (cbc.snapshots.database_name) {
+                    consts.snapshots_possible = true;
+                }
+            }
+        }
+        if (!consts.ip && !consts.hostname || ! consts.port) {
+            consts = 'constants.js: no ip/hostname or port defined, break,';
+            alert('errtext');
+        } else {
+            consts.api = (consts.ip || consts.hostname)+':'+consts.port;
+            if (!consts.snapshots.database_name) {
+                consts.snapshots.database_name = 'Snapshots';
+            }
+            if (consts.snapshots.admin_required === undefined) {
+                consts.snapshots.admin_required = true;
+            }
+            ch_utils.userpass = consts.userpass;
+        }
+        return consts;
+    },
 
     getLanguage: function () {
         //get html language
@@ -194,7 +245,7 @@ var ch_utils = {
             }
         };
         xhttp.open('POST', url, async||true);
-        var basic = "Basic " + btoa(constants.username+':'+constants.password);
+        var basic = "Basic " + ch_utils.userpass;
         //console.log('Authorization', basic);
         //xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
         //xhttp.setRequestHeader("Content-type", "text/plain");
@@ -278,6 +329,7 @@ var ch_utils = {
                 }
             }
         };
+        console.log(url);
         xhttp.open('GET', url, async||true);
         //xhttp.timeout = timeout || 5000; //time in milliseconds
         xhttp.send();
@@ -323,6 +375,7 @@ var ch_utils = {
                 }
             }
         };
+        console.log(url);
         xhttp.open('PUT', url, async||true);
        
         xhttp.setRequestHeader("Content-Type", "application/json; charset=utf-8");

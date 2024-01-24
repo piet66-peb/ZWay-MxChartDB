@@ -1,0 +1,33 @@
+<!DOCTYPE HTML> 
+<html> 
+   <head>
+      <meta charset="utf-8">
+      <title>DB Locked</title>
+      <link rel="shortcut icon" href="../MxChartDB/htdocs/icon.png">
+   </head> 
+   <body>   
+       <h1>Warning: database Locked</h1>
+       It may happen that the warning 'Database is locked' appears when 
+       storing new sensor values.
+       <br><br>
+       It is because the API is multithreaded, but the SQLite engine is not. 
+       If too many requests arrive at once, the engine temporarily locks the 
+       database for further write operations.
+       <br><br>
+       This is not a problem, as the client only removes the data from the 
+       buffer once it has been acknowledged. As long as this does not happen, 
+       the data is always sent again with the next write operation. Data is 
+       therefore not lost.
+       <br>
+       The maximum number of repetitions can be defined in the constants.js file.
+       <br><br>
+       It is worth considering using a separate database file for charts with 
+       large amounts of data.
+       By default, the data for all charts together is stored in a database 
+       (file) with the name MxChartDB.
+       
+       
+       
+   </body>   
+</html>
+

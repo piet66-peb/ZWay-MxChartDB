@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.0 2024-01-17/peb
+//h Version:      V1.0.0 2024-01-23/peb
 //v History:      V1.0.0 2024-01-12/peb first version
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
@@ -20,7 +20,7 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 5 */
-/*globals $, ch_utils, JsonViewer, html_params, constants */
+/*globals $, ch_utils, JsonViewer, html_params */
 'use strict';
 
 //-----------
@@ -28,7 +28,7 @@
 //-----------
 var MODULE='take-snapshot.js';
 var VERSION='V1.0.0';
-var WRITTEN='2024-01-17/peb';
+var WRITTEN='2024-01-23/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------
@@ -68,40 +68,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
     console.log('ts_to='+ts_to);
 
     //get constants.js parameters
-    var snapshots_possible = false;
-    var api, ip, hostname, port, snapshotDB, snapshotAdmin, errtext;
-    try {
-        port = constants.port;
-        ip = constants.browser_client.ip;
-        hostname = constants.browser_client.hostname;
-        snapshotAdmin = constants.browser_client.snapshots.admin_required;
-        snapshotDB = constants.browser_client.snapshots.database_name;
-    } catch(err) {
-        errtext = err;
+    var consts = ch_utils.evalConstants();
+    if (typeof consts === 'string') {
+       ch_utils.displayMessage(0, consts);
     }
-    if (!errtext) {
-        if (!ip && !hostname) {
-            errtext = 'constants.js: no ip/hostname defined, break,';
-        } else
-        if (!port) {
-            errtext = 'constants.js: port defined, break,';
-        } else
-        if (!snapshotDB) {
-            errtext = 'constants.js: no snapshot database defined, break,';
-        } else
-        if (snapshotAdmin === undefined) {
-            errtext = 'constants.js: admin_required not defined, break,';
-        }
-    }
-    if (errtext) {
-        ch_utils.displayMessage(0, errtext);
-        alert(errtext);
-    } else {
-        snapshots_possible = true;
-        api = (ip || hostname)+':'+port;
-        console.log('snapshots db='+snapshotDB);
-        console.log('api='+api);
-    }
+    var api = consts.api;
+    var snapshots_possible = consts.snapshots_possible;
+    var snapshotDB = consts.snapshots.database_name;
 
     if (snapshots_possible) {
         //evaluateartId
@@ -137,7 +110,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             console.log('database file '+snapshotDB+' created/ already existing');
        }
     } //check_create_snapshot_db
-    
+
    //count chart entries
    function count_chart_entries() {
        var url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/count';
@@ -376,12 +349,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     function copyChart(dbNameOld, chartIdOld, dbNameNew, chartIdNew, where) {
         var chartIdDispOld, chartIdDispNew, url;
-        if (dbNameNew !== dbNameOld) {
-            chartIdDispOld = dbNameOld+'.'+chartIdOld;
+        if (dbNameNew !== 'MxChartDB') {
             chartIdDispNew = dbNameNew+'.'+chartIdNew;
         } else {
-            chartIdDispOld = chartIdOld;
             chartIdDispNew = chartIdNew;
+        }
+        if (dbNameOld !== 'MxChartDB') {
+            chartIdDispOld = dbNameOld+'.'+chartIdOld;
+        } else {
+            chartIdDispOld = chartIdOld;
         }
         var ts = Date.now();
         write_values();
@@ -389,14 +365,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
         function write_values() {
            //console.log('cloning table '+chartIdDisp);
            url = 'http://'+api+'/'+dbNameOld+'/'+chartIdOld+'/clone?new='+chartIdDispNew+where;
-           console.log(url);
            ch_utils.ajax_post(url, undefined, write_header, fail);
         }
         function write_header() {
            //console.log('cloning table '+chartIdBase+'_Header');
            url = 'http://'+api+'/'+dbNameOld+'/'+chartIdOld+'_Header'+'/clone?new='+
                 chartIdDispNew+'_Header';
-           console.log(url);
            ch_utils.ajax_post(url, undefined, read_index, fail);
         }
         function read_index() {
@@ -406,9 +380,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
         function correct_index(data) {
            var indexBuffer = data[data.length-1];
-           //console.log('indexBuffer', indexBuffer);
            var chartIdTitleOld = indexBuffer[chartIdDispOld];
-           console.log('chartIdTitleOld='+chartIdTitleOld);
            indexBuffer[chartIdDispNew] = chartIdTitleOld;
            var I = 'MxChartDB_Index';
            //console.log('insert table '+I);
@@ -434,7 +406,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
            } else {
                mess = ch_utils.buildMessage(23, chartIdDispOld, status, JSON.parse(responseText));
            }
-           console.log('url='+url);
            console.log(mess);
            alert(mess);
         } //fail

@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-01-17/peb
+//h Version:      V2.1.0 2024-01-23/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -24,7 +24,7 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 5 */
-/*globals ch_utils, html_params, constants, myFunction */
+/*globals ch_utils, html_params, myFunction */
 'use strict';
 
 //-----------
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-01-17/peb';
+var WRITTEN='2024-01-23/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -85,47 +85,25 @@ document.addEventListener("DOMContentLoaded", function(event) {
     ch_utils.buttonText('snapshotsT', 40);
 
     //get constants.js parameters
-    var ip, hostname, port, errtext;
-    try {
-        port = constants.port;
-        ip = constants.browser_client.ip;
-        hostname = constants.browser_client.hostname;
-    } catch(err) {
-        errtext = err;
+    var consts = ch_utils.evalConstants();
+    if (typeof consts === 'string') {
+       ch_utils.displayMessage(0, consts);
     }
-    if (!errtext) {
-        if (!ip && !hostname) {
-            errtext = 'constants.js: no ip/hostname defined, break,';
-        } else
-        if (!port) {
-            errtext = 'constants.js: port defined, break,';
-        }
-    }
-    if (errtext) {
-        ch_utils.displayMessage(0, errtext);
-        alert(errtext);
-    } else {
-        api = (ip || hostname)+':'+port;
-        console.log('api='+api);
-    }
+    api = consts.api;
 
-    try {
-        target_chart = '';
-        target_data = '';
-        if (ADMIN === 'YES' && constants.browser_client.admin.open_chart_in_new_tab) {
-            target_chart = ' target="_blank"';
-        }
-        if (ADMIN === 'YES' && constants.browser_client.admin.open_data_in_new_tab) {
-            target_data = ' target="_blank"';
-        }
-        if (ADMIN === 'NO' && constants.browser_client.index.chart_in_new_tab) {
-            target_chart = ' target="_blank"';
-        }
-        if (ADMIN === 'NO' && constants.browser_client.index.data_in_new_tab) {
-            target_data = ' target="_blank"';
-        }
-    } catch(err) {
-        alert('Reading file constants.js: '+err.message);
+    target_chart = '';
+    target_data = '';
+    if (ADMIN === 'YES' && consts.admin.open_chart_in_new_tab) {
+        target_chart = ' target="_blank"';
+    }
+    if (ADMIN === 'YES' && consts.admin.open_data_in_new_tab) {
+        target_data = ' target="_blank"';
+    }
+    if (ADMIN === 'NO' && consts.index.chart_in_new_tab) {
+        target_chart = ' target="_blank"';
+    }
+    if (ADMIN === 'NO' && consts.index.data_in_new_tab) {
+        target_data = ' target="_blank"';
     }
 
     filterInput = document.getElementById("myInput");
@@ -137,394 +115,395 @@ document.addEventListener("DOMContentLoaded", function(event) {
     elSnapshots = document.getElementById("snapshots");
 
     step0();
-}); //document).ready
-
-
-    function step0 () {
-        instancesList = {};
-        instancesRead = false;
-        if (ADMIN === 'YES') {
-            ch_utils.checkLoggedIn(go_on);
-        } else {
-            step1();
-        }
-    }
-
-    function go_on(sessionId, adminRights, username) {
-        console.log(sessionId+' '+adminRights+' '+username);
-        if(sessionId && adminRights) {
-            isAdmin = adminRights;
-        } else {
-            isAdmin = undefined;
-        }
-        console.log('isAdmin='+isAdmin);
-        step1();
-    }
-
-    //step 1: read index data
-    function step1 () {
-        var url = 'http://'+api+'/MxChartDB/MxChartDB_Index/select_next';
-        ch_utils.ajax_get(url, success, fail, 12);
-        function success(data) {
-            //goto next step
-            //console.log(data);
-            indexBuffer = data[data.length-1];
-            if (isAdmin) {step2();} else {step3();}
-        } //success
-
-        function fail(status) {
-            var mess = 'error reading MxChartDB_Index: '+status;
-            console.log(mess);
-            alert(mess);
-        } //fail
-    } //step1
-
-    //step2: if administrator read instances
-    function step2 () {
-        var url = '/ZAutomation/api/v1/instances';
-        instancesRead = false;
-        ch_utils.ajax_get(url, success, fail, fail);
-       
-        function success(data) {
-            //goto next step
-            isAdmin = true;
-            buildInstancesList(data.data);
-            step3();
-        } //success
-        function fail(status) {
-            isAdmin = false;
-            ch_utils.buttonVisible('selectFile', false);
-            step3();
-        } //success
-    } //step2
-
-    //step3: build list
-    function step3() {
-        //step4: build new index list and print output
-        display();
-
-        if (!instancesRead && ADMIN === 'YES') {
-            ch_utils.buttonVisible('selectFile', false);
-            ch_utils.alertMessage(13);
-        }
-    } //step3
-
-    //------- function definitions -------------------------
-
-    function display() {
-        //build new index list
-        indexList = buildIndexList(indexBuffer);
-
-        //print ourput
-        printHTML(indexList);
-
-        if (filterInput.value.length > 0) {
-            myFunction();
-        }
-    } //display
-
-    function buildInstancesList(instancesBuffer) {
-        instancesList = {};
-        instancesRead = true;
-        instancesBuffer.filter(function(instance, ix) {
-            return instance.moduleId === "MxChartDB";}).forEach(function(inst) {
-                var chartIdKey = inst.params.chartId;
-                if (inst.params.DBName && inst.params.DBName !== 'MxChartDB') {
-                    chartIdKey = inst.params.DBName+'.'+chartIdKey;
-                }
-                instancesList[chartIdKey] = 
-                    {active: toBoolean(inst.active),
-                     id: inst.id,
-                     title:  inst.params.chartTitle,
-                     chartId: inst.params.chartId,
-                     DBName: inst.params.DBName};
-            });
-    } //buildInstancesList
-
-    function toBoolean(value) {
-        value = value === 'true' ? true : value;
-        value = value === 'false' ? false : value;
-        return value;
-    } //toBoolean
-
-    function buildIndexList(indexBuffer) {
-        //sort index entries
-        var indexArray = [];
-        Object.keys(indexBuffer).map(function(key) {
-            indexArray.push([indexBuffer[key], key]);
-        });
-        indexArray.sort();
-
-        //build html
-        var t = ch_utils.buildMessage(5);
-        var i = ch_utils.buildMessage(6);
-        var a = ch_utils.buildMessage(7);
-        var y = ch_utils.buildMessage(8);
-        var n = ch_utils.buildMessage(9);
-        var o = ch_utils.buildMessage(10);
-        var e = ch_utils.buildMessage(11);
-        var inst = ch_utils.buildMessage(2);
-        var cop = ch_utils.buildMessage(14);
-        var download = ch_utils.buildMessage(33);
-        var rem = ch_utils.buildMessage(15);
-        var c = ch_utils.buildMessage(26);
-        var s = ch_utils.buildMessage(41);
-
-        var htmlText = '<table id="myTable"><tbody><tr><th>'+t+'</th><th>'+i+'</th>';
-        if (instancesRead) {
-            if (ADMIN === 'YES') {
-                htmlText += '<th>'+inst+'</th>';
-            }
-            htmlText += '<th>'+a+'</th>';
-            if (ADMIN === 'YES') {
-                htmlText += '<th>'+cop+'</th>';
-                htmlText += '<th>'+download+'</th>';
-                htmlText += '<th>'+rem+'</th>';
-            }
-        }
-        htmlText += '</tr>';
-        if (ADMIN === 'YES') {
-            adminQuerystring = '?isAdmin='+isAdmin+'&';
-        } else {
-            adminQuerystring = '?';
-        }
-
-        var URLChart = './draw-chartjs.html'+adminQuerystring+'chartId=';
-        var URLJSON  = './data-json.html'+adminQuerystring+'chartId=';
-        var last = '';
-
-        //indexArray.forEach(function(chart, ix) {
-        for (var ix = 0; ix < indexArray.length; ix++) {
-            var htmlTextNew = '';
-            var orphaned = false;
-            var chartId = indexArray[ix][1];
-            var chartTitle = indexArray[ix][0];
-            var uChart = URLChart + chartId;
-            var uJSON = URLJSON + chartId;
-            var chartIdDisp = chartId;
-            var chartIdDB = 'MxChartDB';
-            var chartIdBase = chartId;
-            //if other database:
-            if (chartId.indexOf('.') > 0) {
-                var chartIdSplit = chartIdDisp.split('.');
-                chartIdDB = chartIdSplit[0];
-                chartIdBase = chartIdSplit[1];
-            }
-
-            if (chartTitle === last) {
-                htmlTextNew += '<tr><td><a href="'+uChart+
-                    '"'+target_chart+'><font color="red"><b>'+chartTitle+'</b></font></td>';
-            } else {
-                htmlTextNew += '<tr><td><a href="'+uChart+'"'+target_chart+'>'+chartTitle+
-                    '</td>';
-            }
-            htmlTextNew += '<td><center><a href="'+uJSON+'"'+target_data+'>'+chartIdDisp+'</a></td>';
-
-
-            if (instancesRead) {
-                if (ADMIN === 'YES') {
-                    if (!instancesList.hasOwnProperty(chartId)) {
-                        htmlTextNew += '<td><center></td>';
-                    } else {
-                        htmlTextNew += '<td><center>';
-                        if (!instOriginal(chartId, instancesList[chartId].id)) {
-                            htmlTextNew += '<font color="magenta"><b>'+
-                                instancesList[chartId].id+'</b></font>';
-                        } else {
-                            htmlTextNew += '<font color="green"><b>'+
-                                instancesList[chartId].id+'</b></font>';
-                        }
-                        htmlTextNew += '</td>';
-                    }
-
-                    var col, tex;
-                    if (chartIdDB === 'Snapshots') {
-                        col = 'black';
-                        tex = s;    //snapshot
-                        orphaned = true;
-                    } else
-                    if (isCopy(chartIdBase)) {
-                        col = 'black';
-                        tex = c;    //copy
-                        orphaned = true;
-                    } else
-                    if (!instancesList.hasOwnProperty(chartId)) {
-                        col = 'red';
-                        tex = o;    //orphaned
-                        orphaned = true;
-                    } else
-                    if (instancesList[chartId].title !== chartTitle) {
-                        //maybe open and save chart module.json to repair error
-                        col = 'orange';
-                        tex = e;    //error
-                    } else
-                    if (instancesList[chartId].active) {
-                        col = 'green';
-                        tex = y;    //active
-                    } else {
-                        col = 'black';
-                        tex = n;    //inactive
-                    }
-                    if (tex === y) {
-                        htmlTextNew += '<td headers="active" align=center>'+
-                                    '<input type="checkbox" id="active+'+chartId+'" checked>'+
-                                    '</td>';
-                    } else
-                    if (tex === n) {
-                        htmlTextNew += '<td headers="active" align=center>'+
-                                    '<input type="checkbox" id="active+'+chartId+'">'+
-                                    '</td>';
-                    } else
-                    if (tex === e) {
-                        htmlTextNew += '<td><center><font color="'+col+'"><b>'+
-                                    '<a href="javascript:alert(\''+
-                            ch_utils.buildMessage(20)+'\');">'+tex+'</a> '+
-                                    '</b></font></td>';
-                    } else
-                    if (tex === c) {
-                        htmlTextNew += '<td><center>'+tex+'</td>';
-                    } else
-                    if (tex === s) {
-                        htmlTextNew += '<td><center>'+tex+'</td>';
-                    } else {
-                        htmlTextNew += '<td><center><font color="'+col+'"><b>'+
-                            tex+'</b></font></td>';
-                    }
-
-                    var l1 = '';
-                    if (!isCopy(chartIdBase)) {
-                        l1 =  '<a href="javascript:copyChart(\''+
-                            chartId +'\',\''+api+'\');">'+y+'</a> ';
-                    }
-                    htmlTextNew += '<td><center>'+l1+'</td>';
-                    var l3 =  '<a href="javascript:downloadChart(\''+
-                            chartId +'\',\''+api+'\');">'+y+'</a> ';
-                    htmlTextNew += '<td><center>'+l3+'</td>';
-                    var l2 = '';
-                    if (tex === o || tex === n || tex === c || tex === s) {
-                        l2 =  '<a href="javascript:deleteChart(\''+
-                            chartId +'\',\''+api+'\');">'+y+'</a> ';
-                    }
-                    htmlTextNew += '<td><center>'+l2+'</td>';
-                } //if ADMIN
-                else {
-                    if (!instancesList.hasOwnProperty(chartId)) {
-                        orphaned = true;
-                    }
-                } //if not ADMIN
-            } //instancesRead
-
-            htmlTextNew += '</tr>';
-
-            //filter chart entry
-            if (chartIdDB === 'Snapshots') {
-                if (elSnapshots.checked === false) {
-                    continue;
-                }
-            } else
-            if (orphaned === true) {
-                if (elOrphaned.checked === false) {
-                    continue;
-                }
-            } else
-            if (elOperate.checked === false) {
-                continue;
-            }
-            
-            htmlText += htmlTextNew;
-            last = chartTitle;
-        }
-        htmlText += '</tbody></table>';
-        return htmlText;
-    } //buildIndexList
-
-    function printHTML(indexList) {
-        var indexListString = JSON.stringify(indexList);
-        if (indexListString !== indexListStringPrev) {
-            document.getElementById('json-renderer').innerHTML = indexList;
-            indexListStringPrev = indexListString;
-        }
-
-        //define checkbox event:
-        var checkboxList = document.querySelectorAll('[type="checkbox"]');
-        //console.log(checkboxList);
-        /*jshint loopfunc:true */
-        for (var i = 0; i < checkboxList.length; i++) {
-            if (checkboxList[i].id !== 'operate' &&
-                checkboxList[i].id !== 'orphaned' &&
-                checkboxList[i].id !== 'snapshots') {
-
-            checkboxList[i].addEventListener('change', function(event) {
-                //console.log(event.target);
-                var id = event.target.id.split('+');
-                var chartId = id[1];
-                var checked = event.target.checked;
-                changeActive(chartId, checked);
-            });
-            }
-        }
-        /*jshint loopfunc:false */
-    } //printHTML
-
-    function changeActive(chartId, checked) {
-        /*
-        var instNo;
-        try {
-            instNo = instancesList[chartId].id;
-        } catch(err) {
-            return;
-        }
-        */
-        var instNo = instancesList[chartId].id;
-        instancesList[chartId].active = checked;
-
-        //get instance data
-        var url = '/ZAutomation/api/v1/instances/'+instNo;
-        ch_utils.ajax_get(url, success_get);
-
-        function success_get (response) {
-            var data = response.data;
-            var instNo = data.id;
-            var activeNew = instancesList[chartId].active;
-            data.active = activeNew;
-            var url = '/ZAutomation/api/v1/instances/'+instNo;
-            ch_utils.ajax_put(url, JSON.stringify(data), success_put);
-        }
-
-        function success_put(response) {
-            var instNo = response.data.id;
-            alert(ch_utils.buildMessage(37, instNo, response.data.active));
-            window.location.reload();
-        }
-    } //changeActive
 
     //------- event listeners -------------------------
     if (ADMIN === 'YES') {
         document.getElementById('selectFile').onchange = loadLocalFile;
     }
 
-    // reselect, if isAdmin and page gets focus again
-    //
-    //https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
-    // Set the name of the hidden property and the change event for visibility
-    var hidden, visibilityChange; 
-    if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support 
-        hidden = "hidden";
-        visibilityChange = "visibilitychange";
-    } else if (typeof document.msHidden !== "undefined") {
-        hidden = "msHidden";
-        visibilityChange = "msvisibilitychange";
-    } else if (typeof document.webkitHidden !== "undefined") {
-        hidden = "webkitHidden";
-        visibilityChange = "webkitvisibilitychange";
+}); //document).addEventListener
+
+
+function step0 () {
+    instancesList = {};
+    instancesRead = false;
+    if (ADMIN === 'YES') {
+        ch_utils.checkLoggedIn(go_on);
+    } else {
+        step1();
     }
-    document.addEventListener(visibilityChange, handleVisibilityChange, false);
-    
-    function handleVisibilityChange() {
-        if (!document[hidden] && isAdmin) {
-            step0();
+}
+
+function go_on(sessionId, adminRights, username) {
+    console.log(sessionId+' '+adminRights+' '+username);
+    if(sessionId && adminRights) {
+        isAdmin = adminRights;
+    } else {
+        isAdmin = undefined;
+    }
+    console.log('isAdmin='+isAdmin);
+    step1();
+}
+
+//step 1: read index data
+function step1 () {
+    var url = 'http://'+api+'/MxChartDB/MxChartDB_Index/select_next';
+    ch_utils.ajax_get(url, success, fail, 12);
+    function success(data) {
+        //goto next step
+        //console.log(data);
+        indexBuffer = data[data.length-1];
+        if (isAdmin) {step2();} else {step3();}
+    } //success
+
+    function fail(status) {
+        var mess = 'error reading MxChartDB_Index: '+status;
+        console.log(mess);
+        alert(mess);
+    } //fail
+} //step1
+
+//step2: if administrator read instances
+function step2 () {
+    var url = '/ZAutomation/api/v1/instances';
+    instancesRead = false;
+    ch_utils.ajax_get(url, success, fail, fail);
+   
+    function success(data) {
+        //goto next step
+        isAdmin = true;
+        buildInstancesList(data.data);
+        step3();
+    } //success
+    function fail(status) {
+        isAdmin = false;
+        ch_utils.buttonVisible('selectFile', false);
+        step3();
+    } //success
+} //step2
+
+//step3: build list
+function step3() {
+    //step4: build new index list and print output
+    display();
+
+    if (!instancesRead && ADMIN === 'YES') {
+        ch_utils.buttonVisible('selectFile', false);
+        ch_utils.alertMessage(13);
+    }
+} //step3
+
+//------- function definitions -------------------------
+
+function display() {
+    //build new index list
+    indexList = buildIndexList(indexBuffer);
+
+    //print ourput
+    printHTML(indexList);
+
+    if (filterInput.value.length > 0) {
+        myFunction();
+    }
+} //display
+
+function buildInstancesList(instancesBuffer) {
+    instancesList = {};
+    instancesRead = true;
+    instancesBuffer.filter(function(instance, ix) {
+        return instance.moduleId === "MxChartDB";}).forEach(function(inst) {
+            var chartIdKey = inst.params.chartId;
+            if (inst.params.DBName && inst.params.DBName !== 'MxChartDB') {
+                chartIdKey = inst.params.DBName+'.'+chartIdKey;
+            }
+            instancesList[chartIdKey] = 
+                {active: toBoolean(inst.active),
+                 id: inst.id,
+                 title:  inst.params.chartTitle,
+                 chartId: inst.params.chartId,
+                 DBName: inst.params.DBName};
+        });
+} //buildInstancesList
+
+function toBoolean(value) {
+    value = value === 'true' ? true : value;
+    value = value === 'false' ? false : value;
+    return value;
+} //toBoolean
+
+function buildIndexList(indexBuffer) {
+    //sort index entries
+    var indexArray = [];
+    Object.keys(indexBuffer).map(function(key) {
+        indexArray.push([indexBuffer[key], key]);
+    });
+    indexArray.sort();
+
+    //build html
+    var t = ch_utils.buildMessage(5);
+    var i = ch_utils.buildMessage(6);
+    var a = ch_utils.buildMessage(7);
+    var y = ch_utils.buildMessage(8);
+    var n = ch_utils.buildMessage(9);
+    var o = ch_utils.buildMessage(10);
+    var e = ch_utils.buildMessage(11);
+    var inst = ch_utils.buildMessage(2);
+    var cop = ch_utils.buildMessage(14);
+    var download = ch_utils.buildMessage(33);
+    var rem = ch_utils.buildMessage(15);
+    var c = ch_utils.buildMessage(26);
+    var s = ch_utils.buildMessage(41);
+
+    var htmlText = '<table id="myTable"><tbody><tr><th>'+t+'</th><th>'+i+'</th>';
+    if (instancesRead) {
+        if (ADMIN === 'YES') {
+            htmlText += '<th>'+inst+'</th>';
         }
-    } //handleVisibilityChange
+        htmlText += '<th>'+a+'</th>';
+        if (ADMIN === 'YES') {
+            htmlText += '<th>'+cop+'</th>';
+            htmlText += '<th>'+download+'</th>';
+            htmlText += '<th>'+rem+'</th>';
+        }
+    }
+    htmlText += '</tr>';
+    if (ADMIN === 'YES') {
+        adminQuerystring = '?isAdmin='+isAdmin+'&';
+    } else {
+        adminQuerystring = '?';
+    }
+
+    var URLChart = './draw-chartjs.html'+adminQuerystring+'chartId=';
+    var URLJSON  = './data-json.html'+adminQuerystring+'chartId=';
+    var last = '';
+
+    //indexArray.forEach(function(chart, ix) {
+    for (var ix = 0; ix < indexArray.length; ix++) {
+        var htmlTextNew = '';
+        var orphaned = false;
+        var chartId = indexArray[ix][1];
+        var chartTitle = indexArray[ix][0];
+        var uChart = URLChart + chartId;
+        var uJSON = URLJSON + chartId;
+        var chartIdDisp = chartId;
+        var chartIdDB = 'MxChartDB';
+        var chartIdBase = chartId;
+        //if other database:
+        if (chartId.indexOf('.') > 0) {
+            var chartIdSplit = chartIdDisp.split('.');
+            chartIdDB = chartIdSplit[0];
+            chartIdBase = chartIdSplit[1];
+        }
+
+        if (chartTitle === last) {
+            htmlTextNew += '<tr><td><a href="'+uChart+
+                '"'+target_chart+'><font color="red"><b>'+chartTitle+'</b></font></td>';
+        } else {
+            htmlTextNew += '<tr><td><a href="'+uChart+'"'+target_chart+'>'+chartTitle+
+                '</td>';
+        }
+        htmlTextNew += '<td><center><a href="'+uJSON+'"'+target_data+'>'+chartIdDisp+'</a></td>';
+
+
+        if (instancesRead) {
+            if (ADMIN === 'YES') {
+                if (!instancesList.hasOwnProperty(chartId)) {
+                    htmlTextNew += '<td><center></td>';
+                } else {
+                    htmlTextNew += '<td><center>';
+                    if (!instOriginal(chartId, instancesList[chartId].id)) {
+                        htmlTextNew += '<font color="magenta"><b>'+
+                            instancesList[chartId].id+'</b></font>';
+                    } else {
+                        htmlTextNew += '<font color="green"><b>'+
+                            instancesList[chartId].id+'</b></font>';
+                    }
+                    htmlTextNew += '</td>';
+                }
+
+                var col, tex;
+                if (chartIdDB === 'Snapshots') {
+                    col = 'black';
+                    tex = s;    //snapshot
+                    orphaned = true;
+                } else
+                if (isCopy(chartIdBase)) {
+                    col = 'black';
+                    tex = c;    //copy
+                    orphaned = true;
+                } else
+                if (!instancesList.hasOwnProperty(chartId)) {
+                    col = 'red';
+                    tex = o;    //orphaned
+                    orphaned = true;
+                } else
+                if (instancesList[chartId].title !== chartTitle) {
+                    //maybe open and save chart module.json to repair error
+                    col = 'orange';
+                    tex = e;    //error
+                } else
+                if (instancesList[chartId].active) {
+                    col = 'green';
+                    tex = y;    //active
+                } else {
+                    col = 'black';
+                    tex = n;    //inactive
+                }
+                if (tex === y) {
+                    htmlTextNew += '<td headers="active" align=center>'+
+                                '<input type="checkbox" id="active+'+chartId+'" checked>'+
+                                '</td>';
+                } else
+                if (tex === n) {
+                    htmlTextNew += '<td headers="active" align=center>'+
+                                '<input type="checkbox" id="active+'+chartId+'">'+
+                                '</td>';
+                } else
+                if (tex === e) {
+                    htmlTextNew += '<td><center><font color="'+col+'"><b>'+
+                                '<a href="javascript:alert(\''+
+                        ch_utils.buildMessage(20)+'\');">'+tex+'</a> '+
+                                '</b></font></td>';
+                } else
+                if (tex === c) {
+                    htmlTextNew += '<td><center>'+tex+'</td>';
+                } else
+                if (tex === s) {
+                    htmlTextNew += '<td><center>'+tex+'</td>';
+                } else {
+                    htmlTextNew += '<td><center><font color="'+col+'"><b>'+
+                        tex+'</b></font></td>';
+                }
+
+                var l1 = '';
+                if (!isCopy(chartIdBase)) {
+                    l1 =  '<a href="javascript:copyChart(\''+
+                        chartId +'\',\''+api+'\');">'+y+'</a> ';
+                }
+                htmlTextNew += '<td><center>'+l1+'</td>';
+                var l3 =  '<a href="javascript:downloadChart(\''+
+                        chartId +'\',\''+api+'\');">'+y+'</a> ';
+                htmlTextNew += '<td><center>'+l3+'</td>';
+                var l2 = '';
+                if (tex === o || tex === n || tex === c || tex === s) {
+                    l2 =  '<a href="javascript:deleteChart(\''+
+                        chartId +'\',\''+api+'\');">'+y+'</a> ';
+                }
+                htmlTextNew += '<td><center>'+l2+'</td>';
+            } //if ADMIN
+            else {
+                if (!instancesList.hasOwnProperty(chartId)) {
+                    orphaned = true;
+                }
+            } //if not ADMIN
+        } //instancesRead
+
+        htmlTextNew += '</tr>';
+
+        //filter chart entry
+        if (chartIdDB === 'Snapshots') {
+            if (elSnapshots.checked === false) {
+                continue;
+            }
+        } else
+        if (orphaned === true) {
+            if (elOrphaned.checked === false) {
+                continue;
+            }
+        } else
+        if (elOperate.checked === false) {
+            continue;
+        }
+        
+        htmlText += htmlTextNew;
+        last = chartTitle;
+    }
+    htmlText += '</tbody></table>';
+    return htmlText;
+} //buildIndexList
+
+function printHTML(indexList) {
+    var indexListString = JSON.stringify(indexList);
+    if (indexListString !== indexListStringPrev) {
+        document.getElementById('json-renderer').innerHTML = indexList;
+        indexListStringPrev = indexListString;
+    }
+
+    //define checkbox event:
+    var checkboxList = document.querySelectorAll('[type="checkbox"]');
+    //console.log(checkboxList);
+    /*jshint loopfunc:true */
+    for (var i = 0; i < checkboxList.length; i++) {
+        if (checkboxList[i].id !== 'operate' &&
+            checkboxList[i].id !== 'orphaned' &&
+            checkboxList[i].id !== 'snapshots') {
+
+        checkboxList[i].addEventListener('change', function(event) {
+            //console.log(event.target);
+            var id = event.target.id.split('+');
+            var chartId = id[1];
+            var checked = event.target.checked;
+            changeActive(chartId, checked);
+        });
+        }
+    }
+    /*jshint loopfunc:false */
+} //printHTML
+
+function changeActive(chartId, checked) {
+    /*
+    var instNo;
+    try {
+        instNo = instancesList[chartId].id;
+    } catch(err) {
+        return;
+    }
+    */
+    var instNo = instancesList[chartId].id;
+    instancesList[chartId].active = checked;
+
+    //get instance data
+    var url = '/ZAutomation/api/v1/instances/'+instNo;
+    ch_utils.ajax_get(url, success_get);
+
+    function success_get (response) {
+        var data = response.data;
+        var instNo = data.id;
+        var activeNew = instancesList[chartId].active;
+        data.active = activeNew;
+        var url = '/ZAutomation/api/v1/instances/'+instNo;
+        ch_utils.ajax_put(url, JSON.stringify(data), success_put);
+    }
+
+    function success_put(response) {
+        var instNo = response.data.id;
+        ch_utils.alertMessage(37, instNo, response.data.active);
+        window.location.reload();
+    }
+} //changeActive
+
+// reselect, if isAdmin and page gets focus again
+//
+//https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+// Set the name of the hidden property and the change event for visibility
+var hidden, visibilityChange; 
+if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support 
+    hidden = "hidden";
+    visibilityChange = "visibilitychange";
+} else if (typeof document.msHidden !== "undefined") {
+    hidden = "msHidden";
+    visibilityChange = "msvisibilitychange";
+} else if (typeof document.webkitHidden !== "undefined") {
+    hidden = "webkitHidden";
+    visibilityChange = "webkitvisibilitychange";
+}
+document.addEventListener(visibilityChange, handleVisibilityChange, false);
+
+function handleVisibilityChange() {
+    if (!document[hidden] && isAdmin) {
+        step0();
+    }
+} //handleVisibilityChange
     
 ///////////////////77}); //document).ready
 
@@ -769,16 +748,10 @@ function downloadChart(chartId, api) {
 function loadLocalFile(evt) {
     console.log('loadLocalFile(evt)');
 
-    //check filename
-    var chartIdFormat = /^[0-9a-zA-Z_]+$/;
     var file = evt.target.files[0];
     var chartId = file.name.replace(/\.json$/, '');
-    //if (!chartId.match(chartIdFormat)) {
-    //    ch_utils.alertMessage(28);
-    //    document.getElementById('selectFile').value = '';
-    //    return;
-    //}
 
+    var chartIdFormat = /^([0-9a-zA-Z]+\.)?[0-9a-zA-Z_]+$/;
     var chartIdInput = prompt(ch_utils.buildMessage(32), chartId);
     if (!chartIdInput) {return;}
     if (!chartIdInput.match(chartIdFormat)) {
@@ -807,15 +780,17 @@ function loadLocalFile(evt) {
         if (theFile.total === theFile.loaded) {
             var obj = theFile.target.result;
             if (obj) {
+              console.log('loading file '+file.name+'...');
               load_file(obj);
             }
         }
         return function(e) {
-            console.log('error reading file '+file+': '+e);
+            console.log('error loading file '+file.name+': '+e);
             ch_utils.alertMessage(29, e);
         };
     });
     if (file) {
+        console.log('readAsText file '+file.name+'...');
         reader.readAsText(file);
     }
 

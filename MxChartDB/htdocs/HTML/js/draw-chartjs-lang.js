@@ -279,24 +279,24 @@
             en: 'view all buffered values on one page'
         },
         {//26
-            de: 'Auswahl eines Zeitintervalls',
-            en: 'date-time picker'
+            de: '- Auswahl eines Zeitintervalls',
+            en: '- date-time picker'
         },
         {//27
-            de: 'Komplette Historie anzeigen',
-            en: 'View complete history'
+            de: '- Komplette Historie anzeigen',
+            en: '- View complete history'
         },
         {//28
             de: 'Anzeige bis zum Intervall verschieben',
             en: 'Shift and size to interval'
         },
         {//29
-            de: 'Anzeigeoptionen',
-            en: 'Display options'
+            de: '- Anzeigeoptionen',
+            en: '- Display options'
         },
         {//30
-            de: 'Historisches Intervall',
-            en: 'Historical interval'
+            de: '- Historisches Intervall',
+            en: '- Historical interval'
         },
         {//31
             de: 'Snapshot erstellen',

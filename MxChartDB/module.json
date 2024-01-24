@@ -1,632 +1,636 @@
-{
-   "singleton":false,
-   "dependencies":[
-      "Cron", "MxBaseModule"
-   ],
-   "category": "logging",
-   "author":"piet66",
-   "homepage": "https://github.com/piet66-peb?tab=repositories",
-   "icon":"icon.png",
-   "moduleName":"MxChartDB",
-   "version":"2.2.0",
-   "maturity":"stable",
-    "repository": {
-        "type": "git",
-        "source": "https://github.com/piet66-peb/ZWay-MxChartDB"
-    },
-   "defaults":{
-      "title":"__m_title__",
-      "description":"__m_descr__",
-      "logging":false,
-      "chartTitle":"__m_title__",
-      "lang":"system",
-      "period":"15",
-      "startFullTimes":false,
-      "interval":"week",
-      "initialInterval":"complete",
-      "time_label":"null",
-      "rectangleDevices":"setpoint,forecast.prediction,Soll,Einstellung,soll,Vorhersage",
-      "positionYAxis":"right",
-      "limitYAxis":1000,
-      "y1Label":"null",
-      "y2Label":"null",
-      "opacity":60,
-      "DBName":"MxChartDB",
-      "COMMENT":"remaining defaults are defined in postRender.js"
-   },
-   "schema":{
-      "type":"object",
-      "properties":{
-         "logging":{
-            "type":"boolean"
-         },
-         "chartTitle":{
-            "type":"string",
-            "required":true
-         },
-         "DBName":{
-            "type":"string",
-            "required":true
-         },
-         "chartId":{
-            "COMMENT":"field must be hidden, but NOT readonly!!",
-            "type":"string"
-         },
-         "copyMxChartJS": {
-             "type":"object",
-             "properties": {
-                "copyChart":{
-                    "type":"boolean"
-                },
-                "instanceNum":{
-                    "dependencies": "copyChart",
-                    "minimum" : 2,
-                     "required":true
-                }
-             }
-         },
-         "dataControl": {
-             "type":"object",
-             "properties": {
-                 "dC_new":{
-                    "type":"boolean"
-                 },
-                 "dC_continue":{
-                    "type":"boolean"
-                 }
-             }
-         },
-         "lang":{
-            "enum":[
-               "system",
-               "de",
-               "en"
-            ],
-            "required":true,
-            "type":"string"
-         },
-         "switch":{
-            "datasource":"namespaces",
-            "enum":"namespaces:devices_switchBinary:deviceId",
-            "field":"enum",
-            "required":false
-         },
-         "period":{
-            "type":"select",
-            "required":true,
-            "enum":[
-               "0",
-               "1",
-               "2",
-               "5",
-               "10",
-               "15",
-               "20",
-               "30",
-               "60",
-               "120",
-               "240",
-               "360",
-               "720",
-               "1440",
-               "10080"
-            ]
-         },
-         "startFullTimes":{
-            "type":"boolean"
-         },
-         "interval":{
-            "enum":[
-               "infinite",
-               "day",
-               "2days",
-               "week",
-               "2weeks",
-               "month",
-               "year"
-            ],
-            "required":true,
-            "type":"string"
-         },
-         "initialInterval":{
-            "enum":[
-               "complete",
-               "hour",
-               "day",
-               "2days",
-               "week",
-               "2weeks",
-               "month"
-            ],
-            "required":true,
-            "type":"string"
-         },
-         "time_label":{
-            "type":"string",
-            "required":true
-         },
-         "rectangleDevices":{
-            "type":"string",
-            "required":true
-         },
-         "positionYAxis":{
-            "type":"select",
-            "required":true,
-            "enum":[
-               "right",
-               "left"
-            ]
-         },
-         "limitYAxis":{
-            "type":"number",
-            "required":true
-         },
-         "y1Label":{
-            "type":"string",
-            "required":true
-         },
-         "y2Label":{
-            "type":"string",
-            "required":true
-         },
-         "opacity":{
-            "type":"integer",
-            "minimum" : 0,
-            "maximum" : 100,
-            "required":true
-         },
-         "nonnumericLabels": {
-             "type":"object",
-             "properties": {
-                "convertOnOff":{
-                    "type":"boolean"
-                },
-                "y3Labeling":{
-                    "type":"string"
-                },
-                "y3Icons":{
-                    "type":"string"
-                },
-                "y3IconsWidth":{
-                    "type":"number",
-                    "minimum" : 0
-                },
-                "y3reduceUnusedTicks":{
-                    "type":"boolean"
-                },
-                "y3leastTicks":{
-                    "dependencies": "y3reduceUnusedTicks",
-                    "type":"number",
-                    "minimum" : 2
-                }
-             }
-         },
-         "specials": {
-             "type":"object",
-             "properties": {
-                "nightBackground":{
-                    "type":"boolean"
-                },
-                "nightBackDev":{
-                    "dependencies":"nightBackground",
-                    "field":"enum",
-                    "datasource":"namespaces",
-                    "enum":"namespaces:devices_all:deviceId",
-                    "required":true
-                }
-             }
-         },
-         "sensors":{
-            "minItems":1,
-            "type":"array",
-            "items":{
-               "properties":{
-                  "index":{
-                     "readonly":true,
-                     "required":false
-                  },
-                  "disableDevice":{
-                     "type":"boolean"
-                  },
-                  "device":{
-                     "field":"enum",
-                     "datasource":"namespaces",
-                     "enum":"namespaces:devices_all:deviceId",
-                     "required":false
-                  },
-                  "metric":{
-                     "required":false,
-                     "type":"string",
-                     "default":"level"
-                  },
-                  "tooltip_metric":{
-                     "required":false,
-                     "type":"string"
-                  },
-                  "formula":{
-                     "type":"string",
-                     "required":false
-                  },
-                  "devlabel":{
-                     "type":"string",
-                     "required":false
-                  },
-                  "color":{
-                        "type":"string",
-                        "required":false
 
+{
+
+      "singleton": false,
+      "dependencies": [
+            "Cron",
+            "MxBaseModule"
+      ],
+      "category": "logging",
+      "author": "piet66",
+      "homepage": "https://github.com/piet66-peb?tab=repositories",
+      "icon": "icon.png",
+      "moduleName": "MxChartDB",
+      "version": "2.2.0",
+      "maturity": "stable",
+      "repository": {
+            "type": "git",
+            "source": "https://github.com/piet66-peb/ZWay-MxChartDB"
+      },
+      "defaults": {
+            "title": "__m_title__",
+            "description": "__m_descr__",
+            "logging": false,
+            "chartTitle": "__m_title__",
+            "lang": "system",
+            "period": "15",
+            "startFullTimes": false,
+            "interval": "week",
+            "initialInterval": "complete",
+            "time_label": "null",
+            "rectangleDevices": "setpoint,forecast.prediction,Soll,Einstellung,soll,Vorhersage",
+            "positionYAxis": "right",
+            "limitYAxis": 1000,
+            "y1Label": "null",
+            "y2Label": "null",
+            "opacity": 60,
+            "DBName": "MxChartDB",
+            "COMMENT": "remaining defaults are defined in postRender.js"
+      },
+      "schema": {
+            "type": "object",
+            "properties": {
+                  "logging": {
+                        "type": "boolean"
                   },
-                  "graphType":{
-                        "type":"select",
-                        "required":false,
-                        "enum":[
-                                "rectangle",
-                                "rectangle_left",
-                                "interpolated",
-                                "points",
-                                "pointseries",
-                                "straightlines",
-                                "straightpoints",
-                                "interpolatedpoints",
-                                "bar",
-                                "bar_overlap"
+                  "chartTitle": {
+                        "type": "string",
+                        "required": true
+                  },
+                  "DBName": {
+                        "type": "string",
+                        "required": true
+                  },
+                  "chartId": {
+                        "COMMENT": "field must be hidden, but NOT readonly!!",
+                        "type": "string"
+                  },
+                  "copyMxChartJS": {
+                        "type": "object",
+                        "properties": {
+                              "copyChart": {
+                                    "type": "boolean"
+                              },
+                              "instanceNum": {
+                                    "dependencies": "copyChart",
+                                    "minimum": 2,
+                                    "required": true
+                              }
+                        }
+                  },
+                  "dataControl": {
+                        "type": "object",
+                        "properties": {
+                              "dC_new": {
+                                    "type": "boolean"
+                              },
+                              "dC_continue": {
+                                    "type": "boolean"
+                              }
+                        }
+                  },
+                  "lang": {
+                        "enum": [
+                              "system",
+                              "de",
+                              "en"
+                        ],
+                        "required": true,
+                        "type": "string"
+                  },
+                  "switch": {
+                        "datasource": "namespaces",
+                        "enum": "namespaces:devices_switchBinary:deviceId",
+                        "field": "enum",
+                        "required": false
+                  },
+                  "period": {
+                        "type": "select",
+                        "required": true,
+                        "enum": [
+                              "0",
+                              "1",
+                              "2",
+                              "5",
+                              "10",
+                              "15",
+                              "20",
+                              "30",
+                              "60",
+                              "120",
+                              "240",
+                              "360",
+                              "720",
+                              "1440",
+                              "10080"
                         ]
                   },
-                  "lineType":{
-                        "type":"select",
-                        "required":true,
-                        "enum":[
-                                "continuous",
-                                "dashed",
-                                "dotted",
-                                "invisible"
+                  "startFullTimes": {
+                        "type": "boolean"
+                  },
+                  "interval": {
+                        "enum": [
+                              "infinite",
+                              "day",
+                              "2days",
+                              "week",
+                              "2weeks",
+                              "month",
+                              "year"
+                        ],
+                        "required": true,
+                        "type": "string"
+                  },
+                  "initialInterval": {
+                        "enum": [
+                              "complete",
+                              "hour",
+                              "day",
+                              "2days",
+                              "week",
+                              "2weeks",
+                              "month"
+                        ],
+                        "required": true,
+                        "type": "string"
+                  },
+                  "time_label": {
+                        "type": "string",
+                        "required": true
+                  },
+                  "rectangleDevices": {
+                        "type": "string",
+                        "required": true
+                  },
+                  "positionYAxis": {
+                        "type": "select",
+                        "required": true,
+                        "enum": [
+                              "right",
+                              "left"
                         ]
                   },
-                  "fill":{
-                     "type":"string",
-                     "required":false
+                  "limitYAxis": {
+                        "type": "number",
+                        "required": true
                   },
-                  "chartHidden":{
-                     "type":"boolean",
-                     "required":true,
-                     "default":false
+                  "y1Label": {
+                        "type": "string",
+                        "required": true
                   },
-                  "intcharticon":{
-                     "type":"boolean",
-                     "required":true,
-                     "default":false
+                  "y2Label": {
+                        "type": "string",
+                        "required": true
+                  },
+                  "opacity": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100,
+                        "required": true
+                  },
+                  "nonnumericLabels": {
+                        "type": "object",
+                        "properties": {
+                              "convertOnOff": {
+                                    "type": "boolean"
+                              },
+                              "y3Labeling": {
+                                    "type": "string"
+                              },
+                              "y3Icons": {
+                                    "type": "string"
+                              },
+                              "y3IconsWidth": {
+                                    "type": "number",
+                                    "minimum": 0
+                              },
+                              "y3reduceUnusedTicks": {
+                                    "type": "boolean"
+                              },
+                              "y3leastTicks": {
+                                    "dependencies": "y3reduceUnusedTicks",
+                                    "type": "number",
+                                    "minimum": 2
+                              }
+                        }
+                  },
+                  "specials": {
+                        "type": "object",
+                        "properties": {
+                              "nightBackground": {
+                                    "type": "boolean"
+                              },
+                              "nightBackDev": {
+                                    "dependencies": "nightBackground",
+                                    "field": "enum",
+                                    "datasource": "namespaces",
+                                    "enum": "namespaces:devices_all:deviceId",
+                                    "required": true
+                              }
+                        }
+                  },
+                  "sensors": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                              "properties": {
+                                    "index": {
+                                          "readonly": true,
+                                          "required": false
+                                    },
+                                    "disableDevice": {
+                                          "type": "boolean"
+                                    },
+                                    "device": {
+                                          "field": "enum",
+                                          "datasource": "namespaces",
+                                          "enum": "namespaces:devices_all:deviceId",
+                                          "required": false
+                                    },
+                                    "metric": {
+                                          "required": false,
+                                          "type": "string",
+                                          "default": "level"
+                                    },
+                                    "tooltip_metric": {
+                                          "required": false,
+                                          "type": "string"
+                                    },
+                                    "formula": {
+                                          "type": "string",
+                                          "required": false
+                                    },
+                                    "devlabel": {
+                                          "type": "string",
+                                          "required": false
+                                    },
+                                    "color": {
+                                          "type": "string",
+                                          "required": false
+                                    },
+                                    "graphType": {
+                                          "type": "select",
+                                          "required": false,
+                                          "enum": [
+                                                "rectangle",
+                                                "rectangle_left",
+                                                "interpolated",
+                                                "points",
+                                                "pointseries",
+                                                "straightlines",
+                                                "straightpoints",
+                                                "interpolatedpoints",
+                                                "bar",
+                                                "bar_overlap"
+                                          ]
+                                    },
+                                    "lineType": {
+                                          "type": "select",
+                                          "required": true,
+                                          "enum": [
+                                                "continuous",
+                                                "dashed",
+                                                "dotted",
+                                                "invisible"
+                                          ]
+                                    },
+                                    "fill": {
+                                          "type": "string",
+                                          "required": false
+                                    },
+                                    "chartHidden": {
+                                          "type": "boolean",
+                                          "required": true,
+                                          "default": false
+                                    },
+                                    "intcharticon": {
+                                          "type": "boolean",
+                                          "required": true,
+                                          "default": false
+                                    }
+                              },
+                              "type": "object"
+                        }
                   }
-               },
-               "type":"object"
             }
-         }
-      }
-   },
-   "options":{
-      "fields":{
-         "logging":{
-            "type":"checkbox",
-            "rightLabel":"__logging_label__"
-         },
-         "chartTitle":{
-            "label":"__chartTitle_label__",
-            "helper":"__chartTitle_helper__"
-         },
-         "DBName":{
-            "label":"__DBName_label__",
-            "helper":"__DBName_helper__"
-         },
-         "chartId":{
-            "hidden": true,
-            "COMMENT":"field must be hidden, but NOT readonly!!",
-            "label":"__chartId_label__"
-         },
-         "copyMxChartJS": {
-             "fieldClass":"objectClass",
-             "fields": {
-                "copyChart":{
-                    "type":"checkbox",
-                    "rightLabel":"__copyChart__"
-                },
-                "instanceNum":{
-                    "dependencies": {
-                        "copyChart": true
-                    },
-                    "type":"integer",
-                    "label":"__instanceNum__"
-                }
-             }
-         },
-         "dataControl": {
-             "fieldClass":"dataControl",
-             "label":"__dataControl__",
-             "fields": {
-                 "dC_new":{
-                    "fieldClass":"dC_new",
-                    "type":"checkbox",
-                    "rightLabel":"__dC_new__",
-                    "helper":"__dC_new_helper__"
-                 },
-                 "dC_continue":{
-                    "fieldClass":"dC_continue",
-                    "type":"checkbox",
-                    "rightLabel":"__dC_continue__",
-                    "helper":"__dC_continue_helper__"
-                 }
-             }
-         },
-         "lang":{
-            "label":"__lang_label__",
-            "optionLabels":[
-               "__lang_system__",
-               "__lang_de__",
-               "__lang_en__"
-            ],
-            "type":"select"
-         },
-         "switch":{
-            "datasource":"namespaces",
-            "field":"optionLabels",
-            "helper":"__switch_helper__",
-            "label":"__switch_label__",
-            "optionLabels":"namespaces:devices_switchBinary:deviceName",
-            "type":"select"
-         },
-         "period":{
-            "label":"__l_period__",
-            "type":"select",
-            "optionLabels":[
-               "value_change",
-               "minute",
-               "minutes_02",
-               "minutes_05",
-               "minutes_10",
-               "minutes_15",
-               "minutes_20",
-               "minutes_30",
-               "hour",
-               "hours_2",
-               "hours_4",
-               "hours_6",
-               "twice_per_day",
-               "daily",
-               "weekly"
-            ]
-         },
-         "startFullTimes":{
-            "type":"checkbox",
-            "rightLabel":"__startFullTimes__",
-            "helpers":[
-               "__startFullTimes_helper1__",
-               "__startFullTimes_helper2__",
-               "__startFullTimes_helper3__"
-            ]
-         },
-         "interval":{
-            "helper":"__interval_helper__",
-            "label":"__interval_label__",
-            "optionLabels":[
-               "__interval_infinite__",
-               "__interval_day__",
-               "__interval_2days__",
-               "__interval_week__",
-               "__interval_2weeks__",
-               "__interval_month__",
-               "__interval_year__"
-            ],
-            "type":"select"
-         },
-         "initialInterval":{
-            "label":"__initialInterval__",
-            "optionLabels":[
-               "__initialInterval_complete__",
-               "__initialInterval_hour__",
-               "__initialInterval_day__",
-               "__initialInterval_2days__",
-               "__initialInterval_week__",
-               "__initialInterval_2weeks__",
-               "__initialInterval_month__"
-            ],
-            "type":"select"
-         },
-         "time_label":{
-            "helper":"__l_time_helper__",
-            "label":"__l_time_label__"
-         },
-         "rectangleDevices":{
-            "helper":"__rectangleDevices_helper__",
-            "label":"__rectangleDevices_label__"
-         },
-         "positionYAxis":{
-            "label":"__positionYAxis_label__",
-            "type":"select",
-            "optionLabels":[
-               "__right__",
-               "__left__"
-            ]
-         },
-         "limitYAxis":{
-            "label":"__limitYAxis_label__",
-            "helper":"__limitYAxis_helper__"
-         },
-         "y1Label":{
-            "helper":"__y1Label_helper__",
-            "label":"__y1Label__"
-         },
-         "y2Label":{
-            "helper":"__y2Label_helper__",
-            "label":"__y2Label__"
-         },
-         "opacity":{
-            "label":"__opacity_label__",
-            "helper":"__opacity_helper__"
-         },
-         "nonnumericLabels": {
-             "fieldClass":"nonnumericLabels",
-             "label":"__nonnumericLabels__",
-             "helpers":[
-                "__nonnumericLabels_helper1__",
-                "__nonnumericLabels_helper2__"
-             ],
-             "fields": {
-                "convertOnOff":{
-                    "type":"checkbox",
-                    "rightLabel":"__convertOnOff__"
-                },
-                "y3Labeling":{
-                    "helpers":[
-                       "__y3Labeling_helper1__",
-                       "__y3Labeling_helper2__",
-                       "__y3Labeling_helper3__"
-                    ],
-                    "label":"__y3Labeling__",
-                    "placeholderX":"on,off"
-                },
-                "y3Icons":{
-                    "helpers":[
-                       "__y3Icons_helper1__",
-                       "__y3Icons_helper2__",
-                       "__y3Icons_helper3__",
-                       "__y3Icons_helper4__"
-                    ],
-                    "label":"__y3Icons__",
-                    "placeholderX":"switch-on,switch-off"
-                },
-                "y3IconsWidth":{
-                    "label":"__y3IconsWidth__",
-                    "placeholderX":2.5
-                },
-                "y3reduceUnusedTicks":{
-                    "type":"checkbox",
-                    "rightLabel":"__y3reduceUnusedTicks__"
-                },
-                "y3leastTicks":{
-                    "dependencies": {
-                        "y3reduceUnusedTicks": true
-                    },
-                    "label":"__y3leastTicks__",
-                    "placeholderX":2
-                }
-             }
-         },
-         "specials": {
-             "fieldClass":"specials",
-             "fields": {
-                "nightBackground":{
-                    "type":"checkbox",
-                    "rightLabel":"__nightBackground__",
-                     "helper":"__nightText__"
-                },
-                "nightBackDev":{
-                    "dependencies":{
-                        "nightBackground":true
-                    },
-                    "label":"__nightBackDev__",
-                    "removeDefaultNone":false,
-                    "noneLabel":"__choose__",
-                    "type":"select",
-                    "datasource":"namespaces",
-                    "field":"optionLabels",
-                    "optionLabels":"namespaces:devices_all:deviceName"
-                }
-             }
-         },
-         "sensors":{
-            "label":"__l_sensors__",
-            "fieldClass":"sensorsArray",
-            "items":{
-               "fieldClass":"sensorsFields",
-               "fields":{
-                  "index":{
-                     "fieldClass":"index",
-                     "type":"integer",
-                     "label":"__index-label__",
-                     "helper":"__index-helper__"
+      },
+      "options": {
+            "fields": {
+                  "logging": {
+                        "type": "checkbox",
+                        "rightLabel": "__logging_label__"
                   },
-                  "disableDevice":{
-                     "type":"checkbox",
-                     "rightLabel":"__disableDevice__"
+                  "chartTitle": {
+                        "label": "__chartTitle_label__",
+                        "helper": "__chartTitle_helper__"
                   },
-                  "device":{
-                     "fieldClass":"device",
-                     "label":"__device-label__",
-                     "removeDefaultNone":false,
-                     "noneLabel":"__choose__",
-                     "type":"select",
-                     "datasource":"namespaces",
-                     "field":"optionLabels",
-                     "optionLabels":"namespaces:devices_all:deviceName"
+                  "DBName": {
+                        "label": "__DBName_label__",
+                        "helper": "__DBName_helper__"
                   },
-                  "metric":{
-                     "fieldClass":"metric",
-                     "label":"__metric-label__",
-                     "helper":"__metric-helper__"
+                  "chartId": {
+                        "hidden": true,
+                        "COMMENT": "field must be hidden, but NOT readonly!!",
+                        "label": "__chartId_label__"
                   },
-                  "tooltip_metric":{
-                     "fieldClass":"tooltip_metric",
-                     "label":"__tooltip-label__",
-                     "helper":"__tooltip-helper__"
+                  "copyMxChartJS": {
+                        "fieldClass": "objectClass",
+                        "fields": {
+                              "copyChart": {
+                                    "type": "checkbox",
+                                    "rightLabel": "__copyChart__"
+                              },
+                              "instanceNum": {
+                                    "dependencies": {
+                                          "copyChart": true
+                                    },
+                                    "type": "integer",
+                                    "label": "__instanceNum__"
+                              }
+                        }
                   },
-                  "formula":{
-                     "fieldClass":"formula",
-                     "label":"__formula-label__",
-                     "helpers": [
-                         "__formula-helper__",
-                         "__formula-helper2__"
-                     ]
+                  "dataControl": {
+                        "fieldClass": "dataControl",
+                        "label": "__dataControl__",
+                        "fields": {
+                              "dC_new": {
+                                    "fieldClass": "dC_new",
+                                    "type": "checkbox",
+                                    "rightLabel": "__dC_new__",
+                                    "helper": "__dC_new_helper__"
+                              },
+                              "dC_continue": {
+                                    "fieldClass": "dC_continue",
+                                    "type": "checkbox",
+                                    "rightLabel": "__dC_continue__",
+                                    "helper": "__dC_continue_helper__"
+                              }
+                        }
                   },
-                  "devlabel":{
-                     "label":"__devlabel_label__",
-                     "helper":"__devlabel_helper__"
+                  "lang": {
+                        "label": "__lang_label__",
+                        "optionLabels": [
+                              "__lang_system__",
+                              "__lang_de__",
+                              "__lang_en__"
+                        ],
+                        "type": "select"
                   },
-                  "color":{
-                     "fieldClass":"color",
-                     "label":"__color_label__"
+                  "switch": {
+                        "datasource": "namespaces",
+                        "field": "optionLabels",
+                        "helper": "__switch_helper__",
+                        "label": "__switch_label__",
+                        "optionLabels": "namespaces:devices_switchBinary:deviceName",
+                        "type": "select"
                   },
-                  "graphType":{
-                     "label":"__graphType_label__",
-                     "type":"select",
-                     "optionLabels":[
-                             "__graphType_rectangle__",
-                             "__graphType_rectangle_left__",
-                             "__graphType_interpolated__",
-                             "__graphType_points__",
-                             "__graphType_pointseries__",
-                             "__graphType_straightlines__",
-                             "__graphType_straightpoints__",
-                             "__graphType_interpolatedpoints__",
-                             "__graphType_bar__",
-                             "__graphType_bar_overlap__"
-                     ]
+                  "period": {
+                        "label": "__l_period__",
+                        "type": "select",
+                        "optionLabels": [
+                              "value_change",
+                              "minute",
+                              "minutes_02",
+                              "minutes_05",
+                              "minutes_10",
+                              "minutes_15",
+                              "minutes_20",
+                              "minutes_30",
+                              "hour",
+                              "hours_2",
+                              "hours_4",
+                              "hours_6",
+                              "twice_per_day",
+                              "daily",
+                              "weekly"
+                        ]
                   },
-                  "lineType":{
-                     "label":"__lineType_label__",
-                     "type":"select",
-                     "optionLabels":[
-                             "__lineType_continuous__",
-                             "__lineType_dashed__",
-                             "__lineType_dotted__",
-                             "__lineType_invisible__"
-                     ]
+                  "startFullTimes": {
+                        "type": "checkbox",
+                        "rightLabel": "__startFullTimes__",
+                        "helpers": [
+                              "__startFullTimes_helper1__",
+                              "__startFullTimes_helper2__",
+                              "__startFullTimes_helper3__"
+                        ]
                   },
-                  "fill":{
-                     "fieldClass":"fill",
-                     "label":"__fill_label__",
-                     "helper":"__fill_helper__"
+                  "interval": {
+                        "helper": "__interval_helper__",
+                        "label": "__interval_label__",
+                        "optionLabels": [
+                              "__interval_infinite__",
+                              "__interval_day__",
+                              "__interval_2days__",
+                              "__interval_week__",
+                              "__interval_2weeks__",
+                              "__interval_month__",
+                              "__interval_year__"
+                        ],
+                        "type": "select"
                   },
-                  "chartHidden":{
-                     "type":"checkbox",
-                     "rightLabel":"__chartHidden__"
+                  "initialInterval": {
+                        "label": "__initialInterval__",
+                        "optionLabels": [
+                              "__initialInterval_complete__",
+                              "__initialInterval_hour__",
+                              "__initialInterval_day__",
+                              "__initialInterval_2days__",
+                              "__initialInterval_week__",
+                              "__initialInterval_2weeks__",
+                              "__initialInterval_month__"
+                        ],
+                        "type": "select"
                   },
-                  "intcharticon":{
-                     "type":"checkbox",
-                     "rightLabel":"__intcharticon_label__",
-                     "helper":"__intcharticon_helper__"
+                  "time_label": {
+                        "helper": "__l_time_helper__",
+                        "label": "__l_time_label__"
+                  },
+                  "rectangleDevices": {
+                        "helper": "__rectangleDevices_helper__",
+                        "label": "__rectangleDevices_label__"
+                  },
+                  "positionYAxis": {
+                        "label": "__positionYAxis_label__",
+                        "type": "select",
+                        "optionLabels": [
+                              "__right__",
+                              "__left__"
+                        ]
+                  },
+                  "limitYAxis": {
+                        "label": "__limitYAxis_label__",
+                        "helper": "__limitYAxis_helper__"
+                  },
+                  "y1Label": {
+                        "helper": "__y1Label_helper__",
+                        "label": "__y1Label__"
+                  },
+                  "y2Label": {
+                        "helper": "__y2Label_helper__",
+                        "label": "__y2Label__"
+                  },
+                  "opacity": {
+                        "label": "__opacity_label__",
+                        "helper": "__opacity_helper__"
+                  },
+                  "nonnumericLabels": {
+                        "fieldClass": "nonnumericLabels",
+                        "label": "__nonnumericLabels__",
+                        "helpers": [
+                              "__nonnumericLabels_helper1__",
+                              "__nonnumericLabels_helper2__"
+                        ],
+                        "fields": {
+                              "convertOnOff": {
+                                    "type": "checkbox",
+                                    "rightLabel": "__convertOnOff__"
+                              },
+                              "y3Labeling": {
+                                    "helpers": [
+                                          "__y3Labeling_helper1__",
+                                          "__y3Labeling_helper2__",
+                                          "__y3Labeling_helper3__"
+                                    ],
+                                    "label": "__y3Labeling__",
+                                    "placeholderX": "on,off"
+                              },
+                              "y3Icons": {
+                                    "helpers": [
+                                          "__y3Icons_helper1__",
+                                          "__y3Icons_helper2__",
+                                          "__y3Icons_helper3__",
+                                          "__y3Icons_helper4__"
+                                    ],
+                                    "label": "__y3Icons__",
+                                    "placeholderX": "switch-on,switch-off"
+                              },
+                              "y3IconsWidth": {
+                                    "label": "__y3IconsWidth__",
+                                    "placeholderX": 2.5
+                              },
+                              "y3reduceUnusedTicks": {
+                                    "type": "checkbox",
+                                    "rightLabel": "__y3reduceUnusedTicks__"
+                              },
+                              "y3leastTicks": {
+                                    "dependencies": {
+                                          "y3reduceUnusedTicks": true
+                                    },
+                                    "label": "__y3leastTicks__",
+                                    "placeholderX": 2
+                              }
+                        }
+                  },
+                  "specials": {
+                        "fieldClass": "specials",
+                        "fields": {
+                              "nightBackground": {
+                                    "type": "checkbox",
+                                    "rightLabel": "__nightBackground__",
+                                    "helper": "__nightText__"
+                              },
+                              "nightBackDev": {
+                                    "dependencies": {
+                                          "nightBackground": true
+                                    },
+                                    "label": "__nightBackDev__",
+                                    "removeDefaultNone": false,
+                                    "noneLabel": "__choose__",
+                                    "type": "select",
+                                    "datasource": "namespaces",
+                                    "field": "optionLabels",
+                                    "optionLabels": "namespaces:devices_all:deviceName"
+                              }
+                        }
+                  },
+                  "sensors": {
+                        "label": "__l_sensors__",
+                        "fieldClass": "sensorsArray",
+                        "items": {
+                              "fieldClass": "sensorsFields",
+                              "fields": {
+                                    "index": {
+                                          "fieldClass": "index",
+                                          "type": "integer",
+                                          "label": "__index-label__",
+                                          "helper": "__index-helper__"
+                                    },
+                                    "disableDevice": {
+                                          "type": "checkbox",
+                                          "rightLabel": "__disableDevice__"
+                                    },
+                                    "device": {
+                                          "fieldClass": "device",
+                                          "label": "__device-label__",
+                                          "removeDefaultNone": false,
+                                          "noneLabel": "__choose__",
+                                          "type": "select",
+                                          "datasource": "namespaces",
+                                          "field": "optionLabels",
+                                          "optionLabels": "namespaces:devices_all:deviceName"
+                                    },
+                                    "metric": {
+                                          "fieldClass": "metric",
+                                          "label": "__metric-label__",
+                                          "helper": "__metric-helper__"
+                                    },
+                                    "tooltip_metric": {
+                                          "fieldClass": "tooltip_metric",
+                                          "label": "__tooltip-label__",
+                                          "helper": "__tooltip-helper__"
+                                    },
+                                    "formula": {
+                                          "fieldClass": "formula",
+                                          "label": "__formula-label__",
+                                          "helpers": [
+                                                "__formula-helper__",
+                                                "__formula-helper2__"
+                                          ]
+                                    },
+                                    "devlabel": {
+                                          "label": "__devlabel_label__",
+                                          "helper": "__devlabel_helper__"
+                                    },
+                                    "color": {
+                                          "fieldClass": "color",
+                                          "label": "__color_label__"
+                                    },
+                                    "graphType": {
+                                          "label": "__graphType_label__",
+                                          "type": "select",
+                                          "optionLabels": [
+                                                "__graphType_rectangle__",
+                                                "__graphType_rectangle_left__",
+                                                "__graphType_interpolated__",
+                                                "__graphType_points__",
+                                                "__graphType_pointseries__",
+                                                "__graphType_straightlines__",
+                                                "__graphType_straightpoints__",
+                                                "__graphType_interpolatedpoints__",
+                                                "__graphType_bar__",
+                                                "__graphType_bar_overlap__"
+                                          ]
+                                    },
+                                    "lineType": {
+                                          "label": "__lineType_label__",
+                                          "type": "select",
+                                          "optionLabels": [
+                                                "__lineType_continuous__",
+                                                "__lineType_dashed__",
+                                                "__lineType_dotted__",
+                                                "__lineType_invisible__"
+                                          ]
+                                    },
+                                    "fill": {
+                                          "fieldClass": "fill",
+                                          "label": "__fill_label__",
+                                          "helper": "__fill_helper__"
+                                    },
+                                    "chartHidden": {
+                                          "type": "checkbox",
+                                          "rightLabel": "__chartHidden__"
+                                    },
+                                    "intcharticon": {
+                                          "type": "checkbox",
+                                          "rightLabel": "__intcharticon_label__",
+                                          "helper": "__intcharticon_helper__"
+                                    }
+                              }
+                        }
                   }
-               }
             }
-         }
-      }
-   },
-   "postRender":"loadFunction:postRender.js"
+      },
+      "postRender": "loadFunction:postRender.js"
+
 }
+
