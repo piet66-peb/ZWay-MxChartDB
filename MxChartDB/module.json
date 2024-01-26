@@ -11,7 +11,7 @@
       "homepage": "https://github.com/piet66-peb?tab=repositories",
       "icon": "icon.png",
       "moduleName": "MxChartDB",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "maturity": "stable",
       "repository": {
             "type": "git",
