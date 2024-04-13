@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-01-23/peb
+//h Version:      V2.1.0 2024-04-06/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V2.1.0 2024-01-09/peb [+]other database 
 //h Copyright:    (C) piet66 2022
@@ -29,7 +29,7 @@
 //-----------
 var MODULE='data-json.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-01-23/peb';
+var WRITTEN='2024-04-06/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------
@@ -167,8 +167,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 ch_utils.userTime(ts_last).slice(0,16));
         }
 
-        config_datepicker_numeric("dt_picker_month", 1, 12, true);
-        config_datepicker_numeric("dt_picker_day", 1, 31, true);
+        var monthStart = new Date(ts_first).getMonth() + 1;
+        config_datepicker_numeric("dt_picker_month", 1, 12, true, monthStart);
+        var dayStart = new Date(ts_first).getDate();
+        config_datepicker_numeric("dt_picker_day", 1, 31, true, dayStart);
         config_datepicker_numeric("dt_picker_hour", 0, 23, true);
         config_datepicker_numeric("dt_picker_minute", 0, 59, true);
         config_datepicker_numeric("dt_picker_intervallength", 1, 9, false);
@@ -181,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         config_datepicker_list("dt_picker_intervaltype", list);
     } //config_datepicker
 
-    function config_datepicker_numeric(element, first, last, leading_zero) {
+    function config_datepicker_numeric(element, first, last, leading_zero, curr) {
         var i, j, opt_value;
         var el = document.getElementById(element);
         if (el.options.length > 0) {
@@ -196,7 +198,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             el.options[j++] = new Option(opt_value, opt_value);
         }
-        el.selectedIndex = 0;
+        if (curr !== undefined) {
+            if (leading_zero && curr < 10) {
+                curr = '0'+curr;
+            }
+            el.value = curr;
+        } else {
+            el.selectedIndex = 0;
+        }
     } //config_datepicker_numeric
 
     function config_datepicker_list(element, list) {

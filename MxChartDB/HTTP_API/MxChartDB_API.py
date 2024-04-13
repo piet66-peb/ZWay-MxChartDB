@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V1.7.0 2024-01-22/peb
+#h Version:      V1.8.0 2024-04-13/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -113,8 +113,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V1.7.0'
-WRITTEN = '2024-01-22/peb'
+VERSION = 'V1.8.0'
+WRITTEN = '2024-04-13/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -352,6 +352,13 @@ def db_sizes(sizes):
                   "size free": usersize(sizes[1] *sizes[2])
                   }
     return sizes_json
+
+def file_size(dbase):
+    '''auxiliary function: get os size of a database file'''
+    file_stats = os.stat(dbase+'.db')
+    size_bytes = str(file_stats.st_size)+' Bytes'
+    size_mb = str(round(file_stats.st_size / (1024 * 1024), 3))+' MiB'
+    return size_bytes.ljust(17)+' = '+size_mb
 
 def usertime(ts_in):
     '''auxiliary function: convert unix time to user readable time string'''
@@ -915,6 +922,10 @@ def route_api_list_databases():
     dbs = get_database_list()
     if dbs == []:
         return response_text_err('no databases found'), NOT_FOUND
+    rownum = 0
+    for dbase in dbs:
+        dbs[rownum] = dbase.ljust(17)+file_size(dbase)
+        rownum = rownum + 1
     return response_text(dbs)
 
 @app.route('/<dbase>/create_db', methods=["POST", "GET"], endpoint='route_api_create_db')
