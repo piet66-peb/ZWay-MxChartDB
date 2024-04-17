@@ -12,6 +12,13 @@
 LOGLEVEL = 30
 
 ####
+#### timeout (seconds):
+#### increase this value to avoid 'database is locked' message
+####
+TIMEOUT = 10
+# default: 5 seconds
+
+####
 #### authentication for write accesses
 #### (read accesses don't need any authentication)
 #### recommendation: don't disable authentication
