@@ -1,0 +1,42 @@
+<!DOCTYPE HTML> 
+<html> 
+   <head>
+      <meta charset="utf-8">
+      <title>Change Database</title>
+      <link rel="shortcut icon" href="../MxChartDB/htdocs/icon.png">
+   </head> 
+   <body>   
+       <h1> Move a chart to a different database</h1>
+       Per default the data of all charts are stored into a database
+       named <b>MxChartDB</b>, filename: MxChartDB.db.
+
+       <br><br>For larger charts or charts with high-frequency writing, it may 
+       make sense to use a separate database. You can enter a database of your choice
+       in the app definition. 
+
+       <br><br>You can change this name at any time here. This will open 
+       a new empty chart in the other database. The previously stored data remains in 
+       the old location and is marked as 'orphaned'.
+
+       <br><br>To continue the chart in the new location with the old data, 
+       you can clone it:
+       <ol>
+           <li>Clone the previoisly stored data:
+           <ol>
+               <li>Open the Chart Administration page.</li>
+               <li>Deactivate the chart instance.</li>
+               <Li>Clone the chart data. As target enter a string
+                   <b>
+                   &lt;new database&gt;.&lt;old chart id without database&gt;
+                   </b></li>
+           </ol>
+           </li>
+           <li>Change the database name in the app definition.</li>
+           <li>Activate the chart instance again.</li>
+           <li>Now you can delete the data from the old database.</li>
+       </ol>
+       It is necessary to clone the data first, because it won't overwrite
+       existing data.
+   </body>   
+</html>
+
