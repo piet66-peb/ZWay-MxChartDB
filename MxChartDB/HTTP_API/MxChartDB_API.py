@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V1.9.0 2024-04-17/peb
+#h Version:      V1.9.0 2024-04-23/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -114,7 +114,7 @@ import constants
 
 MODULE = 'MxChartDB_API.py'
 VERSION = 'V1.9.0'
-WRITTEN = '2024-04-17/peb'
+WRITTEN = '2024-04-23/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -225,8 +225,7 @@ def before_request():
         app.logger.setLevel(20)
     app.logger.info('*** '+str(thread_act)+' threads, curr='+str(thread_curr))
     app.logger.info('*** requested path: '+request.path)
-    if thread_act > 2:
-        app.logger.setLevel(LOGLEVEL)
+    app.logger.setLevel(LOGLEVEL)
 
     app.logger.info('*** @app.before_request')
     app.logger.info('requesting host: '+''.join(request.remote_addr))
@@ -1237,6 +1236,7 @@ def route_api_insert(dbase, table):
         sql_del = 'DELETE FROM '+table+' WHERE ts < '+ts_del+';'
         app.logger.info(sql_del)
 
+        rowcount = 0
         try:
             command = 'connect'
             conn = get_db_connection(dbase)
@@ -1244,7 +1244,6 @@ def route_api_insert(dbase, table):
             curs = conn.execute(sql_del)
             command = 'rowcount'
             rowcount = curs.rowcount
-            app.logger.info(str(rowcount)+' entries deleted')
             command = 'commit'
             conn.commit()
         except sqlite3.Error as error:
@@ -1255,6 +1254,7 @@ def route_api_insert(dbase, table):
             else:
                 conn.close()
                 return response_text_err(errtext), DB_ERROR
+        app.logger.info(str(rowcount)+' entries deleted')
 
     #now we do new inserts:
     if request.method == 'GET':

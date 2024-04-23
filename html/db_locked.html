@@ -6,29 +6,30 @@
       <link rel="shortcut icon" href="../MxChartDB/htdocs/icon.png">
    </head> 
    <body>   
-       <h1>Warning: database is locked/ busy</h1>
-       It may happen that the warning 'Database is locked' appears when 
-       storing new sensor values.
-       <br><br>
-       That is not a problem. No data are lost.
-       <br><br>
-       It is because the API is multithreaded, but the SQLite engine is not. 
-       If too many write requests for the same database (file) arrive at once, 
-       the engine temporarily locks this database for further write operations.
-       <br><br>
-       The client only removes the data from the 
-       buffer once it has been acknowledged. As long as this does not happen, 
-       the data is always sent again with the next write operation.
-       <br><br>
-       The maximum number of repetitions can be defined in the constants.js file.
-       <br><br>
-       It is worth considering using a separate database file for charts with 
-       large amounts of data, <br>see also:
+       <h1>Special case: <i>database is locked/busy</i></h1>
+       It may happen that the '<i>database is locked/busy</i>' warning appears 
+        when saving new sensor values.
+        <br><br>
+        This is not a problem. No data is lost.
+        <br><br>
+        It is because the API is multithreaded, but the SQLite engine is not. 
+        If there are too many write requests to the same database (file) at once, 
+        the engine will temporarily lock that database for further writes.
+        <br><br>
+        The client removes the data from the send buffer only after it is acknowledged. 
+        As long as this does not happen, the data is always sent again with the 
+        next write operation.
+        <br><br>
+        If the data has been saved in the meantime, a warning '<i>UNIQUE constraint 
+            failed: MxChartDBxxx.ts</i>' is written to the log file. This message can 
+        be useful for analysis.
+        <br><br>
+        The maximum number of repetitions can be defined in the constants.js file.
+        <br><br>
+        For charts with large amounts of data or frequent writes, it is recommended to use a separate 
+        database file, <br>see also:
           <a href='change_database.html'>
-       Move a chart to a different database</a>
-       
-       
-       
+             Move a chart to a different database</a>
    </body>   
 </html>
 
