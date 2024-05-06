@@ -8,28 +8,34 @@
    <body>   
        <h1>Special case: <i>database is locked/busy</i></h1>
        It may happen that the '<i>database is locked/busy</i>' warning appears 
-        when saving new sensor values.
+        when storing new sensor values.
         <br><br>
-        This is not a problem. No data is lost.
+        This is not a problem. No data will be lost.
         <br><br>
-        It is because the API is multithreaded, but the SQLite engine is not. 
+        This is because the API is multithreaded, but the SQLite engine is not. 
         If there are too many write requests to the same database (file) at once, 
         the engine will temporarily lock that database for further writes.
         <br><br>
-        The client removes the data from the send buffer only after it is acknowledged. 
-        As long as this does not happen, the data is always sent again with the 
-        next write operation.
+        The client removes the data from the send buffer only after it is 
+        acknowledged. Until this happens, the data is always re-sent on the 
+        next write. 
         <br><br>
         If the data has been saved in the meantime, a warning '<i>UNIQUE constraint 
-            failed: MxChartDBxxx.ts</i>' is written to the log file. This message can 
-        be useful for analysis.
+         failed: MxChartDBxxx.ts</i>' is written to the log file. This message
+        may be useful for analysis.
         <br><br>
-        The maximum number of repetitions can be defined in the constants.js file.
+        The maximum number of repetitions can be defined in the constants.js file
+        (parameter <b>buffer_max_rows</b>, default: 20).
         <br><br>
-        For charts with large amounts of data or frequent writes, it is recommended to use a separate 
-        database file, <br>see also:
+        To avoid the '<i>database is locked/busy</i>' events, you can
+        <ul>
+            <li>reduce the write frequency of your chart instances</li>
+            <li>enhance the <b>TIMEOUT</b> parameter in constants.py</li>
+            <li>use different databases<br>see also:
           <a href='change_database.html'>
              Move a chart to a different database</a>
+            </li>
+        </ul>
    </body>   
 </html>
 
