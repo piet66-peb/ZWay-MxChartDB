@@ -1,4 +1,4 @@
-/*** MxChartDB V2.0.0 2024-01-17 Z-Way HA module *********************************/
+/*** MxChartDB V2.0.1 2024-05-01 Z-Way HA module *********************************/
 
 //h-------------------------------------------------------------------------------
 //h
@@ -14,7 +14,7 @@
 //h Resources:    MxBaseModule
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.0 2024-01-17/peb
+//h Version:      V2.0.1 2024-05-01/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -34,6 +34,7 @@
 //v                                     [*]change initially displayed view
 //v               V1.1.3 2022-07-09/peb [-]admin functions for index,html
 //v                                     [+]isAdmin:refresh index on new focus
+//v               V2.0.1 2024-05-01/peb [+]skip if device level already stored 
 //v               [x]fixed
 //v               [*]reworked, changed
 //v               [-]removed
@@ -59,8 +60,8 @@ function MxChartDB(id, controller) {
     MxChartDB.super_.call(this, id, controller);
 
     this.MODULE = 'index.js';
-    this.VERSION = 'V2.0.0';
-    this.WRITTEN = '2024-01-17/peb';
+    this.VERSION = 'V2.0.1';
+    this.WRITTEN = '2024-05-01/peb';
 
     this.LEAST_API_VERSION = '1.1.0';
     this.POLL_INIT = 999;
@@ -75,6 +76,8 @@ function MxChartDB(id, controller) {
     this.tableNameHeader = undefined;
     this.tableNameValues = undefined;
     this.tableNameIndex  = undefined;
+
+    this.lastValuesStored = undefined;
 
     this.intchartIcons = undefined;
     this.now = undefined;
@@ -140,23 +143,23 @@ MxChartDB.prototype.init1 = function() {
 
     //b build devices array
     //---------------------
-    self.devicesArray = [];
+    var devicesArray = [];
     if (self.config.switch) {
-        self.devicesArray.push(self.config.switch);
+        devicesArray.push(self.config.switch);
     }
     _.each(self.config.sensors, function(sensor, index) {
         if (sensor.disableDevice === undefined) {
             sensor.disableDevice = false;
         }
         if (sensor.device && !sensor.disableDevice) {
-            self.devicesArray.push(sensor.device);
+            devicesArray.push(sensor.device);
         }
     });
-    self.log('self.devicesArray', self.devicesArray);
+    self.log('devicesArray', devicesArray);
 
     //b wait till all devices are ready (=>initExec)
     //----------------------------------------------
-    self.waitDevicesReady(self.devicesArray);
+    self.waitDevicesReady(devicesArray);
 }; //init1
 
 //h-------------------------------------------------------------------------------
@@ -229,7 +232,7 @@ MxChartDB.prototype.stop = function() {
 //h Purpose:      central waiting point of module.
 //h
 //h-------------------------------------------------------------------------------
-MxChartDB.prototype.onPoll = function(n, i, t, l) {
+MxChartDB.prototype.onPoll = function(n, i, t, l, m) {
     var self = this;
 
     //b onPoll
@@ -262,18 +265,24 @@ MxChartDB.prototype.onPoll = function(n, i, t, l) {
         //b device sensor value
         //---------------------
         case self.POLL_DEVICE:
-            self.log('--- onPoll by', i + '/' + t, l);
-            if (JSON.stringify(arguments) === self.argumentsOld) {
-                self.log('skipped.');
+            self.log('--- onPoll by', i+'/'+t, m+'='+l);
+
+            if (self.lastValuesStored === undefined) {
+                self.lastValuesStored = {};
+            }
+            if (self.lastValuesStored[i] === undefined) {
+                self.lastValuesStored[i] = {};
+            }
+            if (self.lastValuesStored[i][m] === undefined) {
+                self.lastValuesStored[i][m] = null;
+            }
+            if (self.lastValuesStored[i][m] === l) {
+                self.log('value not changed, skipped.');
                 return;
             }
-            self.argumentsOld = JSON.stringify(arguments);
-
-            if (self.timerId_delay) {
-                self.log('clearing timer...');
-                clearTimeout(self.timerId_delay);
-                self.timerId_delay = undefined;
-            }
+            self.log('--- value changed', i+'/'+t, 
+                      m+'='+self.lastValuesStored[i][m]+' to '+l);
+            self.lastValuesStored[i][m] = l;
             break;
         //b timer delay
         //-------------
@@ -307,6 +316,22 @@ MxChartDB.prototype.onPoll = function(n, i, t, l) {
                     sensor.val = vDev.get("updateTime");
                 } else {
                     sensor.val = vDev.get("metrics:" + sensor.metric);
+
+                    i = sensor.id;
+                    l = sensor.val;
+                    m = sensor.metric;
+                    if (self.lastValuesStored === undefined) {
+                        self.lastValuesStored = {};
+                    }
+                    if (self.lastValuesStored[i] === undefined) {
+                        self.lastValuesStored[i] = {};
+                    }
+                    if (self.lastValuesStored[i][m] === undefined) {
+                        self.lastValuesStored[i][m] = null;
+                    }
+                    if (self.lastValuesStored[i][m] !== l) {
+                        self.lastValuesStored[i][m] = l;
+                    }
                 }
             } catch (err) {
                 self.warn("read sensor value", sensor.metric, sensor.id, sensor.title);
@@ -471,7 +496,7 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
 
     function failureF(response, err_text) {
         if (!response.status) {
-            self.notifyConnectionFault(url+' communication fault');
+            self.notifyConnectionFault('01 '+url+' communication fault');
             if (self.POLL_INIT) {
                 self.checkRetry();
                 return;
@@ -479,7 +504,7 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
             if (typeof failure === 'function') {
                 failure({status: 503});
             } else {
-                self.notifyConnectionFault(failure);
+                self.notifyConnectionFault('02 '+failure);
                 return;
             } 
         } else
@@ -489,9 +514,9 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
             (response.statusText.indexOf('database is locked') >= 0 ||
              err_text.indexOf('database is locked') >= 0)) {
             if (response.status === 900) {
-                self.notifyConnectionFault(url+' '+response.status+' '+err_text);
+                self.notifyConnectionFault('03 '+url+' status='+response.status+' '+err_text);
             } else {
-                self.notifyConnectionFault(url+' '+response.status+' '+response.statusText+' '+err_text);
+                self.notifyConnectionFault('04 '+url+' status='+response.status+' '+response.statusText+' '+err_text);
             }
             if (self.POLL_INIT) {
                 self.checkRetry();
@@ -500,12 +525,12 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
             if (typeof failure === 'function') {
                 failure(response);
             } else {
-                self.notifyConnectionFault(failure);
+                self.notifyConnectionFault('05 '+failure);
                 return;
             }
         } else
         if (typeof failure === 'string') {
-            self.notifyError(url+' '+response.status+' '+response.statusText+' '+err_text);
+            self.notifyError(url+' status='+response.status+' '+response.statusText+' '+err_text);
             self.notifyError(failure);
             self.stop();
         } else
@@ -538,6 +563,7 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
         // we convert javascript objects with JSON.stringify before sending
         data:    dataC || '',
         async:   true,
+        timeout: 20000,
         success: function(response) {
                     self.connection_failed = false;
                     //self.log('response', response);
@@ -581,7 +607,7 @@ MxChartDB.prototype.ajax_get = function(urlPath, success, failure, database) {
 
     function failureF(response, err_text) {
         if (!response.status) {
-            self.notifyConnectionFault(url+' communication fault');
+            self.notifyConnectionFault('11 '+url+' communication fault');
             if (self.POLL_INIT) {
                 self.checkRetry();
                 return;
@@ -589,7 +615,7 @@ MxChartDB.prototype.ajax_get = function(urlPath, success, failure, database) {
             if (typeof failure === 'function') {
                 failure({status: 503});
             } else {
-                self.notifyConnectionFault(failure);
+                self.notifyConnectionFault('12 '+failure);
                 return;
             } 
         } else
@@ -598,7 +624,7 @@ MxChartDB.prototype.ajax_get = function(urlPath, success, failure, database) {
             response.status === 900 && 
             (response.statusText.indexOf('database is locked') >= 0 ||
              err_text.indexOf('database is locked') >= 0)) {
-            self.notifyConnectionFault(url+' '+response.status+' '+response.statusText+' '+err_text);
+            self.notifyConnectionFault('13 '+url+' status='+response.status+' '+response.statusText+' '+err_text);
             if (self.POLL_INIT) {
                 self.checkRetry();
                 return;
@@ -606,12 +632,12 @@ MxChartDB.prototype.ajax_get = function(urlPath, success, failure, database) {
             if (typeof failure === 'function') {
                 failure(response);
             } else {
-                self.notifyConnectionFault(failure);
+                self.notifyConnectionFault('14 '+failure);
                 return;
             }
         } else
         if (typeof failure === 'string') {
-            self.notifyError(url+' '+response.status+' '+response.statusText+' '+err_text);
+            self.notifyError(url+' status='+response.status+' '+response.statusText+' '+err_text);
             self.notifyError(failure);
             self.stop();
         } else

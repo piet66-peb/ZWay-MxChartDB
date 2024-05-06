@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.0 2024-01-22/peb
+//h Version:      V2.0.0 2024-05-01/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -33,7 +33,7 @@
 //-----------
 //var MODULE='init.js';
 //var VERSION='V2.0.0';
-//var WRITTEN='2024-01-22/peb';
+//var WRITTEN='2024-05-01/peb';
 
 //-----------
 //b Functions
@@ -872,11 +872,13 @@ var init = function (self) {
     
         //b if necessary define callback
         //------------------------------
-        self.sensors.forEach( function (item) {
-            if (item.polling && !self.config.startFullTimes) {
-                self.setDevCallback(item.id, item.metric);
-            }
-        });
+        if (!self.config.startFullTimes) {
+            self.sensors.forEach( function (item) {
+                if (item.polling) {
+                    self.setDevCallback(item.id, item.metric);
+                }
+            });
+        }
     
         //b set cron task
         //---------------

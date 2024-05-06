@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-01-23/peb
+//h Version:      V2.1.0 2024-05-05/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-01-23/peb';
+var WRITTEN='2024-05-05/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -251,6 +251,7 @@ function buildIndexList(indexBuffer) {
     var cop = ch_utils.buildMessage(14);
     var download = ch_utils.buildMessage(33);
     var rem = ch_utils.buildMessage(15);
+    var change = ch_utils.buildMessage(42);
     var c = ch_utils.buildMessage(26);
     var s = ch_utils.buildMessage(41);
 
@@ -264,6 +265,7 @@ function buildIndexList(indexBuffer) {
             htmlText += '<th>'+cop+'</th>';
             htmlText += '<th>'+download+'</th>';
             htmlText += '<th>'+rem+'</th>';
+            htmlText += '<th>'+change+'</th>';
         }
     }
     htmlText += '</tr>';
@@ -275,6 +277,7 @@ function buildIndexList(indexBuffer) {
 
     var URLChart = './draw-chartjs.html'+adminQuerystring+'chartId=';
     var URLJSON  = './data-json.html'+adminQuerystring+'chartId=';
+    var URLMOVE  = './move-chart.html?chartId=';
     var last = '';
 
     //indexArray.forEach(function(chart, ix) {
@@ -285,6 +288,7 @@ function buildIndexList(indexBuffer) {
         var chartTitle = indexArray[ix][0];
         var uChart = URLChart + chartId;
         var uJSON = URLJSON + chartId;
+        var uMOVE = URLMOVE + chartId;
         var chartIdDisp = chartId;
         var chartIdDB = 'MxChartDB';
         var chartIdBase = chartId;
@@ -295,6 +299,7 @@ function buildIndexList(indexBuffer) {
             chartIdBase = chartIdSplit[1];
         }
 
+        //chart title
         if (chartTitle === last) {
             htmlTextNew += '<tr><td><a href="'+uChart+
                 '"'+target_chart+'><font color="red"><b>'+chartTitle+'</b></font></td>';
@@ -302,21 +307,25 @@ function buildIndexList(indexBuffer) {
             htmlTextNew += '<tr><td><a href="'+uChart+'"'+target_chart+'>'+chartTitle+
                 '</td>';
         }
-        htmlTextNew += '<td><center><a href="'+uJSON+'"'+target_data+'>'+chartIdDisp+'</a></td>';
 
+        //chart id
+        htmlTextNew += '<td><center><a href="'+uJSON+'"'+target_data+'>'+chartIdDisp+'</a></td>';
 
         if (instancesRead) {
             if (ADMIN === 'YES') {
+                //instance id
+                var instNo_orig;
                 if (!instancesList.hasOwnProperty(chartId)) {
                     htmlTextNew += '<td><center></td>';
                 } else {
                     htmlTextNew += '<td><center>';
-                    if (!instOriginal(chartId, instancesList[chartId].id)) {
+                    instNo_orig = instancesList[chartId].id;
+                    if (!instOriginal(chartId, instNo_orig)) {
                         htmlTextNew += '<font color="magenta"><b>'+
-                            instancesList[chartId].id+'</b></font>';
+                            instNo_orig+'</b></font>';
                     } else {
                         htmlTextNew += '<font color="green"><b>'+
-                            instancesList[chartId].id+'</b></font>';
+                            instNo_orig+'</b></font>';
                     }
                     htmlTextNew += '</td>';
                 }
@@ -349,6 +358,8 @@ function buildIndexList(indexBuffer) {
                     col = 'black';
                     tex = n;    //inactive
                 }
+
+                //active
                 if (tex === y) {
                     htmlTextNew += '<td headers="active" align=center>'+
                                 '<input type="checkbox" id="active+'+chartId+'" checked>'+
@@ -375,21 +386,33 @@ function buildIndexList(indexBuffer) {
                         tex+'</b></font></td>';
                 }
 
+                //clone
                 var l1 = '';
                 if (!isCopy(chartIdBase)) {
                     l1 =  '<a href="javascript:copyChart(\''+
                         chartId +'\',\''+api+'\');">'+y+'</a> ';
                 }
                 htmlTextNew += '<td><center>'+l1+'</td>';
+
+                //download
                 var l3 =  '<a href="javascript:downloadChart(\''+
                         chartId +'\',\''+api+'\');">'+y+'</a> ';
                 htmlTextNew += '<td><center>'+l3+'</td>';
+
+                //delete
                 var l2 = '';
                 if (tex === o || tex === n || tex === c || tex === s) {
                     l2 =  '<a href="javascript:deleteChart(\''+
                         chartId +'\',\''+api+'\');">'+y+'</a> ';
                 }
                 htmlTextNew += '<td><center>'+l2+'</td>';
+
+                //change database
+                var l4 = '';
+                if (tex === y || tex === n) {
+                    l4 =  '<a href="'+uMOVE+'">'+y+'</a> ';
+                }
+                htmlTextNew += '<td><center>'+l4+'</td>';
             } //if ADMIN
             else {
                 if (!instancesList.hasOwnProperty(chartId)) {

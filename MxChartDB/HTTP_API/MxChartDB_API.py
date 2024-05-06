@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V1.9.0 2024-04-23/peb
+#h Version:      V1.9.1 2024-05-05/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -93,6 +93,7 @@
 #pylint: disable=inconsistent-return-statements, too-many-return-statements
 #pylint: disable=too-many-branches, too-many-locals, too-many-statements
 
+import time
 import platform
 import sqlite3
 import threading
@@ -113,8 +114,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V1.9.0'
-WRITTEN = '2024-04-23/peb'
+VERSION = 'V1.9.1'
+WRITTEN = '2024-05-05/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -168,6 +169,10 @@ if hasattr(constants, 'TIMEOUT'):
     TIMEOUT = constants.TIMEOUT
 else:
     TIMEOUT = 5
+if hasattr(constants, 'THRESHOLD_DURATION'):
+    THRESHOLD_DURATION = constants.THRESHOLD_DURATION
+else:
+    THRESHOLD_DURATION = 10
 if hasattr(constants, 'DISABLE_AUTHENTICATION'):
     DISABLE_AUTHENTICATION = constants.DISABLE_AUTHENTICATION
 else:
@@ -321,6 +326,12 @@ def auth_required(func):
 
 #----------------------------------------------------------------------------
 
+def check_threshold(now, dbase, table):
+    '''check_threshold(now, dbase, table)'''
+    duration = round(time.time() - now, 2)
+    if duration >= THRESHOLD_DURATION:
+        app.logger.warn(dbase+'.'+table+' insert duration='+str(duration)+' seconds')
+
 def change_loglevel(new_loglevel):
     '''dynamically change the loglevel'''
     if new_loglevel is None:
@@ -396,8 +407,10 @@ def response_text(text):
 # connect db
 def get_db_connection(dbase):
     '''auxiliary function: connect to database'''
-    conn = sqlite3.connect(dbase+'.db', timeout=TIMEOUT, isolation_level=None)
-    #isolation_level=None: autocommit on
+    ## V1.9.1: autocommit off
+    ## conn = sqlite3.connect(dbase+'.db', timeout=TIMEOUT, isolation_level=None)
+    ## #isolation_level=None: autocommit on
+    conn = sqlite3.connect(dbase+'.db', timeout=TIMEOUT)
     return conn
 
 # get database list
@@ -495,7 +508,7 @@ def count_entries(dbase, table):
         conn = get_db_connection(dbase)
         command = 'select count'
         count = conn.execute(sql).fetchall()[0]
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
         return count
     except sqlite3.Error as error:
@@ -979,7 +992,7 @@ def route_api_size(dbase):
         conn = get_db_connection(dbase)
         command = 'fetchall'
         sizes = conn.execute(sql).fetchall()[0]
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -990,7 +1003,7 @@ def route_api_size(dbase):
 
 @app.route('/<dbase>/rebuild_db', methods=["GET"], endpoint='route_api_rebuild_db')
 def route_api_rebuild_db(dbase):
-    '''route: drop database'''
+    '''route: rebuild database'''
     app.logger.info(request)
     if not os.path.isfile(dbase+'.db'):
         return response_text('database '+dbase+" doesn't exist"), OK
@@ -1000,7 +1013,7 @@ def route_api_rebuild_db(dbase):
         conn = get_db_connection(dbase)
         command = 'vacuum'
         conn.execute(sql)
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1066,7 +1079,7 @@ def route_api_create_table(dbase, table):
         conn.execute(sql)
         command = 'commit'
         conn.commit()
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1089,7 +1102,7 @@ def route_api_check(dbase, db_object):
         conn = get_db_connection(dbase)
         command = 'select'
         row = conn.execute(sql).fetchone()
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1114,7 +1127,7 @@ def route_api_describe(dbase, db_object):
         conn = get_db_connection(dbase)
         command = 'select'
         row = conn.execute(sql).fetchone()
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1150,7 +1163,7 @@ def route_api_drop(dbase, db_object):
         conn.execute(sql)
         command = 'commit'
         conn.commit()
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1206,7 +1219,7 @@ def route_api_clone(dbase, table):
         conn.execute(sql)
         command = 'commit'
         conn.commit()
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1221,6 +1234,7 @@ def route_api_clone(dbase, table):
 @auth_required
 def route_api_insert(dbase, table):
     '''route: insert new row(s) into table'''
+    now = time.time()
     app.logger.info(request)
     if not os.path.isfile(dbase+'.db'):
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
@@ -1244,17 +1258,15 @@ def route_api_insert(dbase, table):
             curs = conn.execute(sql_del)
             command = 'rowcount'
             rowcount = curs.rowcount
-            command = 'commit'
-            conn.commit()
         except sqlite3.Error as error:
-            errtext = 'sqlite3.Error on '+command+'(delete): '+(' '.join(error.args))
-            if 'is locked' in errtext:
-                errtext = errtext.replace('locked', 'locked/busy')
-                app.logger.warning(errtext)
-            else:
-                conn.close()
-                return response_text_err(errtext), DB_ERROR
+            commtext = command+'(delete '+dbase+'.'+table+')'
+            errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
+            conn.close()
+            return response_text_err(errtext), DB_ERROR
+
         app.logger.info(str(rowcount)+' entries deleted')
+        command = 'curs.close'
+        curs.close()
 
     #now we do new inserts:
     if request.method == 'GET':
@@ -1272,7 +1284,6 @@ def route_api_insert(dbase, table):
             return response_text_err('val is not defined'), BAD_REQUEST
         try:
             val_json = json.loads(val)
-            #printF(val_json)
         except json.JSONDecodeError as error:
             return response_text_err('val='+val+' is no JSON object:  '+error.args[0]), BAD_REQUEST
         #printF('add row '+ts_new+' to '+table+ ':\nval ='+ val)
@@ -1287,12 +1298,14 @@ def route_api_insert(dbase, table):
             conn.execute(sql, (ts_int, val))
             command = 'commit'
             conn.commit()
-            command = 'close'
+            command = 'conn.close()'
             conn.close()
         except sqlite3.Error as error:
-            errtext = 'sqlite3.Error on '+command+'(insert GET): '+(' '.join(error.args))
+            commtext = command+'(insert GET '+dbase+'.'+table+')'
+            errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
             conn.close()
             return response_text_err(errtext), DB_ERROR
+        check_threshold(now, dbase, table)
         return response_text('1 of 1 rows stored')
 
     if request.method == 'POST':
@@ -1330,12 +1343,14 @@ def route_api_insert(dbase, table):
                 conn.execute(sql, (ts_int, val))
                 command = 'commit1'
                 conn.commit()
-                command = 'close'
+                command = 'conn.close()'
                 conn.close()
             except sqlite3.Error as error:
-                errtext = 'sqlite3.Error on '+command+'(POST): '+(' '.join(error.args))
+                commtext = command+'(insert POST '+dbase+'.'+table+')'
+                errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
                 conn.close()
                 return response_text_err(errtext), DB_ERROR
+            check_threshold(now, dbase, table)
             return response_text('1 of 1 rows stored')
 
         # bulk inserts
@@ -1379,18 +1394,21 @@ def route_api_insert(dbase, table):
                 try:
                     command = 'insert'
                     conn.execute(sql, (ts_int, val))
-                    command = 'commit'
-                    conn.commit()
                     ji_stored += 1
                 except sqlite3.Error as error:
-                    errtext = 'sqlite3.Error on '+command+'(bulk), line '+str(i)+': '
-                    errtext += (' '.join(error.args))
+                    commtext = command+'(insert bulk, line '+str(i)+' '+dbase+'.'+table+')'
+                    errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
                     if 'UNIQUE constraint failed' in errtext:
                         app.logger.warning(errtext)
                         continue
                     conn.close()
                     return response_text_err(errtext), DB_ERROR
+
+            if ji_stored > 0:
+                command = 'commit'
+                conn.commit()
             conn.close()
+            check_threshold(now, dbase, table)
             return response_text(str(ji_stored)+' of '+str(i)+' rows stored')
 
 @app.route('/<dbase>/<table>/select_next', methods=["GET"])
@@ -1556,7 +1574,7 @@ def route_api_delete_prev(dbase, table):
         command = 'commit'
         conn.commit()
         rowcount = conn.total_changes
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1594,7 +1612,7 @@ def route_api_delete(dbase, table):
         command = 'commit'
         conn.commit()
         rowcount = conn.total_changes
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1662,9 +1680,9 @@ def route_sql_get(dbase):
         resp = curs.fetchall()
         command = 'commit'
         conn.commit()
-        command = 'close cursor'
+        command = 'curs.close()'
         curs.close()
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
@@ -1705,9 +1723,9 @@ def route_sql_post(dbase):
         resp = curs.fetchall()
         command = 'commit'
         conn.commit()
-        command = 'close cursor'
+        command = 'curs.close()'
         curs.close()
-        command = 'close'
+        command = 'conn.close()'
         conn.close()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))

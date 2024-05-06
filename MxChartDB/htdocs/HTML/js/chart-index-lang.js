@@ -34,8 +34,8 @@
             en: 'active'
         },
         {//8
-            de: 'ja',
-            en: 'yes'
+            de: '❎',
+            en: '❎'
         },
         {//9
             de: ' ',
@@ -168,5 +168,9 @@
         {//41
             de: 'Snapshot',
             en: 'Snapshot'
+        },
+        {//42
+            de: 'Datenbank<br>wechseln',
+            en: 'Change<br>Database',
         },
     ];

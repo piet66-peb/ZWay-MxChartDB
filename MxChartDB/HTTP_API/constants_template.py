@@ -15,8 +15,14 @@ LOGLEVEL = 30
 #### timeout (seconds):
 #### increase this value to avoid 'database is locked' message
 ####
-TIMEOUT = 10
+TIMEOUT = 5
 # default: 5 seconds
+
+####
+#### Duration of inserts (seconds):
+#### A warning is issued in the log if the limit value is exceeded.
+####
+THRESHOLD_DURATION = 1.00
 
 ####
 #### authentication for write accesses
