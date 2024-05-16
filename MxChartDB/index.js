@@ -1,4 +1,4 @@
-/*** MxChartDB V2.0.1 2024-05-01 Z-Way HA module *********************************/
+/*** MxChartDB V2.3.0 2024-05-09 Z-Way HA module *********************************/
 
 //h-------------------------------------------------------------------------------
 //h
@@ -14,7 +14,7 @@
 //h Resources:    MxBaseModule
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.1 2024-05-01/peb
+//h Version:      V2.3.0 2024-05-09/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -35,6 +35,8 @@
 //v               V1.1.3 2022-07-09/peb [-]admin functions for index,html
 //v                                     [+]isAdmin:refresh index on new focus
 //v               V2.0.1 2024-05-01/peb [+]skip if device level already stored 
+//v               V2.3.0 2024-05-07/peb [+]after insert wait for response before
+//v                                        next insert
 //v               [x]fixed
 //v               [*]reworked, changed
 //v               [-]removed
@@ -60,8 +62,8 @@ function MxChartDB(id, controller) {
     MxChartDB.super_.call(this, id, controller);
 
     this.MODULE = 'index.js';
-    this.VERSION = 'V2.0.1';
-    this.WRITTEN = '2024-05-01/peb';
+    this.VERSION = 'V2.3.0';
+    this.WRITTEN = '2024-05-09/peb';
 
     this.LEAST_API_VERSION = '1.1.0';
     this.POLL_INIT = 999;
@@ -90,6 +92,9 @@ function MxChartDB(id, controller) {
     this.POLL_TIMER_DELAY = this.POLL_TIMER;
     this.timerId_repeat_post = undefined;
     this.timerId_init = undefined;
+
+    this.last_ts_pending = undefined;
+    this.flag_notifyConnectionFault = undefined;
 }
 inherits(MxChartDB, MxBaseModule);
 _module = MxChartDB;
@@ -258,7 +263,7 @@ MxChartDB.prototype.onPoll = function(n, i, t, l, m) {
                 self.timerId_delay = setTimeout(function() {
                     self.timerId_delay = undefined;
                     self.onPoll(self.POLL_TIMER_DELAY);
-                }, 80 * self.id +10000);
+                }, 10000 + 80 * self.id);    // 10sec + x msec
                 return;
             }
             break;
@@ -408,68 +413,133 @@ MxChartDB.prototype.build_values_array = function(sensors) {
 MxChartDB.prototype.store_table_data = function(tableName, ts, data, 
                                                    callback, ts_del, database) {
     var self = this;
-    self.log('store_table_data', tableName);
+    self.info('--- store_table_data', tableName);
 
-    if (!database) {
-        database = self.database;
-    }
+    if (!database) {database = self.database;}
+    if (!self.data_buffer) {self.data_buffer = [];}
 
     var dataRow = {"ts": ts, "val": data};
-    var dataArrayLength;
     if (self.POLL_INIT || self.buffer_max_rows === 0) {
-        self.data_buffer = dataRow;
-        dataArrayLength = 0;
+        self.data_buffer = [dataRow];
     } else {
         self.data_buffer.push(dataRow);
         if (self.data_buffer.length > self.buffer_max_rows) {
             self.data_buffer.shift();
         }
-        dataArrayLength = self.data_buffer.length;
     }
+    //self.log('self.data_buffer', self.data_buffer);
 
     var url_insert = tableName+'/insert';
     if (ts_del) {
         url_insert += '?ts_del='+ts_del;
     }
-
-    self.log('store_table_data: ts='+ts+', dataArrayLength='+dataArrayLength);
-    self.ajax_post(url_insert, 
-                   self.data_buffer,
-                   function(response) {
-                       self.log('table '+tableName+' data stored: '+
-                                 'ts='+ts+', dataArrayLength='+dataArrayLength);
-                       if (!dataArrayLength) {
-                           self.data_buffer = [];
-                       } else {
-                           var len = self.data_buffer.length;
-                           //self.info('self.data_buffer.length', self.data_buffer.length);
-                           if (len === 0) {
-                               self.data_buffer = [];   //shouldn't occur
-                           } else
-                           if (self.data_buffer[len-1].ts === ts) {
-                               self.data_buffer = [];
-                               self.log('last ts acknowledged');
-                           } else {
-                               //self.info(self.data_buffer);
-                               var i = 0;
-                               for (i = 0; i < len; i++) {
-                                   if (self.data_buffer[i].ts > ts) {
-                                       break;
-                                   }
-                               }
-                               if (i) {
-                                   self.data_buffer = self.data_buffer.slice(i);
-                               }
-                               self.log(tableName+': still waiting for ack on '+self.data_buffer.length+
-                                         ' rows (ts>'+ts+')');
-                           }
-                       }
-                       callback();
-                   },
-                   'table '+tableName+' store data',
-                   database
-    );
+    self.do_insert(url_insert, tableName, callback, database);
 }; //store_table_data
+
+//h-------------------------------------------------------------------------------
+//h
+//h Name:         do_insert
+//h Purpose:      
+//h
+//h-------------------------------------------------------------------------------
+MxChartDB.prototype.do_insert = function(url_insert, tableName, callback, database) {
+    var self = this;
+    self.log('do_insert', tableName);
+
+    var rowcount_to_send = self.data_buffer.length;
+    var last_ts_in_buffer_to_send;
+    if (rowcount_to_send) {
+        last_ts_in_buffer_to_send = self.data_buffer[rowcount_to_send-1].ts;
+    }
+
+    self.log('check: rowcount_to_send', rowcount_to_send);
+    self.log('check: last_ts_in_buffer_to_send', last_ts_in_buffer_to_send);
+    self.log('check: self.last_ts_pending', self.last_ts_pending);
+    self.log('check: self.timerId_repeat_post', self.timerId_repeat_post);
+
+    if (rowcount_to_send > 0 &&     //data to send
+        !self.last_ts_pending &&    //not waiting for response from API
+        !self.timerId_repeat_post   //not waiting for timer delay for resend
+       ) {
+        self.log('calling ajax_post...');
+        self.last_ts_pending = last_ts_in_buffer_to_send;
+        self.ajax_post(
+            url_insert, 
+            self.data_buffer,
+            //success
+            function(response) { 
+                self.info('--- success');
+                if (self.timerId_repeat_post) {
+                    self.log('clearing timer timerId_repeat_post...');
+                    clearTimeout(self.timerId_repeat_post);
+                    self.timerId_repeat_post = undefined;
+                }
+
+                var rowcount_now = self.data_buffer.length;
+                var last_ts_in_buffer_now;
+                if (rowcount_now) {
+                    last_ts_in_buffer_now = self.data_buffer[rowcount_now-1].ts;
+                }
+                self.log('rowcount_now', rowcount_now);
+                self.log('last_ts_in_buffer_now', last_ts_in_buffer_now);
+                self.log('self.last_ts_pending', self.last_ts_pending);
+
+                if (last_ts_in_buffer_now <= self.last_ts_pending) {
+                    self.data_buffer = [];
+                    self.info('--- last ts = all rows acknowledged');
+                } else {
+                    var i = 0;
+                    for (i = 0; i < last_ts_in_buffer_now; i++) {
+                        if (self.data_buffer[i].ts > self.last_ts_pending) {
+                            break;
+                        }
+                    }
+                    if (i) {
+                        self.data_buffer = self.data_buffer.slice(i);
+                    }
+                    self.info('--- not all rows acknowledged');
+                }
+                rowcount_now = self.data_buffer.length;
+                last_ts_in_buffer_now = undefined;
+                if (rowcount_now) {
+                    last_ts_in_buffer_now = self.data_buffer[rowcount_now-1].ts;
+                }
+                self.log('rowcount_now', rowcount_now);
+                self.log('last_ts_in_buffer_now', last_ts_in_buffer_now);
+
+                self.last_ts_pending = null;    //enable new sending
+                if (rowcount_now > 0) {
+                    //send remaining rows
+                    self.info('sending remaining rows');
+                    self.do_insert(url_insert, tableName, callback, database);
+                } else {
+                    //all rows stored
+                    callback();
+                }
+            },
+            //failure
+            function(response) {
+                self.info('--- failure');
+                self.notifyConnectionFault('0a '+'table '+tableName+' store data');
+
+                self.last_ts_pending = null;    //enable new sending
+/*
+                //resend after delay
+                self.notifyWarn('pending since '+self.userTime(self.last_ts_pending));
+                self.timerId_repeat_post = setTimeout(function() {
+                    self.timerId_repeat_post = undefined;
+
+                    self.last_ts_pending = null;
+                    self.notifyWarn('resending now '+self.userTime(Date.now()));
+                    self.do_insert(url_insert, tableName, callback, database);
+                }, 20000 + 20 * self.id);    // 20sec + x msec
+*/                
+            },
+            //database
+            database
+        ); //self.ajax_post
+    } //if (!self.last_ts_pending)
+}; //do_insert
 
 //h-------------------------------------------------------------------------------
 //h
@@ -495,8 +565,9 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
     }
 
     function failureF(response, err_text) {
+        //case 1
         if (!response.status) {
-            self.notifyConnectionFault('01 '+url+' communication fault');
+            self.notifyConnectionFault('1a '+url+' communication fault');
             if (self.POLL_INIT) {
                 self.checkRetry();
                 return;
@@ -504,20 +575,26 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
             if (typeof failure === 'function') {
                 failure({status: 503});
             } else {
-                self.notifyConnectionFault('02 '+failure);
+                self.notifyConnectionFault('1b '+failure);
                 return;
             } 
         } else
+        //case 2
         if (response.status < 100 ||
             response.status === 500 ||      //!!!!!!!!!!!!!!!! unendliche schleife ?????????????
             response.status === 900 && 
             (response.statusText.indexOf('database is locked') >= 0 ||
              err_text.indexOf('database is locked') >= 0)) {
+
             if (response.status === 900) {
-                self.notifyConnectionFault('03 '+url+' status='+response.status+' '+err_text);
+                self.notifyConnectionFault('2a '+url+' status='+response.status+' '+err_text);
+                // status=900 sqlite3.Error on ...: database is locked/busy
+                //
             } else {
-                self.notifyConnectionFault('04 '+url+' status='+response.status+' '+response.statusText+' '+err_text);
+                self.notifyConnectionFault('2b '+url+' status='+response.status+' '+
+                                           response.statusText+' '+err_text);
             }
+
             if (self.POLL_INIT) {
                 self.checkRetry();
                 return;
@@ -525,27 +602,30 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
             if (typeof failure === 'function') {
                 failure(response);
             } else {
-                self.notifyConnectionFault('05 '+failure);
+                self.notifyConnectionFault('2c '+failure);
                 return;
             }
         } else
+        //case 3
         if (typeof failure === 'string') {
-            self.notifyError(url+' status='+response.status+' '+response.statusText+' '+err_text);
+            self.notifyError('3a '+url+' status='+response.status+' '+
+                             response.statusText+' '+err_text);
             self.notifyError(failure);
             self.stop();
         } else
+        //case 4
         if (typeof failure === 'function') {
-            self.warn(url, response.status, response.statusText, err_text);
+            self.warn('4a '+url, response.status, response.statusText, err_text);
             failure(response);
         }
     }
 
-    function successF(response, dataSentLength) {
+    function successF(response) {
         if (typeof success === 'string') {
             self.log(success);
         } else
         if (typeof success === 'function') {
-            success(response, dataSentLength);
+            success(response);
         }
     }
 
@@ -563,9 +643,11 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
         // we convert javascript objects with JSON.stringify before sending
         data:    dataC || '',
         async:   true,
-        timeout: 20000,
+        timeout: 20000,         //default: 20000 ms 
+                                // >> response:status = -1 
+                                //             data   = Timeout was reached
         success: function(response) {
-                    self.connection_failed = false;
+                    self.flag_notifyConnectionFault = false;
                     //self.log('response', response);
                     //status=201: created
                     successF(response);
@@ -585,7 +667,6 @@ MxChartDB.prototype.ajax_post = function(urlPath, data, success, failure, databa
                     failureF(response, err_text);
                  }
     };
-    //self.log('request', request);
     http.request(request);
 }; //ajax_post
 
@@ -667,7 +748,7 @@ MxChartDB.prototype.ajax_get = function(urlPath, success, failure, database) {
         },
         async:   true,
         success: function(response) {
-                    self.connection_failed = false;
+                    self.flag_notifyConnectionFault = false;
                     //self.log('response', response);
                     successF(response);
                  },
@@ -735,8 +816,8 @@ MxChartDB.prototype.checkRetry = function() {
 MxChartDB.prototype.notifyConnectionFault = function(text) {
     var self = this;
 
-    if (!self.connection_failed) {
-        self.connection_failed = true;
+    if (!self.flag_notifyConnectionFault) {
+        self.flag_notifyConnectionFault = true;
         self.notifyWarn(text);
     }
 }; //notifyConnectionFault

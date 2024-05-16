@@ -173,4 +173,12 @@
             de: 'Datenbank<br>wechseln',
             en: 'Change<br>Database',
         },
+        {//43
+            de: 'Polling<br>[Min]',
+            en: 'Polling<br>[min]',
+        },
+        {//44
+            de: 'Chart<br>Länge',
+            en: 'Chart<br>Length',
+        },
     ];

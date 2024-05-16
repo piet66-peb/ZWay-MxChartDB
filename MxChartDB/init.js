@@ -13,12 +13,13 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.0 2024-05-01/peb
+//h Version:      V2.0.1 2024-05-15/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
 //v                                     [x]correct some response status
 //v                                     [+]bulk inserts
+//v               V2.0.1 2024-05-12/peb [-]self.config.chartInterval is obsolete
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -32,8 +33,8 @@
 //b Constants
 //-----------
 //var MODULE='init.js';
-//var VERSION='V2.0.0';
-//var WRITTEN='2024-05-01/peb';
+//var VERSION='V2.0.1';
+//var WRITTEN='2024-05-15/peb';
 
 //-----------
 //b Functions
@@ -171,7 +172,7 @@ var init = function (self) {
         if (!self.config.y1Label) {self.config.y1Label = 'null';}
         if (!self.config.y2Label) {self.config.y2Label = 'null';}
         if (!self.config.rectangleDevices) {self.config.rectangleDevices = ',';}
-        if (!self.config.chartInterval) {self.config.chartInterval = 'infinite';}
+        if (self.config.chartInterval) {self.config.chartInterval = undefined;}
         if (!self.config.initialInterval) {self.config.initialInterval = 'complete';}
         if (!self.config.startFullTimes) {self.config.startFullTimes = false;}
         if (!self.config.nonnumericLabels.y3reduceUnusedTicks) {
@@ -205,15 +206,18 @@ var init = function (self) {
         );
     } //init0
 
-    function isVersionOK (currVersion, leastVersion) {
+    function isVersionOK (currVersion, requestVersion) {
         self.log('*** isVersionOK');
 
         var currVersionArr = currVersion.split('.');
-        var leastVersionArr = leastVersion.split('.');
+        var requestVersionArr = requestVersion.split('.');
 
-        for (var i = 0; i < leastVersionArr.length; i++) {
-            if (currVersionArr[i]*1 < leastVersionArr[i]*1) {
+        for (var i = 0; i < requestVersionArr.length; i++) {
+            if (currVersionArr[i]*1 < requestVersionArr[i]*1) {
                 return false;
+            }
+            if (currVersionArr[i]*1 > requestVersionArr[i]*1) {
+                return true;
             }
         }
         return true;

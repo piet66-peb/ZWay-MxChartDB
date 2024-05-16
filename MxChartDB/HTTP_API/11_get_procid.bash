@@ -12,7 +12,7 @@
 #h Resources:    
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V1.0.0 2023-02-23/peb
+#h Version:      V1.0.1 2024-05-09/peb
 #v History:      V1.0.0 2022-12-11/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      MIT
@@ -20,8 +20,8 @@
 #h-------------------------------------------------------------------------------
 
 MODULE='get_procid.bash';
-VERSION='V1.0.0'
-WRITTEN='2023-02-23/peb'
+VERSION='V1.0.1'
+WRITTEN='2024-05-09/peb'
 
 PROC=MxChartDB_API
 systemctl is-active --quiet "$PROC"
@@ -33,7 +33,7 @@ then
     echo process $PROC, $user is not started
 else
     echo ''
-    systemctl status $PROC | cat
+    systemctl status $PROC --no-pager -l
     systemctl show -pUser $PROC
     echo ''
     echo stop process with:

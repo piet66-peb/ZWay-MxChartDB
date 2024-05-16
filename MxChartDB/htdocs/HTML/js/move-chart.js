@@ -11,7 +11,7 @@
 //h Resources:    
 //h Platforms:    
 //h Authors:      peb piet66
-//h Version:      V1.0.0 2024-05-06/peb
+//h Version:      V1.0.0 2024-05-14/peb
 //v History:      V1.0.0 2024-05-04/peb first version
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
@@ -26,7 +26,7 @@
 //-----------
 var MODULE='move-chart.js';
 var VERSION='V1.0.0';
-var WRITTEN='2024-05-06/peb';
+var WRITTEN='2024-05-14/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //b Variables
@@ -238,7 +238,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //h-------------------------------------------------------------------------------
     function enable_button(self) {
         newDB = self.value;
-        var dbFormat = /^[0-9a-zA-Z_]+$/;
+        var dbFormat = /^[0-9a-zA-Z]+$/;
         document.getElementById('wrong_input').firstChild.data = ' ';
 
         if (!newDB) {

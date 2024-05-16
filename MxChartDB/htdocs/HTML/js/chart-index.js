@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-05-05/peb
+//h Version:      V2.1.0 2024-05-12/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-05-05/peb';
+var WRITTEN='2024-05-12/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -221,7 +221,10 @@ function buildInstancesList(instancesBuffer) {
                  id: inst.id,
                  title:  inst.params.chartTitle,
                  chartId: inst.params.chartId,
-                 DBName: inst.params.DBName};
+                 DBName: inst.params.DBName,
+                 interval: inst.params.interval,
+                 period: inst.params.period,
+                };
         });
 } //buildInstancesList
 
@@ -252,6 +255,8 @@ function buildIndexList(indexBuffer) {
     var download = ch_utils.buildMessage(33);
     var rem = ch_utils.buildMessage(15);
     var change = ch_utils.buildMessage(42);
+    var polling = ch_utils.buildMessage(43);
+    var chartLength = ch_utils.buildMessage(44);
     var c = ch_utils.buildMessage(26);
     var s = ch_utils.buildMessage(41);
 
@@ -262,6 +267,8 @@ function buildIndexList(indexBuffer) {
         }
         htmlText += '<th>'+a+'</th>';
         if (ADMIN === 'YES') {
+            htmlText += '<th>'+polling+'</th>';
+            htmlText += '<th>'+chartLength+'</th>';
             htmlText += '<th>'+cop+'</th>';
             htmlText += '<th>'+download+'</th>';
             htmlText += '<th>'+rem+'</th>';
@@ -385,6 +392,20 @@ function buildIndexList(indexBuffer) {
                     htmlTextNew += '<td><center><font color="'+col+'"><b>'+
                         tex+'</b></font></td>';
                 }
+
+                //chart length (period)
+                var period = '';
+                if (instancesList.hasOwnProperty(chartId)) {
+                    period = instancesList[chartId].period;
+                }
+                htmlTextNew += '<td><center>'+period+'</td>';
+
+                //chart length (interval)
+                var interval = '';
+                if (instancesList.hasOwnProperty(chartId)) {
+                    interval = instancesList[chartId].interval;
+                }
+                htmlTextNew += '<td><center>'+interval+'</td>';
 
                 //clone
                 var l1 = '';
