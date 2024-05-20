@@ -1,4 +1,4 @@
-/*** MxChartDB V2.3.0 2024-05-09 Z-Way HA module *********************************/
+/*** MxChartDB V2.3.1 2024-05-18 Z-Way HA module *********************************/
 
 //h-------------------------------------------------------------------------------
 //h
@@ -14,7 +14,7 @@
 //h Resources:    MxBaseModule
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.3.0 2024-05-09/peb
+//h Version:      V2.3.1 2024-05-18/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -62,8 +62,8 @@ function MxChartDB(id, controller) {
     MxChartDB.super_.call(this, id, controller);
 
     this.MODULE = 'index.js';
-    this.VERSION = 'V2.3.0';
-    this.WRITTEN = '2024-05-09/peb';
+    this.VERSION = 'V2.3.1';
+    this.WRITTEN = '2024-05-18/peb';
 
     this.LEAST_API_VERSION = '1.1.0';
     this.POLL_INIT = 999;
@@ -429,10 +429,11 @@ MxChartDB.prototype.store_table_data = function(tableName, ts, data,
     }
     //self.log('self.data_buffer', self.data_buffer);
 
-    var url_insert = tableName+'/insert';
+    var url_insert = tableName+'/insert?';
     if (ts_del) {
-        url_insert += '?ts_del='+ts_del;
+        url_insert += 'ts_del='+ts_del+'&';
     }
+    url_insert += 'self='+self.id;  //for analysis only
     self.do_insert(url_insert, tableName, callback, database);
 }; //store_table_data
 

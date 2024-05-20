@@ -15,7 +15,7 @@ LOGLEVEL = 30       # default: 20
 #### timeout (seconds):
 #### increase this value to minimize 'database is locked' messages
 ####
-TIMEOUT = 10        # default: 5 seconds
+#TIMEOUT = 10        # default: 5 seconds
 
 ####
 #### Add warnings to the log for analysis:
@@ -24,7 +24,7 @@ TIMEOUT = 10        # default: 5 seconds
 #### a warning is issued in the log if the limit value is exceeded.
 ####
 THRESHOLD_DURATION = 1.00   # seconds, default: None
-THRESHOLD_THREADS = 5       # default: None
+#THRESHOLD_THREADS = 5       # default: None
 
 ####
 #### authentication for write accesses

@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.0.0 2024-05-14/peb
+#h Version:      V2.1.0 2024-05-20/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -115,8 +115,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V2.0.0'
-WRITTEN = '2024-05-14/peb'
+VERSION = 'V2.1.0'
+WRITTEN = '2024-05-20/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -154,7 +154,7 @@ INTERNAL_ERROR = 500
 
 # hello
 app.logger.setLevel(20)
-app.logger.info('------------ '+MODULE+' '+VERSION+' '+WRITTEN+' '+SQLITE+' started')
+app.logger.info('------- '+MODULE+':'+VERSION+' '+WRITTEN+' sqlite:'+SQLITE)
 STARTED = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 #----------------------------------------------------------------------------
@@ -225,7 +225,7 @@ if not CORS_HOST is None:
 
 #----------------------------------------------------------------------------
 
-def manage_thread_list(func, request_path):
+def manage_thread_list(func):
     '''manage active thread list'''
 
     def remove_el(element, queue):
@@ -265,31 +265,40 @@ def manage_thread_list(func, request_path):
     if func == 'create':
         app.logger.info('create THREAD_LIST))')
         return collections.deque()
+
     if func == 'append':
-        app.logger.info('append '+str(request_path)+' to THREAD_LIST')
-        THREAD_LIST.append(request_path)
-    elif func == 'remove_el':
-        app.logger.info('remove '+str(request_path)+' from THREAD_LIST')
-        remove_el(request_path, THREAD_LIST)
-    elif func == 'buildlist':
-        app.logger.info('return THREAD_LIST')
-        return buildlist()
-THREAD_LIST = manage_thread_list('create', None)
+        THREAD_LOCK.acquire()
+        self = request.args.get('self', '?')
+        app.logger.info('append '+self+' '+str(request.path)+' to THREAD_LIST')
+        THREAD_LIST.append(self+' '+request.path)
+        buildlist = buildlist()
+
+        thread_act = threading.active_count()
+        if THRESHOLD_THREADS is not None and thread_act >= THRESHOLD_THREADS:
+            queuetext = '*** insert queue: '+buildlist
+            app.logger.warn(queuetext)
+
+        THREAD_LOCK.release()
+        return buildlist
+    if func == 'remove_el':
+        THREAD_LOCK.acquire()
+        self = request.args.get('self', '?')
+        app.logger.info('remove '+self+' '+str(request.path)+' from THREAD_LIST')
+        remove_el(self+' '+request.path, THREAD_LIST)
+        THREAD_LOCK.release()
+
+THREAD_LIST = manage_thread_list('create')
+THREAD_LOCK = threading.Lock()
 
 # filter whitelists
 @app.before_request
 def before_request():
     '''decorator: check whitelist before every request'''
-    queuetext = None
-    if request.path.find("/insert") > 0:
-        manage_thread_list('append', request.path)
-        queuetext = '*** insert queue: '+manage_thread_list('buildlist', None)
+
     thread_act = threading.active_count()
-    if THRESHOLD_THREADS and thread_act >= THRESHOLD_THREADS:
+    if THRESHOLD_THREADS is not None and thread_act >= THRESHOLD_THREADS:
         infotext = '*** '+str(thread_act)+' threads, request='+request.path
         app.logger.warn(infotext)
-        if queuetext:
-            app.logger.warn(queuetext)
 
     app.logger.info('requesting host: '+''.join(request.remote_addr))
     app.logger.info('requesting method: '+request.method)
@@ -387,7 +396,7 @@ def auth_required(func):
 def check_threshold(now, dbase, table):
     '''check_threshold(now, dbase, table)'''
     duration = round(time.time() - now, 2)
-    if THRESHOLD_DURATION and duration >= THRESHOLD_DURATION:
+    if THRESHOLD_DURATION is not None and duration >= THRESHOLD_DURATION:
         app.logger.warn('*** '+dbase+'.'+table+' insert duration='+str(duration)+' seconds')
 
 def change_loglevel(new_loglevel):
@@ -1299,8 +1308,10 @@ def route_api_insert(dbase, table):
     '''route: insert new row(s) into table'''
     now = time.time()
     app.logger.info(request)
+    buildlist = manage_thread_list('append')
+
     if not os.path.isfile(dbase+'.db'):
-        manage_thread_list('remove_el', request.path)
+        manage_thread_list('remove_el')
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
 
     # first delete öld rows:
@@ -1308,10 +1319,10 @@ def route_api_insert(dbase, table):
     ts_del = request.args.get('ts_del')
     if ts_del is not None:
         if not ts_del.isnumeric():
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text_err('ts_del = '+ts_del+' is invalid'), BAD_REQUEST
         if int(ts_del) < 0:
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text_err('ts_del = '+ts_del+' is invalid'), BAD_REQUEST
         sql_del = 'DELETE FROM '+table+' WHERE ts < '+ts_del+';'
         app.logger.info(sql_del)
@@ -1328,7 +1339,9 @@ def route_api_insert(dbase, table):
             commtext = command+'(delete '+dbase+'.'+table+')'
             errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
             conn.close()
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
+            if errtext.find('database is locked') > 0:
+                app.logger.error('*** insert queue: '+buildlist)
             return response_text_err(errtext), DB_ERROR
 
         app.logger.info(str(rowcount)+' entries deleted')
@@ -1339,24 +1352,24 @@ def route_api_insert(dbase, table):
     if request.method == 'GET':
         ts_new = request.args.get('ts')
         if ts_new is None:
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text_err('ts is not defined'), BAD_REQUEST
         if not ts_new.isnumeric():
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text_err('ts = '+ts_new+' is invalid'), BAD_REQUEST
         ts_int = int(ts_new)
         if ts_int < 0:
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text_err('ts = '+ts_new+' is invalid'), BAD_REQUEST
 
         val = request.args.get('val')
         if val is None:
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text_err('val is not defined'), BAD_REQUEST
         try:
             val_json = json.loads(val)
         except json.JSONDecodeError as error:
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text_err('val='+val+' is no JSON object:  '+error.args[0]), BAD_REQUEST
         #printF('add row '+ts_new+' to '+table+ ':\nval ='+ val)
 
@@ -1376,10 +1389,12 @@ def route_api_insert(dbase, table):
             commtext = command+'(insert GET '+dbase+'.'+table+')'
             errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
             conn.close()
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
+            if errtext.find('database is locked') > 0:
+                app.logger.error('*** insert queue: '+buildlist)
             return response_text_err(errtext), DB_ERROR
         check_threshold(now, dbase, table)
-        manage_thread_list('remove_el', request.path)
+        manage_thread_list('remove_el')
         return response_text('1 of 1 rows stored')
 
     if request.method == 'POST':
@@ -1397,17 +1412,17 @@ def route_api_insert(dbase, table):
             ts_int = jdata['ts']
             #printF('ts_int', ts_int)
             if ts_int is None:
-                manage_thread_list('remove_el', request.path)
+                manage_thread_list('remove_el')
                 return response_text_err('ts is not defined'), BAD_REQUEST
             if ts_int < 0:
-                manage_thread_list('remove_el', request.path)
+                manage_thread_list('remove_el')
                 return response_text_err('ts = '+str(ts_int)+' is invalid'), BAD_REQUEST
 
             val_json = jdata['val']                         # val as object
             val = json.dumps(val_json)                      # val as string
             #printF('val_json', val_json)
             if val_json is None:
-                manage_thread_list('remove_el', request.path)
+                manage_thread_list('remove_el')
                 return response_text_err('val is not defined'), BAD_REQUEST
 
             sql = 'INSERT INTO '+table+ ' VALUES (?, ?);'
@@ -1426,10 +1441,12 @@ def route_api_insert(dbase, table):
                 commtext = command+'(insert POST '+dbase+'.'+table+')'
                 errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
                 conn.close()
-                manage_thread_list('remove_el', request.path)
+                manage_thread_list('remove_el')
+                if errtext.find('database is locked') > 0:
+                    app.logger.error('*** insert queue: '+buildlist)
                 return response_text_err(errtext), DB_ERROR
             check_threshold(now, dbase, table)
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text('1 of 1 rows stored')
 
         # bulk inserts
@@ -1458,7 +1475,7 @@ def route_api_insert(dbase, table):
                 #printF('ts_int', ts_int)
                 if ts_int is None:
                     conn.close()
-                    manage_thread_list('remove_el', request.path)
+                    manage_thread_list('remove_el')
                     return response_text_err('line '+str(i)+': ts is not defined'), BAD_REQUEST
                 if ts_int <= ts_last:
                     app.logger.info(str(ts_int)+' <= '+str(ts_last))
@@ -1469,7 +1486,7 @@ def route_api_insert(dbase, table):
                 #printF('val_json', val_json)
                 if val_json is None:
                     conn.close()
-                    manage_thread_list('remove_el', request.path)
+                    manage_thread_list('remove_el')
                     return response_text_err('line '+str(i)+': val is not defined'), BAD_REQUEST
 
                 try:
@@ -1483,7 +1500,9 @@ def route_api_insert(dbase, table):
                         app.logger.warning(errtext)
                         continue
                     conn.close()
-                    manage_thread_list('remove_el', request.path)
+                    manage_thread_list('remove_el')
+                    if errtext.find('database is locked') > 0:
+                        app.logger.error('*** insert queue: '+buildlist)
                     return response_text_err(errtext), DB_ERROR
 
             if ji_stored > 0:
@@ -1491,7 +1510,7 @@ def route_api_insert(dbase, table):
                 conn.commit()
             conn.close()
             check_threshold(now, dbase, table)
-            manage_thread_list('remove_el', request.path)
+            manage_thread_list('remove_el')
             return response_text(str(ji_stored)+' of '+str(i)+' rows stored')
 
 @app.route('/<dbase>/<table>/select_next', methods=["GET"])
