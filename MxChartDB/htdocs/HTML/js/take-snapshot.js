@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.0 2024-01-23/peb
+//h Version:      V1.0.0 2024-08-07/peb
 //v History:      V1.0.0 2024-01-12/peb first version
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
@@ -28,8 +28,12 @@
 //-----------
 var MODULE='take-snapshot.js';
 var VERSION='V1.0.0';
-var WRITTEN='2024-01-23/peb';
+var WRITTEN='2024-08-07/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
+
+var url;
+var IndexDBName;
+var tableNameIndex;
 
 //------
 //b Main
@@ -40,7 +44,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     var vLog = {chartHeader: {},
                 chartValues: []};
-    var url;
     var ts_first, ts_last, endTime, db_count;
 
     //------- program code -------------------------
@@ -52,6 +55,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //ch_utils.convertCharset = true; //for all ajax inputs
     }
     ch_utils.getLanguage();
+
+    //detect index database name
+    // /ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/admin.html
+    url = window.location.pathname;
+    IndexDBName = url.split('/')[6];
+    tableNameIndex = IndexDBName+'_Index';
+    console.log('IndexDBName='+IndexDBName);
 
     //get parameters
     var chartId = ch_utils.getParameter('chartId');
@@ -80,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //evaluateartId
         chartId = chartId.replace('__', '.');
         var chartIdDisp = chartId;
-        var chartIdDB = 'MxChartDB';
+        var chartIdDB = IndexDBName;
         var chartIdBase = chartId;
         //if other database:
         if (chartId.indexOf('.') > 0) {
@@ -349,12 +359,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     function copyChart(dbNameOld, chartIdOld, dbNameNew, chartIdNew, where) {
         var chartIdDispOld, chartIdDispNew, url;
-        if (dbNameNew !== 'MxChartDB') {
+        if (dbNameNew !== IndexDBName) {
             chartIdDispNew = dbNameNew+'.'+chartIdNew;
         } else {
             chartIdDispNew = chartIdNew;
         }
-        if (dbNameOld !== 'MxChartDB') {
+        if (dbNameOld !== IndexDBName) {
             chartIdDispOld = dbNameOld+'.'+chartIdOld;
         } else {
             chartIdDispOld = chartIdOld;
@@ -374,24 +384,24 @@ document.addEventListener("DOMContentLoaded", function(event) {
            ch_utils.ajax_post(url, undefined, read_index, fail);
         }
         function read_index() {
-           var I = 'MxChartDB_Index';
-            var url = 'http://'+api+'/MxChartDB/'+I+'/select_next';
+           var I = tableNameIndex;
+            var url = 'http://'+api+'/'+IndexDBName+'/'+I+'/select_next';
             ch_utils.ajax_get(url, correct_index, fail);
         }
         function correct_index(data) {
            var indexBuffer = data[data.length-1];
            var chartIdTitleOld = indexBuffer[chartIdDispOld];
            indexBuffer[chartIdDispNew] = chartIdTitleOld;
-           var I = 'MxChartDB_Index';
+           var I = tableNameIndex;
            //console.log('insert table '+I);
-           url = 'http://'+api+'/MxChartDB/'+I+'/insert';
+           url = 'http://'+api+'/'+IndexDBName+'/'+I+'/insert';
            ch_utils.ajax_post(url, JSON.stringify({"ts": ts, "val": indexBuffer}),
                                    delete_old_index, fail);
         }
         function delete_old_index() {
-           var I = 'MxChartDB_Index';
+           var I = tableNameIndex;
            //console.log('clear table '+I);
-           url = 'http://'+api+'/MxChartDB/'+I+'/delete_prev?ts='+ts;
+           url = 'http://'+api+'/'+IndexDBName+'/'+I+'/delete_prev?ts='+ts;
            ch_utils.ajax_post(url, undefined, success_message, fail);
         }
         

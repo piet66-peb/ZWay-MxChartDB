@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.1.0 2024-05-20/peb
+#h Version:      V2.1.0 2024-10-13/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -116,7 +116,7 @@ import constants
 
 MODULE = 'MxChartDB_API.py'
 VERSION = 'V2.1.0'
-WRITTEN = '2024-05-20/peb'
+WRITTEN = '2024-10-13/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -207,6 +207,14 @@ if hasattr(constants, 'WHITELIST_POST'):
     WHITELIST_POST = constants.WHITELIST_POST
 else:
     WHITELIST_POST = []
+if hasattr(constants, 'MODAL_WIDTH'):
+    MODAL_WIDTH = constants.MODAL_WIDTH
+else:
+    MODAL_WIDTH = '100%'
+if hasattr(constants, 'MODAL_HEIGHT'):
+    MODAL_HEIGHT = constants.MODAL_HEIGHT
+else:
+    MODAL_HEIGHT = '520px'
 #pylint: enable=no-member
 
 if DISABLE_AUTHENTICATION:
@@ -566,10 +574,14 @@ def select_last_ts(dbase, table, raw='no'):
     return ts_last, OK
 
 # get count entry in table
-def count_entries(dbase, table):
+def count_entries(dbase, table, condition):
     '''auxiliary function: count rows in table'''
-    sql = "SELECT COUNT(ts) FROM "+table+";"
-    #app.logger.info(sql)
+    if condition:
+        sql = "SELECT COUNT(*) FROM "+table+" WHERE "+condition+";"
+    else:
+        sql = "SELECT COUNT(*) FROM "+table+";"
+        #sql = 'sp_spaceused '+table+';'
+    #app.logger.warn(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -582,6 +594,25 @@ def count_entries(dbase, table):
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
         conn.close()
         return errtext
+
+# get count entry in table
+def count_entries_local(dbase, table, condition=None):
+    '''local function: count rows in table'''
+    if condition:
+        sql = "SELECT COUNT(ts) FROM "+table+" WHERE "+condition+";"
+    else:
+        sql = "SELECT COUNT(ts) FROM "+table+";"
+    #app.logger.info(sql)
+    try:
+        conn = get_db_connection(dbase)
+        count = conn.execute(sql).fetchall()[0]
+        conn.close()
+        return str(count[0])
+    except sqlite3.Error as error:
+        errtext = 'sqlite3.Error : '+(' '.join(error.args))
+        app.logger.error(errtext)
+        app.logger.error('at: '+sql)
+        return 'error'
 
 #----- HTML -----------------------------------------------------------------
 
@@ -669,14 +700,15 @@ def route_html_modal(module, chart_id):
         <!--$('#myIframe').attr('src', "XSRCX&isAdmin="+isAdmin);-->
       </script>
       <iframe id="myIframe" src=""
-          style="border:none;height:520px;width:110% !important">
-      </iframe>
+          style="border:none; height: MODAL_HEIGHT; width:MODAL_WIDTH"></iframe>
    </body>
 </html>
 """
     src = "/ZAutomation/api/v1/load/modulemedia/"
     src += module+'/HTML/draw-chartjs.html?chartId='+chart_id
     html = html.replace('XSRCX', src)
+    html = html.replace('MODAL_HEIGHT', MODAL_HEIGHT)
+    html = html.replace('MODAL_WIDTH', MODAL_WIDTH)
     return html
 
 #----- API ------------------------------------------------------------------
@@ -768,7 +800,7 @@ def route_api_commands():
                    </td>
                    <td>200</td><td>900 (db error)</td></tr>
               <tr><td>count entries in an object (table, view)</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;object&gt;/count</td><td>200</td><td>900 (db error)</td></tr>
+                   GET</td><td>/&lt;db&gt;/&lt;object&gt;/count[?&lt;condition&gt;]</td><td>200</td><td>900 (db error)</td></tr>
 
               <tr><td colspan=6 style="background-color: #f2f2f2;"><br>*** MxChartDB specific API functions *** 
               <br><br></td></tr>
@@ -841,147 +873,172 @@ def route_api_admin():
                   <th><font color=#d3d3d3>Describe&nbsp;</font></th>
                   <th><font color=#d3d3d3>Drop&nbsp;</font></th>
                   <th><font color=#d3d3d3>Select Values</font></th>
-                  <th> Entry Count </th>
-                  <th> First Timestamp </th>
-                  <th> Last Timestamp </th>
-              </tr>
-              %lines%
-              </table>
-              """
+                  <th><center> Entry<br>Count </center></th>
+                  <th><center> Entry Count<br>Latest Hour </center></th>
+                  <th><center> First<br>Timestamp </center></th>
+                  <th><center> Last<br>Timestamp </center></th>
+              </tr>\n"""
     dbs = get_database_list()
-    tab_lines = ''
 
-    line_template1 = """
-              <tr><td>%d%</td>
-                  <td><a href='../%d%/drop_db'><u><font color=blue>drop database</font></u></a></td>
-                  <td>%t%</td>
-                  <td><center>%typ%</td>
-                  <td><a href='../%d%/%t%/describe'><u><font color=blue>describe</font></u></a></td>
-                  <td><a href='../%d%/%t%/drop'><u><font color=blue>drop</font></u></a></td>
-                  <td><a href=
-                  '../%d%/%t%/select_next'
-                  ><u><font color=blue>select values</font></u></a></td>
-                  <td><center>%c%</td>
-                  <td><center>%f%</td>
-                  <td><center>%l%</td>
-              </tr>"""
-    line_template2 = """
-              <tr><td>%d%</td>
-                  <td><a href='../%d%/drop_db'><u><font color=blue>drop database</font></u></a></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-              </tr>"""
-    line_template3 = """
-              <tr><td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-              </tr>"""
-    line_template4 = """
-              <tr><td></td>
-                  <td></td>
-                  <td>%t%</td>
-                  <td><center>%typ%</td>
-                  <td><a href='../%d%/%t%/describe'><u><font color=blue>describe</font></u></a></td>
-                  <td><a href='../%d%/%t%/drop'><u><font color=blue>drop</font></u></a></td>
-                  <td><a href=
-                  '../%d%/%t%/select_next'
-                  ><u><font color=blue>select values</font></u></a></td>
-                  <td><center>%c%</td>
-                  <td><center>%f%</td>
-                  <td><center>%l%</td>
-              </tr>"""
-    line_template5 = """
-              <tr><td>%d%</td>
-                  <td><a href='../%d%/drop_db'><u><font color=blue>drop database</font></u></a></td>
-                  <td>%t%</td>
-                  <td><center>%typ%</td>
-                  <td><a href='../%d%/%t%/describe'><u><font color=blue>describe</font></u></a></td>
-                  <td><a href='../%d%/%t%/drop'><u><font color=blue>drop</font></u></a></td>
-                  <td><a href=
-                  '../%d%/sql?select * from %t%;'
-                  ><u><font color=blue>select values</font></u></a></td>
-                  <td><center>%c%</td>
-                  <td><center>%f%</td>
-                  <td><center>%l%</td>
-              </tr>"""
     if dbs != []:
+        #for all databases:
         for dbs_i in dbs:
+            #for all tables in database:
             objects = get_object_list(dbs_i, 'table')
             if isinstance(objects, str):
                 return response_text_err(objects), DB_ERROR
+            first = True
+            for table_i in objects:
+                if first:
+                    db_name = dbs_i
+                    db_drop = "<a href='../"+dbs_i+ \
+                    "/drop_db'><u><font color=blue>drop database</font></u></a>"
+                    obj_type = "table"
+                else:
+                    db_name = ''
+                    db_drop = ''
+                    obj_type = ''
 
-            if objects == []:
-                tab_lines = tab_lines + \
-                            line_template2.replace('%d%', dbs_i)
-            else:
-                first = True
-                for table_i in objects:
-                    if first:
-                        tab_lines = tab_lines + \
-                                    line_template1.replace('%d%', dbs_i).replace('%t%', table_i)\
-                                    .replace('%c%', str(count_entries(dbs_i, table_i)[0]))\
-                                    .replace('%f%', select_first_ts(dbs_i, table_i)[0])\
-                                    .replace('%l%', select_last_ts(dbs_i, table_i)[0])\
-                                    .replace('%typ%', 'table')
-                    else:
-                        tab_lines = tab_lines + \
-                                    line_template4.replace('%d%', dbs_i).replace('%t%', table_i)\
-                                    .replace('%c%', str(count_entries(dbs_i, table_i)[0]))\
-                                    .replace('%f%', select_first_ts(dbs_i, table_i)[0])\
-                                    .replace('%l%', select_last_ts(dbs_i, table_i)[0])\
-                                    .replace('%typ%', 'table')
-                    first = False
+                select = "<a href='../"+dbs_i+"/"+table_i+ \
+                "/select_next'><u><font color=blue>select values</font></u></a>"
+                count = count_entries_local(dbs_i, table_i)
+                first = select_first_ts(dbs_i, table_i)[0]
+                last = select_last_ts(dbs_i, table_i)[0]
+                count_hour = '0'
+                if last:
+                    last_ts = select_last_ts(dbs_i, table_i, 'yes')[0]
+                    last_hour = last_ts - 1000*60*60
+                    if last_hour > 0:
+                        condition = 'ts>'+str(last_hour)
+                        count_hour = count_entries_local(dbs_i, table_i, condition)
+                html += \
+                "<tr><td>"+db_name+"</td>" + \
+                "<td>"+db_drop+"</td>" + \
+                "<td>"+table_i+"</td>" + \
+                "<td><center>"+obj_type+"</td>" + \
+                "<td><a href='../"+dbs_i+"/"+table_i+ \
+                "/describe'><u><font color=blue>describe</font></u></a></td>" + \
+                "<td><a href='../"+dbs_i+"/"+table_i+ \
+                "/drop'><u><font color=blue>drop</font></u></a></td>" + \
+                "<td>"+select+"</td>" + \
+                "<td><center> "+count+" </center></td>" + \
+                "<td><center> "+count_hour+" </center></td>" + \
+                "<td><center> "+first+" </center></td>" + \
+                "<td><center> "+last+" </center></td>" + \
+                "</tr>\n"
+                first = False
 
+            #for all views in database:
             objects = get_object_list(dbs_i, 'view')
             if isinstance(objects, str):
                 return response_text_err(objects), DB_ERROR
+            obj_first = True
+            for table_i in objects:
+                if first:
+                    db_name = dbs_i
+                    db_drop = "<a href='../"+dbs_i+ \
+                    "/drop_db'><u><font color=blue>drop database</font></u></a>"
+                else:
+                    db_name = ''
+                    db_drop = ''
+                if obj_first:
+                    obj_type = "view"
+                else:
+                    obj_type = ''
 
-            if objects:
-                if not first:
-                    tab_lines = tab_lines + line_template3
-                first = True
-                for table_i in objects:
-                    tab_lines = tab_lines + \
-                                    line_template5.replace('%d%', dbs_i).replace('%t%', table_i)\
-                                    .replace('%c%', '')\
-                                    .replace('%f%', '')\
-                                    .replace('%l%', '')\
-                                    .replace('%typ%', 'view')
-                    first = False
+                select = "<a href=../"+dbs_i+"/sql?select%20*%20from%20"+table_i+";>" + \
+                        "<u><font color=blue>select values</font></u></a>"
+                count = count_entries_local(dbs_i, table_i)
+                first = ''
+                last = ''
+                html += \
+                "<tr><td>"+db_name+"</td>" + \
+                "<td>"+db_drop+"</td>" + \
+                "<td>"+table_i+"</td>" + \
+                "<td><center>"+obj_type+"</td>" + \
+                "<td><a href='../"+dbs_i+"/"+table_i+ \
+                "/describe'><u><font color=blue>describe</font></u></a></td>" + \
+                "<td><a href='../"+dbs_i+"/"+table_i+ \
+                "/drop'><u><font color=blue>drop</font></u></a></td>" + \
+                "<td>"+select+"</td>" + \
+                "<td><center>"+count+"</td>" + \
+                "<td><center>"+""+"</td>" + \
+                "<td><center>"+first+"</td>" + \
+                "<td><center>"+last+"</td>" + \
+                "</tr>\n"
+                first = False
+                obj_first = False
 
+            #for all indexes:
             objects = get_object_list(dbs_i, 'index')
             if isinstance(objects, str):
                 return response_text_err(objects), DB_ERROR
+            obj_first = True
+            for table_i in objects:
+                if first:
+                    db_name = dbs_i
+                    db_drop = "<a href='../"+dbs_i+ \
+                    "/drop_db'><u><font color=blue>drop database</font></u></a>"
+                else:
+                    db_name = ''
+                    db_drop = ''
+                if obj_first:
+                    obj_type = "index"
+                else:
+                    obj_type = ''
+                select = ''
+                count = ''
+                first = ''
+                last = ''
+                html += \
+                "<tr><td>"+db_name+"</td>" + \
+                "<td>"+db_drop+"</td>" + \
+                "<td>"+table_i+"</td>" + \
+                "<td><center>"+obj_type+"</td>" + \
+                "<td><a href='../"+dbs_i+"/"+table_i+ \
+                "/describe'><u><font color=blue>describe</font></u></a></td>" + \
+                "<td><a href='../"+dbs_i+"/"+table_i+ \
+                "/drop'><u><font color=blue>drop</font></u></a></td>" + \
+                "<td>"+select+"</td>" + \
+                "<td><center>"+count+"</td>" + \
+                "<td><center>"+first+"</td>" + \
+                "<td><center>"+last+"</td>" + \
+                "</tr>\n"
+                first = False
+                obj_first = False
 
-            if objects:
-                if not first:
-                    tab_lines = tab_lines + line_template3
-                first = True
-                for table_i in objects:
-                    tab_lines = tab_lines + \
-                                    line_template5.replace('%d%', dbs_i).replace('%t%', table_i)\
-                                    .replace('%c%', '')\
-                                    .replace('%f%', '')\
-                                    .replace('%l%', '')\
-                                    .replace('%typ%', 'index')
-                    first = False
-
+            #if database is empty
+            if first:
+                html += \
+                "<tr><td>"+dbs_i+"</td>" + \
+                "<td><a href='../"+dbs_i+ \
+                "/drop_db'><u><font color=blue>drop database</font></u></a></td>" + \
+                "<td></td>" + \
+                "<td></td>" + \
+                "<td></td>" + \
+                "<td></td>" + \
+                "<td></td>" + \
+                "<td></td>" + \
+                "<td></td>" + \
+                "<td></td>" + \
+                "</tr>\n"
     else:
-        tab_lines = line_template3
-    html = html.replace("%lines%", tab_lines)
+        html += \
+        "<tr><td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "<td></td>" + \
+        "</tr>\n"
+
+    html += '</table>'
+
+    #html = html.replace("%lines%", tab_lines)
     return html
 
 @app.route('/version', methods=["GET"])
@@ -1644,7 +1701,8 @@ def route_api_count(dbase, table):
     if not os.path.isfile(dbase+'.db'):
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
 
-    count = count_entries(dbase, table)
+    condition = urllib.parse.unquote(str(request.query_string, "utf-8"))
+    count = count_entries(dbase, table, condition)
     if isinstance(count, str):
         return response_text_err(count), DB_ERROR
     return jsonify(count), OK

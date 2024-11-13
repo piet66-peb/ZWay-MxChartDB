@@ -1,8 +1,8 @@
-/*** MxChartDB init.js */
+/*** MxChartDB_init.js */
 
 //h-------------------------------------------------------------------------------
 //h
-//h Name:         init.js
+//h Name:         MxChartDB_init.js
 //h Type:         init functions for MxChartDB module
 //h Project:      Z-Way HA
 //h Usage:        
@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.1 2024-05-15/peb
+//h Version:      V2.0.2 2024-11-12/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -27,19 +27,19 @@
 
 /*jshint esversion: 5 */
 /*globals zway */
-'use strict';
 
 //-----------
 //b Constants
 //-----------
-//var MODULE='init.js';
-//var VERSION='V2.0.1';
-//var WRITTEN='2024-05-15/peb';
+//var MODULE='MxChartDB_init.js';
+//var VERSION='V2.0.2';
+//var WRITTEN='2024-11-12/peb';
 
 //-----------
 //b Functions
 //-----------
 var init = function (self) {
+'use strict';
     var chartHeaderBuild  = null;
     var storeNewValueData = null;
     var globalData        = null;
@@ -84,15 +84,6 @@ var init = function (self) {
         self.info('self.constants.ip', self.constants.ip, 
                   'self.constants.hostname', self.constants.hostname);
 
-        if (self.constants.hasOwnProperty('browser_client')) {
-            if (self.constants.browser_client.ip) {
-                self.constants.ip_browser = self.constants.browser_client.ip;
-            }
-            if (self.constants.browser_client.hostname) {
-                self.constants.hostname_browser = self.constants.browser_client.hostname;
-            }
-        }
-         
         //b check configuration
         //---------------------
         self.err = undefined;
@@ -152,7 +143,7 @@ var init = function (self) {
         } 
         if (self.err) {
             self.notifyError(self.err);
-            return;
+            throw self.err;
         }
         self.api = self.constants.ip || self.constants.hostname;
         self.buffer_max_rows = self.constants.buffer_max_rows;
@@ -160,30 +151,40 @@ var init = function (self) {
     
         //b set defaults
         //--------------
-        if (!self.config.DBName) {self.config.DBName = self.databaseIndex;}
         var letterNumber = /^[0-9a-zA-Z]+$/;
         if(! self.config.DBName.match(letterNumber)) {
             throw(self.instanceMessage+': invalid database name, break.');
         }
-        self.database = self.config.DBName;
-        if (!self.config.limitYAxis) {self.config.limitYAxis = 1000;}
+        //if (!self.config.axes.limitYAxis) {self.config.axes.limitYAxis = 1000;}
         if (!self.config.opacity) {self.config.opacity = 60;}
-        if (!self.config.time_label) {self.config.time_label = 'null';}
-        if (!self.config.y1Label) {self.config.y1Label = 'null';}
-        if (!self.config.y2Label) {self.config.y2Label = 'null';}
-        if (!self.config.rectangleDevices) {self.config.rectangleDevices = ',';}
+        if (!self.config.axes.time_label) {self.config.axes.time_label = 'null';}
+        if (!self.config.axes.y1Label) {self.config.axes.y1Label = 'null';}
+        if (!self.config.axes.y2Label) {self.config.axes.y2Label = 'null';}
+        //if (!self.config.rectangleDevices) {self.config.rectangleDevices = ',';}  //obsolete
         if (self.config.chartInterval) {self.config.chartInterval = undefined;}
         if (!self.config.initialInterval) {self.config.initialInterval = 'complete';}
-        if (!self.config.startFullTimes) {self.config.startFullTimes = false;}
+        if (!self.config.store_value_set.startFullTimes) {
+            self.config.store_value_set.startFullTimes = false;
+        }
         if (!self.config.nonnumericLabels.y3reduceUnusedTicks) {
             self.config.nonnumericLabels.y3reduceUnusedTicks = false;
         }
         if (!self.config.nonnumericLabels.y3leastTicks) {
             self.config.nonnumericLabels.y3leastTicks = 2;
         }
+        if (self.config.store_value_set.poll_method === 'poll_never') {
+            self.config.store_value_set.startFullTimes = false;
+            self.config.store_value_set.run_after_start = false;
+        }
+        if (!self.config.hasOwnProperty('global_js')) {
+            self.config.global_js = {define_global_js: false,
+                                     lines: 5,
+                                     code: ''};
+        }
     
         //b get API version (=>ajax_get)
         //------------------------------
+        self.log('*** request api version');
         var url_get = '../version';
         self.ajax_get(url_get, 
                       function(response) {
@@ -224,92 +225,78 @@ var init = function (self) {
     } //isVersionOK
     
     function check_create_default_db () {
-        self.log('*** check_create_default_db');
+        self.log('*** check_create_default_db '+self.IndexDBName);
     
         //b check/ create db server + database (=>ajax_post)
         //--------------------------------------------------
         var url_create = 'create_db';
-        self.ajax_post(url_create, undefined,
+        self.ajax_post(url_create, 
+                       undefined,
                        function() {
-                           self.log('database '+self.databaseIndex+
+                           self.log('database '+self.IndexDBName+
                                     ' created/ already existing');
-                           check_create_db();}, 
-                       'checking/creating database '+self.databaseIndex,
-                       self.databaseIndex
+                           check_create_user_db();}, 
+                       'checking/creating database '+self.IndexDBName,
+                       self.IndexDBName
         );
     } //check_create_default_db
     
-    function check_create_db () {
-        self.log('*** check_create_db');
+    function check_create_user_db () {
+        self.log('*** check_create_user_db');
     
-        //b check/ create db server + database (=>ajax_post)
-        //--------------------------------------------------
+        //b check/ create user database (=>ajax_post)
+        //-------------------------------------------
         var url_create = 'create_db';
         self.ajax_post(url_create, undefined,
                        function() {
-                           self.log('database '+self.database+
+                           self.log('database '+self.DBName+
                                     ' created/ already existing');
                            init1();}, 
-                       'checking/creating database '+self.database
+                       'checking/creating database '+self.DBName
         );
-    } //check_create_db
+    } //check_create_user_db
     
     function init1 () {
         self.log('*** init1');
-    
-        //b check chartId for uniqueness
-        //------------------------------
-        var chartIdTest = self.config.chartId;
-        var chartIdTestFound = false;
-        if (chartIdTest) {
-            var chartId_instance = chartIdTest.replace(/^.*\D/, '')*1;
-            //self.info(chartIdTest, chartId_instance);
-            if (chartId_instance !== self.id) {
-                Object.keys(self.controller.instances).forEach(function(ix) {
-                    var i = self.controller.instances[ix];
-                    if (i.moduleId === 'MxChartDB' && i.id !== self.id &&
-                        i.params.chartId === chartIdTest) {
-                        self.info('chart instance found with same chartId='+chartIdTest);
-                        chartIdTestFound = true;
-                    }
-                });
-            }
-            if (chartIdTestFound) {
-                self.config.chartId = '';
-                self.info('chartId='+chartIdTest+' reset');
-            }
+        //b set chart index
+        //-----------------
+        if (!self.config.chartId ||
+            self.config.dataControl.dc_method === 'dc_clear') {
+            self.config.chartId = self.moduleName + self.id;
         }
     
-        //b set unique chartId
-        //--------------------
-        if (!self.config.chartId) {
-            chartIdTest = self.moduleName + self.id;
-            //self.info('chartIdTest', chartIdTest);
+        //b check if wrong chart id in configuration
+        //------------------------------------------
+        var chartIdTest = self.moduleName + self.id;
+        var err;
+        var url = '/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_repair.html';
+        var help = '<br>see '+
+                   "<a rel='help' href='"+url+"' target='_blank'><u><font color=blue>help</font></u></a>"+
+                   ' for repair';
+        if (chartIdTest !== self.config.chartId) {
+            err = 'wrong Chart id in configuration';
+            self.notifyError(err+'<br>'+
+                             'should be '+chartIdTest+' instead of '+self.config.chartId+
+                             help
+            );
+            throw err;
+        }
     
-            //b check if chartId already used
-            //-------------------------------
-            var chartIdUsed = '';
-            Object.keys(self.controller.instances).forEach(function(ix) {
-                var i = self.controller.instances[ix];
-                if (i.moduleId === 'MxChartDB') {
-                    var chartIdUsedi = i.params.chartId;
-                    //self.info(i.id, 'chartIdUsedi', chartIdUsedi);
-                    if(chartIdUsedi && chartIdUsedi.indexOf(chartIdTest) >= 0) {
-                        if (chartIdUsedi.length > chartIdUsed.length) {
-                            chartIdUsed = chartIdUsedi;
-                            //self.info('chartIdUsed', chartIdUsed);
-                        }
-                    }
+        //b check if chart id is already used by other instance
+        //-----------------------------------------------------
+        Object.keys(self.controller.instances).forEach(function(ix) {
+            var i = self.controller.instances[ix];
+           if (i.moduleId === self.moduleName && 
+                i.id !== self.id &&
+                i.params.chartId === chartIdTest) {
+                err = 'ChartId '+chartIdTest+' is already used by other instance '+i.id;
+                self.notifyError(err+help);
+                throw err;
                 }
-            });
-            chartIdTest = chartIdUsed !== '' ? chartIdUsed+'_'+self.id : chartIdTest;
-            self.config.chartId = chartIdTest;
-            self.info('chartId set to '+chartIdTest);
-        }
+        });
         self.log('self.config.chartId', self.config.chartId);
         self.tableNameValues = self.config.chartId;
         self.tableNameHeader = self.config.chartId+'_Header';
-        self.tableNameIndex  = 'MxChartDB_Index';
     
         //b check/ create index table (=>create_index_table)
         //--------------------------------------------------
@@ -318,10 +305,6 @@ var init = function (self) {
     
     function create_table (tableName, callback, database) {
         self.log('*** create_table', tableName);
-
-        if (!database) {
-            database = self.database;
-        }
 
         var url_create = tableName+'/create_table';
         self.ajax_post(url_create, undefined,
@@ -349,10 +332,10 @@ var init = function (self) {
                                        function() {
                                            create_header_table();
                                        },
-                                       self.databaseIndex
+                                       self.IndexDBName
                           );
                       },
-                      self.databaseIndex
+                      self.IndexDBName
         );
     } //create_index_table
    
@@ -368,9 +351,10 @@ var init = function (self) {
                       function() {
                           self.log('table '+self.tableNameHeader+' not existing');
                           create_table(self.tableNameHeader, 
-                                            function() {
-                                                create_data_table();
-                                            }
+                                       function() {
+                                           create_data_table();
+                                       },
+                                       self.DBName
                           );
                       }
         );
@@ -388,9 +372,10 @@ var init = function (self) {
                       function() {
                           self.log('table '+self.tableNameValues+' not existing');
                           create_table(self.tableNameValues, 
-                                            function() {
-                                                initExec();
-                                            }
+                                       function() {
+                                           initExec();
+                                       },
+                                       self.DBName
                           );
                       }
         );
@@ -407,21 +392,38 @@ var init = function (self) {
     
         //b store data globally
         //---------------------
+        var poll_method = self.config.store_value_set.poll_method;
         globalData = {
             chartTitle: self.config.chartTitle.trim(),
             chartId: self.config.chartId,
             chartInterval: self.config.interval,
             initialInterval: self.config.initialInterval,
-            time_label: self.config.time_label,
-            y1Label: self.config.y1Label,
-            y2Label: self.config.y2Label,
-            period: self.config.period,
+            time_label: self.config.axes.time_label,
+            y1Label: self.config.axes.y1Label,
+            y2Label: self.config.axes.y2Label,
+            poll_method: poll_method,
+            run_after_start: self.config.store_value_set.run_after_start,
+            //set cron polling in these cases:
+            polling_cron: (poll_method === 'poll_interval' ||
+                           poll_method === 'poll_interval_rectangle' ||
+                           poll_method === 'poll_interval_value_change'),
+            period: self.config.store_value_set.period,
+            //poll all devices in these cases:
+            polling_devs: (poll_method === 'poll_value_change' ||
+                           poll_method === 'poll_interval_value_change'),
+            //poll device, if rectangle:
+            polling_rectangles: poll_method === 'poll_interval_rectangle',
             chartLanguage: self.config.lang,
-            positionYAxis: self.config.positionYAxis,
-            limitYAxis: self.config.limitYAxis,
+            positionYAxis: self.config.axes.positionYAxis,
+            limitYAxis: self.config.axes.limitYAxis,
+            lowerLimitY1: self.config.axes.lowerLimitY1,
+            upperLimitY1: self.config.axes.upperLimitY1,
+            lowerLimitY2: self.config.axes.lowerLimitY2,
+            upperLimitY2: self.config.axes.upperLimitY2,
             opacity: self.config.opacity,
             chartUrl: self.chartUrl,
-            startFullTimes: self.config.startFullTimes,
+            startFullTimes: self.config.store_value_set.startFullTimes,
+            use_nonnumeric: self.config.nonnumericLabels.use_nonnumeric,
             convertOnOff: self.config.nonnumericLabels.convertOnOff,
             y3Labeling: self.config.nonnumericLabels.y3Labeling,
             y3Icons: self.config.nonnumericLabels.y3Icons,
@@ -431,7 +433,9 @@ var init = function (self) {
             ZWayVersion: zway.controller.data.softwareRevisionVersion.value,
             nightBackground: self.config.specials.nightBackground,
             nightBackDev: self.config.specials.nightBackDev,
-        };
+            post_calc: self.config.post_calc,
+            global_js: self.config.global_js,
+        }; //globalData
     
         //b compute chart length (seconds)
         //--------------------------------
@@ -458,54 +462,74 @@ var init = function (self) {
                 self.chartIntervalMSecs = 0;
         }
     
-        //b rectangle devices list
-        //------------------------
-        var rectArray = self.list2Array(self.config.rectangleDevices);
+        //------------
+        //TODO: rectangleDevices obsolete in new version
+        var rectArray = [];
+        if (typeof self.config.rectangleDevices !== "undefined") {
+            rectArray = self.list2Array(self.config.rectangleDevices);
+        }
     
         //b for all devices
         //-----------------
         var sensorsCount = self.config.sensors.length;
-        _.each(self.config.sensors, function(sensor, index) {
-            var devId, vDev, deviceType, title, scale, formula, devlabel, dev_key;
-            if (sensor.disableDevice) {
+        _.each(self.config.sensors, function(sensor, ix) {
+            self.log(ix, sensor.index);
+            var devId, vDev, deviceType, title, scale, formula, chartLabel, intcharticon;
+            self.log("sensor.entrytype", sensor.entrytype);
+            if (sensor.entrytype === 'disabled') {
                 devId = null;
-                title = 'None';
-                formula = 'null';
-                devlabel = 'null';
-                dev_key = devlabel;
+                formula = null;
+                chartLabel = null;
+                intcharticon = false;
             } else
-            if (sensor.device) {
+            if (sensor.entrytype === 'formula') {
+                if (sensor.formula.length === 0) {
+                    self.err = 'no formula defined for index '+ix;
+                } 
+                if (self.err) {
+                    self.notifyError(self.err);
+                    throw self.err;
+                }
+                devId = null;
+                formula = sensor.formula;
+                chartLabel = sensor.devlabel || sensor.formula;
+                intcharticon = false;
+            } else
+            if (sensor.entrytype === 'sensor') {
+                if (!sensor.device && poll_method !== 'poll_never') {
+                    self.err = 'no sensor defined for index '+ix;
+                } 
+                if (self.err) {
+                    self.notifyError(self.err);
+                    throw self.err;
+                }
                 devId = sensor.device;
                 vDev = self.controller.devices.get(devId);
                 deviceType = vDev.get("deviceType");
                 title = vDev.get("metrics:title");
                 scale = vDev.get("metrics:scaleTitle");
                 formula = sensor.formula;
-                devlabel = sensor.devlabel || 0;
-                dev_key = sensor.devlabel || 0;
+                chartLabel =  sensor.devlabel;
+                intcharticon = sensor.intcharticon || false;
             } else {
+                sensor.entrytype = 'disabled';
                 devId = null;
-                title = 'None';
-                if (sensor.formula) {
-                    formula = sensor.formula;
-                } else {
-                    formula = 'null';
-                }
-                if (sensor.devlabel) {
-                    devlabel = sensor.devlabel;
-                    dev_key = devlabel;
-                } else {
-                    devlabel = 'null';
-                    dev_key = devlabel;
-                }
+                formula = null;
+                chartLabel = null;
+                intcharticon = false;
             }
     
             var item = {
-                index: index,
+                index: ix,
+                entrytype: sensor.entrytype,
+                usedYAxe: sensor.usedYAxe,
                 id: devId,
                 deviceType: deviceType,
                 metric: sensor.metric || 'level',
                 tooltip_metric: sensor.tooltip_metric || '',
+                intcharticon: intcharticon,
+                title: title,
+                scale: scale,
                 formula: formula,
                 color: sensor.color,
                 graphType: sensor.graphType,
@@ -513,13 +537,8 @@ var init = function (self) {
                 fill: sensor.fill,
                 binary: false,
                 chartHidden: sensor.chartHidden || false,
-                intcharticon: sensor.intcharticon || false,
-                polling: globalData.period <= 0 ? true : false,
-                title: title,
-                scale: scale,
-                devlabel: sensor.devlabel || 0,
-                dev_key: sensor.devlabel || 0,
-                disableDevice: sensor.disableDevice || false
+                polling: globalData.polling_devs,
+                chartLabel: chartLabel,
             };
             item.tooltip_metric = item.tooltip_metric.trim();
     
@@ -531,76 +550,90 @@ var init = function (self) {
                 }
             }
     
-            //b binary device?
-            //----------------
-            if (item.deviceType && item.deviceType.indexOf('Binary') >= 0) {
-                item.binary = true;
-            }
-    
-            //b make graph label
-            //------------------
-            if (item.dev_key === 0 && item.title !== undefined) {
-                var s_title = item.title;
-                //compute scale if not level
-                if (item.metric !== 'level') {
-                    s_title += ': '+item.metric;
-                    item.scale = undefined; //vDev.get("metrics:" + item.metric + "Scale") || item.scale;
+            if (sensor.entrytype === 'sensor') {
+                //b binary device?
+                //----------------
+                if (item.deviceType.indexOf('Binary') >= 0) {
+                    item.binary = true;
                 }
-                //add scale to label
-                if (item.scale === undefined) {
-                    item.dev_key = s_title;
-                } else {
-                    var str = s_title + " (" + item.scale + ")";
-                    var p = str.lastIndexOf(' ()');
-                    if (p === str.length - 3) {
-                        item.dev_key = str.substring(0, p);
+        
+                //b make graph label
+                //------------------
+                if (!item.chartLabel && item.title !== undefined) {
+                    var s_title = item.title;
+                    //compute scale if not level
+                    if (item.metric !== 'level') {
+                        s_title += ': '+item.metric;
+                        item.scale = undefined;
+                    }
+                    //add scale to label
+                    if (item.scale === undefined) {
+                        item.chartLabel = s_title;
                     } else {
-                        item.dev_key = str;
+                        var str = s_title + " (" + item.scale + ")";
+                        var p = str.lastIndexOf(' ()');
+                        if (p === str.length - 3) {
+                            item.chartLabel = str.substring(0, p);
+                        } else {
+                            item.chartLabel = str;
+                        }
+                    }
+                } //!item.chartLabel
+        
+                //b compute graph type
+                //--------------------
+                if (item.graphType === undefined && item.binary) {
+                    item.graphType = "rectangle";
+                    self.config.sensors[ix].graphType = "rectangle";
+                }
+                //------------
+                //TODO: rectangleDevices obsolete in new version
+                if (typeof self.config.rectangleDevices !== "undefined") {
+                    if (item.graphType === undefined) {
+                        for (var i = 0; i < rectArray.length; i++) {
+                            if (item.title.indexOf(rectArray[i]) >= 0 ||
+                                item.chartLabel.indexOf(rectArray[i]) >= 0) {
+                                item.graphType = "rectangle";
+                                self.config.sensors[ix].graphType = "rectangle";
+                            }
+                        }
                     }
                 }
-            } //item.dev_key === 0
-    
-            //b compute graph type
-            //--------------------
-            if (item.graphType === undefined && item.binary) {
-                item.graphType = "rectangle";
-            }
-            if (item.graphType === undefined) {
-                for (var i = 0; i < rectArray.length; i++) {
-                    if (item.title.indexOf(rectArray[i]) >= 0 ||
-                        item.dev_key.indexOf(rectArray[i]) >= 0) {
-                        item.graphType = "rectangle";
-                    }
+   
+                if (globalData.polling_rectangles &&
+                    ["rectangle", "rectangle_left", "pointseries", "interpolatedpoints", 
+                     "straightpoints", "points"].indexOf(item.graphType) >= 0) {
+                    item.polling = true;
                 }
-            }
-
-            if (["rectangle", "rectangle_left", "pointseries", "interpolatedpoints", 
-                 "straightpoints", "points"].indexOf(item.graphType) >= 0) {
-                item.polling = true;
-            }
-    
-            //b add icon to virtual device
-            //----------------------------
-            if (item.intcharticon) {
-                self.intchartIcons.push(devId);
-            }
+        
+                //b add icon to virtual device
+                //----------------------------
+                if (item.intcharticon) {
+                    self.intchartIcons.push(devId);
+                }
+            } //sensor.entrytype === 'sensor'
     
             self.sensors.push(item);
             self.log("sensor item", item);
     
         });
+        //------------
+        //TODO: rectangleDevices obsolete in new version
+        if (typeof self.config.rectangleDevices !== "undefined") {
+            self.config.rectangleDevices = undefined; //obsolete
+        }
         self.log("intchartIcons", self.intchartIcons);
 
-        var db_chartId = self.database+'.'+self.config.chartId;
-        if (self.database === self.databaseIndex) {
+        var db_chartId = self.DBName+'.'+self.config.chartId;
+        if (self.DBName === self.IndexDBName) {
             db_chartId = self.config.chartId;
         }
-        //define intxhartUrl:
+        //define chartUrl:
         var api_browser = self.constants.ip_browser || 
                             self.constants.hostname_browser ||
                             self.api;
         self.chartUrl = 'http://'+api_browser+':'+self.constants.port+
-                        '/HTML_MODAL/MxChartDB/'+db_chartId;
+                        '/HTML_MODAL/'+self.IndexDBName+'/'+db_chartId;
     
         self.log(self.chartUrl);
         setUrlToAllDevices();
@@ -613,18 +646,19 @@ var init = function (self) {
                       function(response) {
                           if (response.status === 204) {
                               self.log('table '+tableName+' no contents');
-                              compareHeaderData();
+                              checkDataControl();
                           } else {
                               self.log('table '+tableName+' data selected');
-                              compareHeaderData(response.data[0]);
+                              checkDataControl(response.data[0]);
                           }
                       },
                       function(response) {
                           if (response.status === 404) {
                               self.log('table '+tableName+' no data');
-                              compareHeaderData();
+                              checkDataControl();
                           } else {
-                              self.notifyError(url_select+' '+response.status+' '+response.statusText);
+                              self.notifyError(url_select+' '+response.status+' '+
+                                               response.statusText);
                               self.error('selecting in table '+tableName);
                           }
                       }
@@ -633,42 +667,78 @@ var init = function (self) {
     
     //h-------------------------------------------------------------------------------
     //h
+    //h Name:         checkDataControl
+    //h Purpose:      
+    //h
+    //h-------------------------------------------------------------------------------
+    function checkDataControl (chartHeaderStored) {
+        self.log('*** checkDataControl');
+    
+        //b data control
+        //--------------
+        self.log('------ dataControl', self.config.dataControl.dc_method);
+        doWhenChanged = 'wait';
+        if (self.config.dataControl.dc_method === 'dc_clear') {
+            self.info('building up new chart');
+            doWhenChanged = 'remove';
+            self.config.dataControl.dc_method = 'dc_normal';
+        } else
+        if (self.config.dataControl.dc_method === 'dc_continue') {
+            self.info('continuing current chart with new devices');
+            doWhenChanged = 'continue';
+            self.config.dataControl.dc_method = 'dc_normal';
+        }
+        self.log('doWhenChanged', doWhenChanged);
+
+        if (doWhenChanged === 'remove') {
+            removeOldDataset (chartHeaderStored, doWhenChanged);
+        } else {
+            compareHeaderData (chartHeaderStored, doWhenChanged);
+        }
+    
+    } //checkDataControl
+    
+    //h-------------------------------------------------------------------------------
+    //h
+    //h Name:         removeOldDataset
+    //h Purpose:      
+    //h
+    //h-------------------------------------------------------------------------------
+    function removeOldDataset (chartHeaderStored, doWhenChanged) {
+        self.log('*** removeOldDataset');
+
+        //b delete all sensor data and exchange header
+        //--------------------------------------------
+        self.now = Date.now();
+        var ts = self.now;
+        var url_delete = self.tableNameValues+'/delete_prev?ts='+ts;
+        self.ajax_post(url_delete, undefined,
+                    function() {
+                        self.log('table '+self.tableNameValues+' old data removed');
+                        compareHeaderData (chartHeaderStored, doWhenChanged);
+                    },
+                    'table '+url_delete
+        );
+    } //removeOldDataset
+    
+    //h-------------------------------------------------------------------------------
+    //h
     //h Name:         compareHeaderData
     //h Purpose:      
     //h
     //h-------------------------------------------------------------------------------
-    function compareHeaderData (chartHeaderStored) {
+    function compareHeaderData (chartHeaderStored, doWhenChanged) {
         self.log('*** compareHeaderData');
     
         //b build new chart header data (=>build_chart_header)
         //----------------------------------------------------
-        self.now = Date.now();
         chartHeaderBuild = build_chart_header();
         self.log('chartHeaderBuild', chartHeaderBuild);
-    
-        //b data control
-        //--------------
-        self.log('------ dataControl', self.config.dataControl.dC_new, 
-                                       self.config.dataControl.dC_continue);
-        doWhenChanged = 'wait';
-        if (self.config.dataControl.dC_new) {
-            self.info('building up new chart');
-            doWhenChanged = 'remove';
-            self.config.dataControl.dC_new = false;
-        } else
-        if (self.config.dataControl.dC_continue) {
-            self.info('continuing current chart with new devices');
-            doWhenChanged = 'continue';
-            self.config.dataControl.dC_continue = false;
-            //miracle: after deactivate/activate boolean item still is true
-            //         only after open and save module.json it's false
-            //         >> doesn't matter in this case
-        }
     
         var DEVICES_REMOVED = 1;
         var DEVICES_CHANGED = 2;
         var DEVICES_ADDED = 3;
-        var storeNewHeaderData, removeOldValueData;
+        var storeNewHeaderData;
     
         var chartHeaderStoredStringified;
         var chartHeaderStringified;
@@ -687,7 +757,6 @@ var init = function (self) {
         //--------------------------------------
         if (!chartHeaderStored)  {
             storeNewHeaderData = true;
-            removeOldValueData = false;
             storeNewValueData  = true;
         } else
         //b else if header not changed
@@ -695,7 +764,6 @@ var init = function (self) {
         if (chartHeaderStoredStringified === chartHeaderStringified)  {
             self.log('headerdata not changed');
             storeNewHeaderData = true;
-            removeOldValueData = false;
             storeNewValueData  = true;
         } else
         //b else if header data changed
@@ -709,7 +777,6 @@ var init = function (self) {
             var chartDevicesNew = JSON.stringify(chartHeaderBuild.chartDevices);
             if (chartDevicesCurr === chartDevicesNew) {
                 self.log('devices not changed');
-                removeOldValueData = false;
                 storeNewValueData  = true;
             } else
             //b else if device list changed
@@ -717,29 +784,24 @@ var init = function (self) {
             if (chartDevicesCurr !== chartDevicesNew) {
                 self.info('device list changed !!!');
 
-                var db_chartId = self.database+'.'+self.config.chartId;
+                var db_chartId = self.DBName+'.'+self.config.chartId;
 
-                //b if 'delete old value data if changed'
-                //---------------------------------------
-                if (doWhenChanged === 'remove') {
-                    removeOldValueData = true;
-                    storeNewValueData  = true;
-                } else
-                //b else if 'wait when changed'
-                //---------------------------  
+                //b if 'wait when changed'
+                //------------------------  
                 if (doWhenChanged === 'wait') {
-                    removeOldValueData = false;
                     storeNewValueData  = false;
     
                     chartHeaderStored.chartDevicesNew = chartHeaderBuild.chartDevices;
                     //b if devices removed
                     //--------------------
-                    if (chartHeaderBuild.chartDevices.length < chartHeaderStored.chartDevices.length) {
+                    if (chartHeaderBuild.chartDevices.length < 
+                        chartHeaderStored.chartDevices.length) {
                         chartHeaderStored.errText = db_chartId+':'+DEVICES_REMOVED;
                     } else
                     //b else if devices added
                     //-----------------------
-                    if (chartHeaderBuild.chartDevices.length > chartHeaderStored.chartDevices.length) {
+                    if (chartHeaderBuild.chartDevices.length >
+                        chartHeaderStored.chartDevices.length) {
                         chartHeaderStored.errText = db_chartId+':'+DEVICES_ADDED;
                     } else {
                     //b else if devices changed
@@ -753,8 +815,8 @@ var init = function (self) {
                 if (doWhenChanged === 'continue') {
                     //b if devices removed
                     //--------------------
-                    if (chartHeaderBuild.chartDevices.length < chartHeaderStored.chartDevices.length) {
-                        removeOldValueData = false;
+                    if (chartHeaderBuild.chartDevices.length < 
+                        chartHeaderStored.chartDevices.length) {
                         storeNewValueData  = false;
     
                         chartHeaderStored.chartDevicesNew = chartHeaderBuild.chartDevices;
@@ -762,7 +824,6 @@ var init = function (self) {
                     //b else
                     //------
                     } else {
-                        removeOldValueData = false;
                         storeNewValueData  = true;
                     }
                 }
@@ -772,26 +833,8 @@ var init = function (self) {
         var ts = self.now;
         var callback = function () {build_chart_index(ts);};
     
-        //b if remove all old sensor value data
-        //--------------------------------------
-        if (removeOldValueData) {
-            //b delete all sensor data and exchange header
-            //--------------------------------------------
-            var url_delete = self.tableNameValues+'/delete_prev?ts='+ts;
-            self.ajax_post(url_delete, undefined,
-                        function() {
-                            self.log('table '+self.tableNameValues+' old data removed');
-                            if (storeNewHeaderData) {
-                                self.store_table_data(self.tableNameHeader, ts, chartHeaderBuild, callback, ts);
-                            } else {
-                                callback();
-                            }
-                        },
-                        'table '+self.tableNameValues+' delete_prev?ts='+self.now
-            );
-        //b else if new header data
-        //-------------------------
-        } else
+        //b if new header data
+        //--------------------
         if (storeNewHeaderData) {
             //b exchange header
             //-----------------
@@ -816,12 +859,12 @@ var init = function (self) {
         self.log('*** build_chart_index', ts);
    
         function store_index (data) {
-            var db_chartId = self.database+'.'+self.config.chartId;
-            if (self.database === self.databaseIndex) {
+            var db_chartId = self.DBName+'.'+self.config.chartId;
+            if (self.DBName === self.IndexDBName) {
                 db_chartId = self.config.chartId;
             }
             if (data) {
-                self.log('data in', data);
+                self.log('chart index in', data);
                 if (data.hasOwnProperty(db_chartId) && data[db_chartId] === self.config.chartTitle) {
                     self.log('chart '+db_chartId+' already in index');
                     initExec1();
@@ -836,7 +879,7 @@ var init = function (self) {
                                   ts, data, 
                                   function () {initExec1();}, 
                                   ts,
-                                  self.databaseIndex);
+                                  self.IndexDBName);
         }
     
         var url_select = self.tableNameIndex+'/select_next?ts=0';
@@ -858,7 +901,7 @@ var init = function (self) {
                               self.error('table '+self.tableNameIndex+' select_next');
                           }
                       },
-                      self.databaseIndex
+                      self.IndexDBName
         );
     } //build_chart_index
     
@@ -876,7 +919,7 @@ var init = function (self) {
     
         //b if necessary define callback
         //------------------------------
-        if (!self.config.startFullTimes) {
+        if (!globalData.startFullTimes) {
             self.sensors.forEach( function (item) {
                 if (item.polling) {
                     self.setDevCallback(item.id, item.metric);
@@ -886,12 +929,12 @@ var init = function (self) {
     
         //b set cron task
         //---------------
-        if (globalData.period > 0) {
+        if (globalData.polling_cron) {
             //calculate time for cron task:
             var p = Math.round(globalData.period);
             var s = self.id;
             var m = (p < 60) ? [s % p, 59, p] : s % 60; //different start times per instance
-            if (self.config.startFullTimes) {
+            if (globalData.startFullTimes) {
                 m = (p < 60) ? [0, 59, p] : 0;          //start at full time
             }
             var h = p >= 24 * 60 ? 0 : (p / 60 >= 1 ? [0, 23, Math.round(p / 60)] : null);
@@ -912,8 +955,11 @@ var init = function (self) {
 
         //b run first poll (=>onPoll)
         //---------------------------
-        if (globalData.period > 0 && !self.error && !self.config.startFullTimes) {
-            self.onPoll(self.POLL_FIRST);
+        if (!self.error) {
+            if (globalData.run_after_start || 
+                globalData.poll_method === 'poll_once') {
+                self.onPoll(self.POLL_FIRST);
+            }
         }
     } //initExec1
     
@@ -937,12 +983,13 @@ var init = function (self) {
         var chartlineTypes = [undefined];
         var chartFill = [undefined];
         var chartHidden = [undefined];
-        var disableDevice = [undefined];
+        var entrytypes = [undefined];
+        var usedYAxes = [undefined];
     
         self.sensors.forEach(function(sensor) {
-            chartLabels.push(sensor.dev_key);
+            chartLabels.push(sensor.chartLabel);
             chartDevices.push(sensor.id);
-            if (sensor.dev_key !== sensor.title) {
+            if (sensor.chartLabel !== sensor.title) {
                 chartDevTitles.push(sensor.title);
             } else {
                 chartDevTitles.push(undefined);
@@ -957,11 +1004,14 @@ var init = function (self) {
             chartlineTypes.push(sensor.lineType);
             chartFill.push(sensor.fill);
             chartHidden.push(sensor.chartHidden);
-            disableDevice.push(sensor.disableDevice);
+            entrytypes.push(sensor.entrytype);
+            usedYAxes.push(sensor.usedYAxe);
         }); //sensors.forEach
     
         //b build chart header
         //--------------------
+        //var global_js_code = globalData.global_js.code.replace(/\n/g, '').replace(/\s+/g, ' ');
+        //global_js_code = JSON.stringify(global_js_code);
         var chartHeader = {
             Timestamp: self.now,
             ZWayVersion: globalData.ZWayVersion,
@@ -974,12 +1024,18 @@ var init = function (self) {
             chartLanguage: globalData.chartLanguage,
             positionYAxis: globalData.positionYAxis,
             limitYAxis: globalData.limitYAxis,
+            lowerLimitY1: globalData.lowerLimitY1,
+            upperLimitY1: globalData.upperLimitY1,
+            lowerLimitY2: globalData.lowerLimitY2,
+            upperLimitY2: globalData.upperLimitY2,
             opacity: globalData.opacity,
             chartUrl: globalData.chartUrl,
             chartInterval: globalData.chartInterval,
             initialInterval: globalData.initialInterval,
+            poll_method: globalData.poll_method,
             period: globalData.period,
             startFullTimes: globalData.startFullTimes,
+            use_nonnumeric: globalData.use_nonnumeric,
             convertOnOff: globalData.convertOnOff,
             y3Labeling: globalData.y3Labeling,
             y3Icons: globalData.y3Icons,
@@ -997,9 +1053,14 @@ var init = function (self) {
             chartlineTypes: chartlineTypes,
             chartFill: chartFill,
             chartHidden: chartHidden,
-            disableDevice: disableDevice,
+            entrytypes: entrytypes,
+            usedYAxes: usedYAxes,
             nightBackground: globalData.nightBackground,
             nightBackDev: globalData.nightBackDev,
+            post_calc: self.realCopyObject(globalData.post_calc),
+            //define_global_js: globalData.global_js.define_global_js,
+            //code: global_js_code,
+            global_js: self.realCopyObject(globalData.global_js),
         };
         return JSON.parse(JSON.stringify(chartHeader));
     } //build_chart_header

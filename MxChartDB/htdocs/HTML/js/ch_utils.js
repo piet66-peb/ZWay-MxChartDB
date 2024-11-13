@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.1 2024-01-23/peb
+//h Version:      V1.0.1 2024-11-06/peb
 //v History:      V1.0.0 2022-01-02/peb first version
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
@@ -29,7 +29,7 @@
 //-----------
 var MODULE='ch-utils.js';
 var VERSION='V1.0.1';
-var WRITTEN='2024-01-23/peb';
+var WRITTEN='2024-11-06/peb';
 
 //-----------
 //b Functions
@@ -74,6 +74,45 @@ var ch_utils = {
         });
     }, //convertMessagesToUTF8
 
+    //check whether running on a mobile
+    isMobile: function () {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }, //isMobile
+
+    //check if any argument is not set (undefined or null)
+    notSet: function() {
+        for (var i = 0; i < arguments.length; i++) {
+            if (arguments[i] === undefined ||
+                arguments[i] === null ||
+                typeof arguments[i] === 'string' &&  
+                    arguments[i].trim() === ''
+            ) {
+                return true;
+            }
+            return false;
+        }
+    }, //notSet
+
+    //check if any argument is not set (undefined or null) or no number
+    noNumber: function() {
+        for (var i = 0; i < arguments.length; i++) {
+            if (arguments[i] === undefined ||
+                arguments[i] === null ||
+                typeof arguments[i] === 'string' &&  
+                    arguments[i].trim() === '' ||
+                isNaN(arguments[i])) {
+                return true;
+            }
+            return false;
+        }
+    }, //noNumber
+
+    //round a value to the given amount of decimals
+    round: function(value, decimals) {
+        return +(value.toFixed(decimals));
+    }, //round
+
+
     evalConstants: function () {
         var consts = {
             username: btoa(constants.username),
@@ -86,6 +125,10 @@ var ch_utils = {
             admin:    {},
             snapshots:{},
             snapshots_possible: false,
+            standard_display:{},
+            frame:{},
+            modal:{},
+            mobile:{},
         };
         if (constants.hasOwnProperty('browser_client')) {
             var cbc = constants.browser_client;
@@ -106,6 +149,18 @@ var ch_utils = {
                 if (cbc.snapshots.database_name) {
                     consts.snapshots_possible = true;
                 }
+            }
+            if (cbc.hasOwnProperty('standard_display')) {
+                consts.standard_display = cbc.standard_display;
+            }
+            if (cbc.hasOwnProperty('modal')) {
+                consts.modal = cbc.modal;
+            }
+            if (cbc.hasOwnProperty('frame')) {
+                consts.frame = cbc.frame;
+            }
+            if (cbc.hasOwnProperty('mobile')) {
+                consts.mobile = cbc.mobile;
             }
         }
         if (!consts.ip && !consts.hostname || ! consts.port) {
@@ -410,7 +465,7 @@ var ch_utils = {
         return text;
     }, //buildMessage
 
-    // usage:   ch_utils.displayMessage(<messNo>, <string1>, ...);
+    // usage:   ch_utils.displayMessage([<elemen>], <messNo>, <string1>, ...);
     displayMessage: function () {
         var text = messageFormats[arguments[0]][this.lang];
         for (var i = 1; i < arguments.length; i++) {

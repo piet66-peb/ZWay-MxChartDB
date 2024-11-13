@@ -181,4 +181,20 @@
             de: 'Chart<br>Länge',
             en: 'Chart<br>Length',
         },
+        {//45
+            de: 'Framing',
+            en: 'Framing',
+        },
+        {//46
+            de: 'Bitte einige Charts auswählen',
+            en: 'Please select some charts',
+        },
+        {//47
+            de: 'mehrere Charts auf einer Seite öffnen',
+            en: 'open several charts on one page',
+        },
+        {//48
+            de: 'Chart Id<br>korrigieren',
+            en: 'Correct<br>Chart Id',
+        },
     ];

@@ -69,3 +69,9 @@ CORS_HOST = ["http://192.168.178.22:8083"]
 ####
 WHITELIST_GET = ["127.0.0.1", "192.168.178.*"]
 WHITELIST_POST = ["127.0.0.1", "192.168.178.22", "192.168.178.42"]
+
+####
+#### define the size of the modal window in Smarthome UI
+####
+MODAL_WIDTH = '100%'
+MODAL_HEIGHT = '530px'

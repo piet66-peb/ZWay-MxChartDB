@@ -1,4 +1,4 @@
-    var ixButtonTextBase = 38;
+    var ixButtonTextBase = 39;
     var messageFormats = [
         //message texts (0+...):
         {//0
@@ -108,8 +108,8 @@
             en: 'Formula problem at sensor {0} ({1}) at {2}'
         },
         {//25
-            de: 'Formel {0} kann mit den vorhandenen Daten nicht aufgelöst werden',
-            en: 'Formula "{0}" cannot be solved with the current data'
+            de: 'Die Formel kann mit den vorhandenen Daten nicht aufgelöst werden',
+            en: 'The formula  cannot be solved with the current data'
         },
         {//26
             de: '--- Vergrößern: mit Mausrad --- Ziehen: mit Maus --- Bereich wählen: mit Maus+Strg ---',
@@ -172,8 +172,12 @@
             de: "37 not used" ,
             en: "37 not used"
         },
+        {//38
+            de: "Fehler im globalen Javascript Code:\n{0}" ,
+            en: "error in global Javascript code:\n{0}"
+        },
 
-        //ixButtonTextBase button texts (38+...):
+        //ixButtonTextBase button texts (39+...):
         {//0
             de: 'Dateien durchsuchen...',
             en: 'Browse data...'
@@ -187,8 +191,8 @@
             en: 'Chart Data'
         },
         {//3
-            de: ' 📅 ',
-            en: ' 📅 '
+            de: 'Zeitintervall' ,
+            en: 'time picker'
         },
         {
             de: 'Neues Fenster',
@@ -279,8 +283,8 @@
             en: 'view all buffered values on one page'
         },
         {//26
-            de: '- Auswahl eines Zeitintervalls',
-            en: '- date-time picker'
+            de: 'Auswahl eines Zeitintervalls',
+            en: 'date-time picker'
         },
         {//27
             de: '- Komplette Historie anzeigen',
@@ -301,5 +305,9 @@
         {//31
             de: 'Snapshot erstellen',
             en: 'Take Snapshot'
+        },
+        {//32
+            de: 'Berechnung',
+            en: 'Calculation'
         },
     ];

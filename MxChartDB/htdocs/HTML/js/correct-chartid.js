@@ -1,8 +1,8 @@
 //h-------------------------------------------------------------------------------
 //h
-//h Name:         move-chart.js
+//h Name:         correct-chartid.js
 //h Type:         Javascript module (MxChartDB)
-//h Purpose:      moves given chart to different database (file)
+//h Purpose:      correct the chart id of thegiven chart to  McChartDB+<InstNo>
 //h Project:      Z-Way
 //h Usage:        
 //h Result:       
@@ -24,7 +24,7 @@
 
 //b Constants
 //-----------
-var MODULE='move-chart.js';
+var MODULE='correct-chartid.js';
 var VERSION='V1.0.0';
 var WRITTEN='2024-08-07/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
@@ -33,10 +33,10 @@ console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 //-----------
 var isAdmin;
 var instNo, moduleId, isActive, title;
-var chartIdDisp, chartIdDB, chartIdBase, newDB;
+var chartIdDisp, chartIdDB, chartIdBase;
+var chartIdDisp_new, chartIdBase_new;
 var log, logId, line;
 var api;
-var url;
 var IndexDBName;
 var tableNameIndex;
 
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     //detect index database name
     // /ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/admin.html
-    url = window.location.pathname;
+    var url = window.location.pathname;
     IndexDBName = url.split('/')[6];
     tableNameIndex = IndexDBName+'_Index';
     console.log('IndexDBName='+IndexDBName);
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     document.getElementById('inst_no_val').firstChild.data = ' ';
     document.getElementById('inst_name_val').firstChild.data = ' ';
     document.getElementById('active_val').firstChild.data = ' ';
-    var url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'_Header/select_next';
+    url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'_Header/select_next';
     ch_utils.ajax_get(url, success_header, failed);
     function success_header(data) {
         var header = data[data.length - 1];
@@ -131,6 +131,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         document.getElementById('inst_no_val').firstChild.data = instNo;
 
         if (instNo) {
+            chartIdBase_new = IndexDBName + instNo;
             url = '/ZAutomation/api/v1/instances/'+instNo;
             ch_utils.ajax_get(url, success_inst, failed_inst);
         }
@@ -191,21 +192,25 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //------------------------------
     function check_continue() {
         if (!isAdmin) {
-            document.getElementById('move_txt').firstChild.data = ch_utils.buildMessage(2);
+            document.getElementById('correct_txt').firstChild.data = ch_utils.buildMessage(2);
             return;
         }
 
         //b if instance found
         //-------------------
         if (isActive !== undefined && db_count !== undefined) {
-            //b enable move-chart function
+            //b enable correct-chartid function
             //----------------------------
-            document.getElementById('move_txt').firstChild.data = ch_utils.buildMessage(1);
-            ch_utils.buttonVisible('move_div', true);
-            var filterInput = document.getElementById("db_input");
-            filterInput.placeholder = ch_utils.buildMessage(3);
-            filterInput.value = '';
-            filterInput.focus();
+            if (chartIdBase_new === chartIdBase) {
+                document.getElementById('correct_txt').firstChild.data = ch_utils.buildMessage(7);
+            } else {
+                document.getElementById('correct_txt').firstChild.data = ch_utils.buildMessage(1, 
+                    chartIdBase, chartIdBase_new);
+                ch_utils.buttonVisible('correct_div', true);
+                if (isActive) {
+                    document.getElementById('note1').firstChild.data = ch_utils.buildMessage(6);
+                }
+            }
         }
     }
 }); //DOMContentLoaded
@@ -242,46 +247,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     //h-------------------------------------------------------------------------------
     //h
-    //h Name:         enable_button
-    //h Purpose:      enables the button for execution of the database change
-    //h
-    //h-------------------------------------------------------------------------------
-    function enable_button(self) {
-        newDB = self.value;
-        var dbFormat = /^[0-9a-zA-Z]+$/;
-        document.getElementById('wrong_input').firstChild.data = ' ';
-
-        if (!newDB) {
-            ch_utils.buttonVisible('do_change', false);
-            ch_utils.buttonVisible('note1', false);
-            ch_utils.buttonVisible('result', false);
-            return;
-        }
-        if (newDB === chartIdDB) {
-            document.getElementById('wrong_input').firstChild.data = ch_utils.buildMessage(5);
-            ch_utils.buttonVisible('do_change', false);
-            ch_utils.buttonVisible('note1', false);
-            ch_utils.buttonVisible('result', false);
-            return;
-        }
-
-        if (!newDB.match(dbFormat)) {
-            document.getElementById('wrong_input').firstChild.data = ch_utils.buildMessage(4);
-            ch_utils.buttonVisible('do_change', false);
-            ch_utils.buttonVisible('note1', false);
-            ch_utils.buttonVisible('result', false);
-            return;
-        }
-        ch_utils.buttonVisible('do_change', true);
-        if (isAdmin) {
-            ch_utils.buttonVisible('note1', true);
-            document.getElementById('note1').firstChild.data = ch_utils.buildMessage(6);
-        }
-        document.getElementById('do_change').focus();
-    } //enable_button
-
-    //h-------------------------------------------------------------------------------
-    //h
     //h Name:         line_to_log
     //h Purpose:      adds an additional line to the log
     //h
@@ -300,66 +265,79 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //h-------------------------------------------------------------------------------
     //h
     //h Name:         step
-    //h Purpose:      executes database change step by step
+    //h Purpose:      executes chart id change step by step
     //h
     //h-------------------------------------------------------------------------------
     function step(stepNo) {
+        var chartIdOld = chartIdBase;
+        var chartIdNew = chartIdBase_new;
+        var headerOld = chartIdOld+'_Header';
+        var headerNew = chartIdNew+'_Header';
         console.log(stepNo);
         switch(stepNo) {
             case 0:
                 //disable new input:
-                document.getElementById('db_input').disabled = true;
                 document.getElementById('do_change').disabled = true;
 
-                line = '<b>Move Chart '+chartIdBase+' from Database '+chartIdDB+' to Database '+newDB+'</b>';
+                line = '<b>Correct Chart Id '+chartIdOld+' into '+chartIdNew+'</b>';
                 line_to_log(line);
                 line_to_log('');
                 step(++stepNo);
                 break;
             case 1:
+                line = 'testing for existing table '+headerNew+'...';
+                line_to_log(line);
+                testTable(chartIdDB, headerNew, stepNo);
+                break;
+            case 2:
+                line = 'testing for existing table '+chartIdNew+'...';
+                line_to_log(line);
+                testTable(chartIdDB, chartIdNew, stepNo);
+                break;
+            case 3:
                 if (isActive) {
                     line = 'deactivating instance '+instNo+'...';
                     line_to_log(line);
-                    changeInstanceActive(false, stepNo);
+                    changeInstanceActive(instNo, false, stepNo);
                 } else {
                     step(++stepNo);
                 }
                 break;
-            case 2:
-                line = 'copying header table to database '+newDB+'...';
-                line_to_log(line);
-                cloneTable(chartIdBase+'_Header', newDB, stepNo);
-                break;
-            case 3:
-                line = 'copying value table to database '+newDB+'...';
-                line_to_log(line);
-                cloneTable(chartIdBase, newDB, stepNo);
-                break;
             case 4:
-                line = 'correcting chart index...';
+                line = 'copying header table '+headerNew+'...';
                 line_to_log(line);
-                correctIndex(newDB, stepNo);
+                cloneTable(chartIdDB, headerOld, headerNew, stepNo);
                 break;
             case 5:
-                line = 'correcting db definition of chart instance'+instNo+'...';
+                line = 'copying value table '+chartIdNew+'...';
                 line_to_log(line);
-                changeInstanceDB(newDB, stepNo);
+                cloneTable(chartIdDB, chartIdOld, chartIdNew, stepNo);
                 break;
             case 6:
-                line = 'dropping header table from database '+chartIdDB+'...';
+                line = 'correcting chart index...';
                 line_to_log(line);
-                dropTable(chartIdBase+'_Header', stepNo);
+                correctIndex(stepNo);
                 break;
             case 7:
-                line = 'dropping value table from database '+chartIdDB+'...';
+                line = 'correcting the Chart Id of chart instance '+instNo+'...';
                 line_to_log(line);
-                dropTable(chartIdBase, stepNo);
+                changeInstanceChartid(instNo, chartIdNew, stepNo);
                 break;
             case 8:
+                line = 'dropping header table '+headerOld+'...';
+                line_to_log(line);
+                dropTable(chartIdDB, headerOld, stepNo);
+                break;
+            case 9:
+                line = 'dropping value table '+chartIdOld+'...';
+                line_to_log(line);
+                dropTable(chartIdDB, chartIdOld, stepNo);
+                break;
+            case 10:
                 if (isActive) {
                     line = 'activating chart instance '+instNo+'...';
                     line_to_log(line);
-                    changeInstanceActive(true, stepNo);
+                    changeInstanceActive(instNo, true, stepNo);
                 } else {
                     step(++stepNo);
                 }
@@ -378,7 +356,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //h Purpose:      changes the active state of a given instance
     //h
     //h-------------------------------------------------------------------------------
-    function changeInstanceActive(newState, stepNo) {
+    function changeInstanceActive(instNo,newState, stepNo) {
         var url = '/ZAutomation/api/v1/instances/'+instNo;
         ch_utils.ajax_get(url, success_get, failed);
     
@@ -400,17 +378,17 @@ document.addEventListener("DOMContentLoaded", function(event) {
     
     //h-------------------------------------------------------------------------------
     //h
-    //h Name:         changeInstanceDB
-    //h Purpose:      changes the database name of a given instance
+    //h Name:         changeInstanceChartid
+    //h Purpose:      changes the chart id of a given instance
     //h
     //h-------------------------------------------------------------------------------
-    function changeInstanceDB(newDB, stepNo) {
+    function changeInstanceChartid(instNo, chartId, stepNo) {
         var url = '/ZAutomation/api/v1/instances/'+instNo;
         ch_utils.ajax_get(url, success_get, failed);
     
         function success_get (response) {
             var data = response.data;
-            data.params.DBName = newDB;
+            data.params.chartId = chartId;
             ch_utils.ajax_put(url, JSON.stringify(data), success_put, failed);
         }
         function success_put(response) {
@@ -422,7 +400,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             line_to_log(text);
             line_to_log('');
         }
-    } //changeInstanceDB
+    } //changeInstanceChartid
     
     //h-------------------------------------------------------------------------------
     //h
@@ -430,9 +408,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //h Purpose:      clones a complete table
     //h
     //h-------------------------------------------------------------------------------
-    function cloneTable(table, newDB, stepNo) {
-        var tableNew = newDB+'.'+table;
-        var url = 'http://'+api+'/'+chartIdDB+'/'+table+'/clone?new='+tableNew;
+    function cloneTable(db, tableOld, tableNew, stepNo) {
+        var url = 'http://'+api+'/'+db+'/'+tableOld+'/clone?new='+tableNew;
         ch_utils.ajax_post(url, undefined, success_post, failed);
     
         function success_post(response) {
@@ -452,8 +429,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //h Purpose:      drops a table
     //h
     //h-------------------------------------------------------------------------------
-    function dropTable(table, stepNo) {
-        var url = 'http://'+api+'/'+chartIdDB+'/'+table+'/drop';
+    function dropTable(db, table, stepNo) {
+        var url = 'http://'+api+'/'+db+'/'+table+'/drop';
         ch_utils.ajax_post(url, undefined, success_post, failed);
     
         function success_post(response) {
@@ -469,11 +446,38 @@ document.addEventListener("DOMContentLoaded", function(event) {
     
     //h-------------------------------------------------------------------------------
     //h
+    //h Name:         testTable
+    //h Purpose:      test a table for existence
+    //h
+    //h-------------------------------------------------------------------------------
+    function testTable(db, table, stepNo) {
+        var url = 'http://'+api+'/'+db+'/'+table+'/check';
+        ch_utils.ajax_get(url, success_get, failed);
+    
+        function success_get(response) {
+            line_to_log('table '+db+'.'+table+' is already existing.');
+            line_to_log('you have to repair this first.');
+            line_to_log('');
+        }
+        function failed(status, text) {
+            if (status === 404) {
+                line_to_log('done.');
+                line_to_log('');
+                step(++stepNo);
+            } else {
+                line_to_log(text);
+                line_to_log('');
+            }
+        }
+    } //testTable
+    
+    //h-------------------------------------------------------------------------------
+    //h
     //h Name:         correctIndex
     //h Purpose:      corrects the chart index
     //h
     //h-------------------------------------------------------------------------------
-    function correctIndex(newDB, stepNo) {
+    function correctIndex(stepNo) {
         var url = 'http://'+api+'/'+IndexDBName+'/'+tableNameIndex+'/select_next';
         ch_utils.ajax_get(url, success_get, failed);
     
@@ -481,8 +485,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             var indexBuffer = data[data.length-1];
             var chartIdOld = chartIdDB+'.'+chartIdBase;
             if (chartIdDB === IndexDBName) {chartIdOld = chartIdBase;}
-            var chartIdNew = newDB+'.'+chartIdBase;
-            if (newDB === IndexDBName) {chartIdNew = chartIdBase;}
+            var chartIdNew = chartIdDB+'.'+chartIdBase_new;
+            if (chartIdDB === IndexDBName) {chartIdNew = chartIdBase;}
             indexBuffer[chartIdNew] = indexBuffer[chartIdOld];
             delete indexBuffer[chartIdOld];
             console.log(indexBuffer);

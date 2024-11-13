@@ -3,7 +3,7 @@
    <head>
       <meta charset="utf-8">
       <!--<base href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/">-->
-      <title>MxChartDB Protokoll Daten</title>
+      <title>Chart Daten</title>
       <link rel="shortcut icon" href="../icon.png">
       <link rel="stylesheet" type="text/css" href="css/jsonViewer.css"/>
       <script src="libs/jsonViewer.js"></script>
@@ -49,6 +49,7 @@
          <input type="radio" id="radio_values_rang" name="select_data">
          <label id="values_rang_text">Display a time interval</label><br>
          <br><br>
+         <div id=dt_picker>
          <label id=dt_picker_title>Time Interval </label>
          <br><br>
          <table>
@@ -91,8 +92,11 @@
                </td>
             </tr>
          </table>
+         </div>
          <br>
          <div id="count_text"></div>
+         <div id="count_avg"></div>
+         <div id="count_latest_hour"></div>
          <br><br>
          <button id="dt_picker_exec"><b>OK</b></button>
       </div>

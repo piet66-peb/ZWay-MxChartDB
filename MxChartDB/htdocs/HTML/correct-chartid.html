@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <!--<base href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/">-->
+      <title>Correct Chart Id</title>
+      <link rel="shortcut icon" href="../icon.png">
+      <link rel="stylesheet" type="text/css" href="css/jsonViewer.css"/>
+      <script src="libs/jsonViewer.js"></script>
+      <script src='js/correct-chartid-lang.js'></script>
+      <script src='js/ch_utils.js'></script>
+      <script src='../constants.js'></script>
+      <script src='js/correct-chartid.js'></script>
+      <style type="text/css">
+         body {
+         margin: 0 50px;
+         font-family: sans-serif;
+         width: 90%;
+         }
+         textarea#json-input {
+         width: 100%;
+         height: 200px;
+         }
+         pre#json-renderer {
+         border: 1px solid #aaa;
+         padding: 0.5em 1.5em;
+         }
+      </style>
+   </head>
+   <body>
+      <script>
+         console.log(window.location);
+         console.log('pathname='+window.location.pathname);
+         console.log('parameter='+window.location.search);
+      </script>          
+      <br>
+
+      <div id="notification">
+         <div id="notification-message">correct-chartid.js nicht gefunden oder fehlerhaft!</div>
+      </div>
+      <br>
+
+      <!-- chart info -->
+      <table>
+         <tr>
+            <td>
+               <div id=ctitle_txt>Chart Title: </div>
+            </td>
+            <td>
+               <div id=ctitle_val>TTTTT</div>
+            </td>
+         </tr>
+         <tr>
+            <td>
+               <div id=cid_txt>Chart Id: </div>
+            </td>
+            <td>
+               <div id=cid_val>IIIII</div>
+            </td>
+         </tr>
+         <tr>
+            <td>
+               <div id=cd_name_txt>Database Name: </div>
+            </td>
+            <td>
+               <div id=cd_name_val>DDDD</div>
+            </td>
+         </tr>
+         <tr><td> </td></tr>
+         <tr>
+            <td>
+               <div id=count_txt>Instance Name: </div>
+            </td>
+            <td>
+               <div id=count_val> </div>
+            </td>
+         </tr>
+         <tr>
+            <td>
+               <div id=first_txt>Instance Name: </div>
+            </td>
+            <td>
+               <div id=first_val> </div>
+            </td>
+         </tr>
+         <tr>
+            <td>
+               <div id=last_txt>Instance Name: </div>
+            </td>
+            <td>
+               <div id=last_val> </div>
+            </td>
+         </tr>
+         <tr><td> </td></tr>
+         <tr>
+            <td>
+               <div id=inst_no_txt>Instance Number: </div>
+            </td>
+            <td>
+               <div id=inst_no_val>NNNNN</div>
+            </td>
+         </tr>
+         <tr>
+            <td>
+               <div id=inst_name_txt>Instance Name: </div>
+            </td>
+            <td>
+               <div id=inst_name_val>NNNNN</div>
+            </td>
+         </tr>
+         <tr>
+            <td>
+               <div id=active_txt>Instance Name: </div>
+            </td>
+            <td>
+               <div id=active_val> </div>
+            </td>
+         </tr>
+      </table>
+      <br>
+      <div id="count_text"></div>
+      <br>
+
+      <!-- correct chartid -->
+      <div id=correct_txt> </div>
+      <br>
+      <div id="correct_div" style="display:none;">
+        <button id="do_change" onclick="step(0)"> </button>
+        <br><label id=note1> </label>
+      </div>
+      <br><br>
+
+      <!-- display result -->
+      <div id="result" style="display:none;">
+         <pre id="json-renderer"></pre>
+      </div>
+   </body>
+</html>
+

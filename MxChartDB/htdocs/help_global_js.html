@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <title>MxChartDB: Global User Definitions</title>
+      <link rel="shortcut icon" href="/ZAutomation/api/market_price/load/modulemedia/MxChartDB/icon.png">
+
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>      
+
+    <style>
+        {
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        tr:nth-child(even){background-color: #f2f2f2;}
+        tr:hover {background-color: #ddd;}
+        th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #04AA6D;
+            color: white;
+        }
+         .center {text-align:center;}
+    </style>
+
+   </head>
+   <body>
+      <h1>MxChartDB: Global User Definitions</h1>
+
+      For definition of globally valid constants, variables and functions, 
+      which can be called in
+      <a rel='help' href='/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_arithmetic.html' target='_blank'><u>Sensor Arithmetic</u></a>
+      and in the 
+      <a rel='help' href='/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_global_js.html' target='_blank'><u>In-Display-Calculation</u></a>.
+      <br>
+      Javascript is used for the definition.
+      <br><br>
+      Additionally it is possible to set own variables to transfer values between different sensor 
+      arithmetics.
+
+      <h2>1. Global definition</h2>
+
+      <h3>Example</h3>
+
+      Javascript code:
+
+      <pre><code class="language-javascript">
+{
+      ts1: 1728968400000,
+      ts2: 1730264400000,
+      customer_price: function (curr_ts, market_price) {
+          if (market_price === null) {return null;}
+          if (curr_ts &lt; g.ts1) {return (-0.000107217*market_price*market_price + 1.19103*market_price + 18.2442);}
+          if (curr_ts &lt; g.ts2) {return (-0.0000248097*market_price*market_price + 1.19033*market_price + 16.7827);}
+          return (-0.000160312*market_price*market_price + 1.19448*market_price + 18.2124);
+      },
+};
+      </code></pre>
+      <br>
+      Invocation of this function in the sensor arithmetic with:
+      <pre><code class="language-javascript">g.customer_price(x0, x2)</code></pre>
+
+
+      <br><h3>Definition Rules</h3>
+      <ul>
+          <li>Create exactly one Javascript object with curly brackets</li>
+          <li>Define every variable, constant and function as an object property</li>
+          <li>Call this elements with preceeding 'g.'</li>
+      </ul>
+
+      <br>
+      <h2>2. Define variables</h2>
+
+      <h3>Example</h3>
+
+      In arithmetics:
+      <br>
+      in entry 1 (sensor 1), display market price[ct/kWh]: 
+      <pre><code class="language-javascript">g.market_price = x*100/1000; g.market_price</code></pre>
+
+      in entry 2 (formula), display customer price[ct/kWh]: 
+      <pre><code class="language-javascript">g.final_price = g.customer_price(x0, g.market_price); g.final_price</code></pre>
+
+      in entry 3 (formula), display taxes and levies: 
+      <pre><code class="language-javascript">g.taxes_levies = g.final_price - g.market_price; g.taxes_levies</code></pre>
+
+      in entry 4 (formula), display taxes and levies[%]: 
+      <pre><code class="language-javascript">Math.round(g.taxes_levies/g.market_price*100*10)/10</code></pre>
+
+
+      <br><h3>Definition Rules</h3>
+      <ul>
+          <li>Set a new variable for the global object with: g.&lt;name&gt; = &lt;value&gt;;</li>
+          <li>Read the variable with: g.&lt;name&gt;</li>
+      </ul>
+      Please observe the right order: the variables are set and changed by increasing entry number.
+
+
+      <br><br>
+      <h2>3. Shortening</h2>
+
+      For convenience the latest computed values are stored automatically into global variables after
+      computation:
+      <pre><code class="language-javascript">g.vi = arithmetic(sensor[i]);</code></pre>
+      <br>
+
+      The above example can therefore be shortened as follows:
+      <br>
+      in entry 1 (sensor 1), display market price[ct/kWh]: 
+      <pre><code class="language-javascript">x*100/1000</code></pre>
+
+      in entry 2 (formula), display customer price[ct/kWh]: 
+      <pre><code class="language-javascript">g.customer_price(x0, g.v1)</code></pre>
+
+      in entry 3 (formula), display taxes and levies: 
+      <pre><code class="language-javascript"> g.v2 - g.v1</code></pre>
+
+      in entry 4 (formula), display taxes and levies[%]: 
+      <pre><code class="language-javascript">Math.round(g.v3/g.v1*100*10)/10</code></pre>
+
+      <br>
+      Much shorter, but also less comprehensible.
+
+      <br><br>
+      <h2>4. Standard functions</h2>
+
+      <table>
+         <tr>
+            <th class="center">Function</th>
+            <th>Invocation</th>
+            <th>Purpose</th>
+         </tr>
+         <tr>
+            <td class="center">g.notSet</td>
+            <td>true|false = g.notSet(&lt;arguments&gt;)</td>
+            <td>check if one of the arguments is undefined or null</td>
+         </tr>
+         <tr>
+            <td class="center">g.noNumber</td>
+            <td>true|false = g.noNumber(&lt;arguments&gt;)</td>
+            <td>check if one of the arguments is undefined, null or no number</td>
+         </tr>
+      </table>
+
+      <br><h3>Examples</h3>
+      <pre><code class="language-javascript">g.notSet(x1. x2) ? null : x1 + x2</code></pre>
+      <pre><code class="language-javascript">g.noNumber(x. x[-1], x2) ? null : (x - x[-1])/ x2</code></pre>
+      <pre><code class="language-javascript">
+{
+    consumption: function(x_curr, x_prev) {
+        if (g.noNumber(x_curr, x_prev)) {return null;}
+        return x_curr - x_prev;
+    },
+};
+      </code></pre>
+
+      <br><br>
+      <script>hljs.highlightAll();</script>
+   </body>
+</html>
+

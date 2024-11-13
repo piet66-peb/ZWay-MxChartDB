@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-05-12/peb
+//h Version:      V2.1.0 2024-11-12/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -24,7 +24,7 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 5 */
-/*globals ch_utils, html_params, myFunction */
+/*globals ch_utils, html_params, myFunction, sorttable */
 'use strict';
 
 //-----------
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-05-12/peb';
+var WRITTEN='2024-11-12/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -48,6 +48,8 @@ var elOrphaned;
 var elSnapshots;
 var target_chart, target_data;
 var api;
+var IndexDBName;
+var tableNameIndex;
 
 //------
 //b Main
@@ -70,6 +72,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ADMIN = 'YES';
     }
 
+    //detect index database name
+    // /ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/admin.html
+    IndexDBName = url.split('/')[6];
+    tableNameIndex = IndexDBName+'_Index';
+    console.log('IndexDBName='+IndexDBName);
+
     if (ADMIN === 'YES') {
         document.title = ch_utils.buildMessage(17);
         ch_utils.displayMessage(17);
@@ -90,6 +98,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
        ch_utils.displayMessage(0, consts);
     }
     api = consts.api;
+
+    //display aspect ratio
+    ch_utils.displayMessageDiv('AspectRatio', 0, window.innerWidth+' x '+window.innerHeight+', '+window.navigator.platform);
+    console.log(window.navigator);
 
     target_chart = '';
     target_data = '';
@@ -147,7 +159,7 @@ function go_on(sessionId, adminRights, username) {
 
 //step 1: read index data
 function step1 () {
-    var url = 'http://'+api+'/MxChartDB/MxChartDB_Index/select_next';
+    var url = 'http://'+api+'/'+IndexDBName+'/'+tableNameIndex+'/select_next';
     ch_utils.ajax_get(url, success, fail, 12);
     function success(data) {
         //goto next step
@@ -157,7 +169,7 @@ function step1 () {
     } //success
 
     function fail(status) {
-        var mess = 'error reading MxChartDB_Index: '+status;
+        var mess = 'error reading '+tableNameIndex+': '+status;
         console.log(mess);
         alert(mess);
     } //fail
@@ -211,9 +223,9 @@ function buildInstancesList(instancesBuffer) {
     instancesList = {};
     instancesRead = true;
     instancesBuffer.filter(function(instance, ix) {
-        return instance.moduleId === "MxChartDB";}).forEach(function(inst) {
+        return instance.moduleId === IndexDBName;}).forEach(function(inst) {
             var chartIdKey = inst.params.chartId;
-            if (inst.params.DBName && inst.params.DBName !== 'MxChartDB') {
+            if (inst.params.DBName && inst.params.DBName !== IndexDBName) {
                 chartIdKey = inst.params.DBName+'.'+chartIdKey;
             }
             instancesList[chartIdKey] = 
@@ -223,7 +235,7 @@ function buildInstancesList(instancesBuffer) {
                  chartId: inst.params.chartId,
                  DBName: inst.params.DBName,
                  interval: inst.params.interval,
-                 period: inst.params.period,
+                 period: inst.params.store_value_set.period,
                 };
         });
 } //buildInstancesList
@@ -259,22 +271,38 @@ function buildIndexList(indexBuffer) {
     var chartLength = ch_utils.buildMessage(44);
     var c = ch_utils.buildMessage(26);
     var s = ch_utils.buildMessage(41);
+    var framePage = ch_utils.buildMessage(45);
+    var frameText = ch_utils.buildMessage(47);
+    var correct_chartid = ch_utils.buildMessage(48);
 
-    var htmlText = '<table id="myTable"><tbody><tr><th>'+t+'</th><th>'+i+'</th>';
+    var htmlText = '<table id="myTable" class="sortable">';
+    htmlText += '<colgroup>';
+    htmlText += '<col span="10">';
+    htmlText += '<col style="visibility:COL10_VISIBILITY;">';
+    var col10_visibility = 'collapse';
+    htmlText += '</colgroup>';
+    htmlText += '<tbody><tr><th id="title">'+t+'</th>'+
+                '<th id="chartid">'+i+'</th>';
     if (instancesRead) {
         if (ADMIN === 'YES') {
-            htmlText += '<th>'+inst+'</th>';
+            htmlText += '<th id="inst">'+inst+'</th>';
         }
-        htmlText += '<th>'+a+'</th>';
+        htmlText += '<th id="active">'+a+'</th>';
         if (ADMIN === 'YES') {
-            htmlText += '<th>'+polling+'</th>';
-            htmlText += '<th>'+chartLength+'</th>';
-            htmlText += '<th>'+cop+'</th>';
-            htmlText += '<th>'+download+'</th>';
-            htmlText += '<th>'+rem+'</th>';
-            htmlText += '<th>'+change+'</th>';
+            htmlText += '<th id="polling">'+polling+'</th>';
+            htmlText += '<th id="chartlength">'+chartLength+'</th>';
+            htmlText += '<th id="clone">'+cop+'</th>';
+            htmlText += '<th id="download">'+download+'</th>';
+            htmlText += '<th id="remove">'+rem+'</th>';
+            htmlText += '<th id="dbchange">'+change+'</th>';
+            htmlText += '<th id="correctid">'+correct_chartid+'</th>';
         }
     }
+
+    htmlText += '<th id="framing" class="sorttable_nosort" >'+
+                    '<button type="button"  title="'+frameText+'"'+
+                        ' onclick="framing()">'+framePage+'</button>'+
+                '</th>';
     htmlText += '</tr>';
     if (ADMIN === 'YES') {
         adminQuerystring = '?isAdmin='+isAdmin+'&';
@@ -285,6 +313,7 @@ function buildIndexList(indexBuffer) {
     var URLChart = './draw-chartjs.html'+adminQuerystring+'chartId=';
     var URLJSON  = './data-json.html'+adminQuerystring+'chartId=';
     var URLMOVE  = './move-chart.html?chartId=';
+    var URLCORRECT  = './correct-chartid.html?chartId=';
     var last = '';
 
     //indexArray.forEach(function(chart, ix) {
@@ -296,8 +325,9 @@ function buildIndexList(indexBuffer) {
         var uChart = URLChart + chartId;
         var uJSON = URLJSON + chartId;
         var uMOVE = URLMOVE + chartId;
+        var uCORRECT = URLCORRECT + chartId;
         var chartIdDisp = chartId;
-        var chartIdDB = 'MxChartDB';
+        var chartIdDB = IndexDBName;
         var chartIdBase = chartId;
         //if other database:
         if (chartId.indexOf('.') > 0) {
@@ -308,28 +338,29 @@ function buildIndexList(indexBuffer) {
 
         //chart title
         if (chartTitle === last) {
-            htmlTextNew += '<tr><td><a href="'+uChart+
+            htmlTextNew += '<tr><td headers="title"><a href="'+uChart+
                 '"'+target_chart+'><font color="red"><b>'+chartTitle+'</b></font></td>';
         } else {
-            htmlTextNew += '<tr><td><a href="'+uChart+'"'+target_chart+'>'+chartTitle+
+            htmlTextNew += '<tr><td headers="chartid"><a href="'+uChart+'"'+target_chart+'>'+chartTitle+
                 '</td>';
         }
 
         //chart id
-        htmlTextNew += '<td><center><a href="'+uJSON+'"'+target_data+'>'+chartIdDisp+'</a></td>';
+        htmlTextNew += '<td headers="chartid" ><center><a href="'+uJSON+'"'+target_data+'>'+chartIdDisp+'</a></td>';
 
         if (instancesRead) {
             if (ADMIN === 'YES') {
                 //instance id
                 var instNo_orig;
                 if (!instancesList.hasOwnProperty(chartId)) {
-                    htmlTextNew += '<td><center></td>';
+                    htmlTextNew += '<td headers="inst"><center></td>';
                 } else {
-                    htmlTextNew += '<td><center>';
+                    htmlTextNew += '<td headers="inst"><center>';
                     instNo_orig = instancesList[chartId].id;
                     if (!instOriginal(chartId, instNo_orig)) {
                         htmlTextNew += '<font color="magenta"><b>'+
                             instNo_orig+'</b></font>';
+                        col10_visibility = 'visible';
                     } else {
                         htmlTextNew += '<font color="green"><b>'+
                             instNo_orig+'</b></font>';
@@ -378,34 +409,34 @@ function buildIndexList(indexBuffer) {
                                 '</td>';
                 } else
                 if (tex === e) {
-                    htmlTextNew += '<td><center><font color="'+col+'"><b>'+
+                    htmlTextNew += '<td headers="active"><center><font color="'+col+'"><b>'+
                                 '<a href="javascript:alert(\''+
                         ch_utils.buildMessage(20)+'\');">'+tex+'</a> '+
                                 '</b></font></td>';
                 } else
                 if (tex === c) {
-                    htmlTextNew += '<td><center>'+tex+'</td>';
+                    htmlTextNew += '<td headers="active"><center>'+tex+'</td>';
                 } else
                 if (tex === s) {
-                    htmlTextNew += '<td><center>'+tex+'</td>';
+                    htmlTextNew += '<td headers="active"><center>'+tex+'</td>';
                 } else {
-                    htmlTextNew += '<td><center><font color="'+col+'"><b>'+
+                    htmlTextNew += '<td headers="active"><center><font color="'+col+'"><b>'+
                         tex+'</b></font></td>';
                 }
 
                 //chart length (period)
                 var period = '';
                 if (instancesList.hasOwnProperty(chartId)) {
-                    period = instancesList[chartId].period;
+                    period = instancesList[chartId].period || '';
                 }
-                htmlTextNew += '<td><center>'+period+'</td>';
+                htmlTextNew += '<td headers="polling"><center>'+period+'</td>';
 
                 //chart length (interval)
                 var interval = '';
                 if (instancesList.hasOwnProperty(chartId)) {
                     interval = instancesList[chartId].interval;
                 }
-                htmlTextNew += '<td><center>'+interval+'</td>';
+                htmlTextNew += '<td headers="chartlength"><center>'+interval+'</td>';
 
                 //clone
                 var l1 = '';
@@ -413,12 +444,12 @@ function buildIndexList(indexBuffer) {
                     l1 =  '<a href="javascript:copyChart(\''+
                         chartId +'\',\''+api+'\');">'+y+'</a> ';
                 }
-                htmlTextNew += '<td><center>'+l1+'</td>';
+                htmlTextNew += '<td headers="clone"><center>'+l1+'</td>';
 
                 //download
                 var l3 =  '<a href="javascript:downloadChart(\''+
                         chartId +'\',\''+api+'\');">'+y+'</a> ';
-                htmlTextNew += '<td><center>'+l3+'</td>';
+                htmlTextNew += '<td headers="download"><center>'+l3+'</td>';
 
                 //delete
                 var l2 = '';
@@ -426,14 +457,25 @@ function buildIndexList(indexBuffer) {
                     l2 =  '<a href="javascript:deleteChart(\''+
                         chartId +'\',\''+api+'\');">'+y+'</a> ';
                 }
-                htmlTextNew += '<td><center>'+l2+'</td>';
+                htmlTextNew += '<td headers="remove"><center>'+l2+'</td>';
 
                 //change database
                 var l4 = '';
                 if (tex === y || tex === n) {
                     l4 =  '<a href="'+uMOVE+'">'+y+'</a> ';
                 }
-                htmlTextNew += '<td><center>'+l4+'</td>';
+                htmlTextNew += '<td headers="dbchange"><center>'+l4+'</td>';
+
+                //correct chartid
+                var l5 = '';
+                if (instNo_orig &&
+                    !instOriginal(chartId, instNo_orig)) {
+                    if (tex === y || tex === n) {
+                        l5 =  '<a href="'+uCORRECT+'">'+y+'</a> ';
+                    }
+                }
+                htmlTextNew += '<td headers="correctid"><center>'+l5+'</td>';
+
             } //if ADMIN
             else {
                 if (!instancesList.hasOwnProperty(chartId)) {
@@ -442,6 +484,10 @@ function buildIndexList(indexBuffer) {
             } //if not ADMIN
         } //instancesRead
 
+        //build framepage
+        htmlTextNew += '<td headers="framing" align=center>'+
+                       '<input type="checkbox" id="framing+'+chartId+'">'+
+                       '</td>';
         htmlTextNew += '</tr>';
 
         //filter chart entry
@@ -463,7 +509,7 @@ function buildIndexList(indexBuffer) {
         last = chartTitle;
     }
     htmlText += '</tbody></table>';
-    return htmlText;
+    return htmlText.replace('COL10_VISIBILITY', col10_visibility);
 } //buildIndexList
 
 function printHTML(indexList) {
@@ -485,14 +531,43 @@ function printHTML(indexList) {
         checkboxList[i].addEventListener('change', function(event) {
             //console.log(event.target);
             var id = event.target.id.split('+');
-            var chartId = id[1];
-            var checked = event.target.checked;
-            changeActive(chartId, checked);
+            if (id[0] === 'active') {
+                var chartId = id[1];
+                var checked = event.target.checked;
+                changeActive(chartId, checked);
+            }
         });
         }
     }
     /*jshint loopfunc:false */
+
+    var el = document.getElementById('myTable');
+    sorttable.makeSortable(el);
 } //printHTML
+
+function framing() {
+    var chartList = '';
+    var checkboxList = document.querySelectorAll('[type="checkbox"]');
+    for (var i = 0; i < checkboxList.length; i++) {
+        var id = checkboxList[i].id.split('+');
+        if (id[0] === 'framing') {
+            if (checkboxList[i].checked) {
+                if (chartList) {
+                    chartList += ',';
+                }
+                chartList += id[1];
+            }
+        }
+    }
+    if (chartList) {
+        var url = './frame.html'+'?charts='+chartList;
+        window.open(url, "_blank");
+    } else {
+        ch_utils.alertMessage(46);
+    }
+    filterInput = document.getElementById("myInput");
+    filterInput.focus();
+} //framing
 
 function changeActive(chartId, checked) {
     /*
@@ -552,7 +627,7 @@ function handleVisibilityChange() {
 ///////////////////77}); //document).ready
 
 function instOriginal(chartId, instNo) {
-    if ('MxChartDB'+instNo === chartId.replace(/^.*\./, '')) {return true;}
+    if (IndexDBName+instNo === chartId.replace(/^.*\./, '')) {return true;}
     return false;
 } //instOriginal
 
@@ -579,7 +654,7 @@ function copyChart(chartIdOld, api) {
     }
 
     var chartIdDispOld = chartIdOld;
-    var chartIdDBOld = 'MxChartDB';
+    var chartIdDBOld = IndexDBName;
     var chartIdBaseOld = chartIdOld;
     //if other database:
     if (chartIdOld.indexOf('.') > 0) {
@@ -598,7 +673,7 @@ function copyChart(chartIdOld, api) {
     }
 
     var chartIdDispNew = chartIdNew;
-    var chartIdDBNew = 'MxChartDB';
+    var chartIdDBNew = IndexDBName;
     var chartIdBaseNew = chartIdNew;
     //if other database:
     if (chartIdNew.indexOf('.') > 0) {
@@ -625,16 +700,16 @@ function copyChart(chartIdOld, api) {
     function correct_index() {
        indexBuffer[chartIdNew] = indexBuffer[chartIdOld];
        //console.log('indexBuffer', indexBuffer);
-       var I = 'MxChartDB_Index';
+       var I = tableNameIndex;
        //console.log('insert table '+I);
-       url = 'http://'+api+'/MxChartDB/'+I+'/insert';
+       url = 'http://'+api+'/'+IndexDBName+'/'+I+'/insert';
        ch_utils.ajax_post(url, JSON.stringify({"ts": ts, "val": indexBuffer}),
                                delete_old_index, fail);
     }
     function delete_old_index() {
-       var I = 'MxChartDB_Index';
+       var I = tableNameIndex;
        //console.log('clear table '+I);
-       url = 'http://'+api+'/MxChartDB/'+I+'/delete_prev?ts='+ts;
+       url = 'http://'+api+'/'+IndexDBName+'/'+I+'/delete_prev?ts='+ts;
        ch_utils.ajax_post(url, undefined, refresh_window, fail);
     }
     function refresh_window() {
@@ -657,7 +732,7 @@ function copyChart(chartIdOld, api) {
 
 function deleteChart(chartId, api) {
     var chartIdDisp = chartId;
-    var chartIdDB = 'MxChartDB';
+    var chartIdDB = IndexDBName;
     var chartIdBase = chartId;
     //if other database:
     if (chartId.indexOf('.') > 0) {
@@ -682,24 +757,24 @@ function deleteChart(chartId, api) {
        ch_utils.ajax_post(url, undefined, select_index_table, fail);
     }
    function select_index_table() {
-       var I = 'MxChartDB_Index';
+       var I = tableNameIndex;
        //console.log('selecting table '+I);
-       url = 'http://'+api+'/MxChartDB/'+I+'/select_next';
+       url = 'http://'+api+'/'+IndexDBName+'/'+I+'/select_next';
        ch_utils.ajax_get(url, correct_index, fail);
     }
    function correct_index(data) {
        delete indexBuffer[chartId];
        //console.log('indexBuffer', indexBuffer);
-       var I = 'MxChartDB_Index';
+       var I = tableNameIndex;
        //console.log('insert table '+I);
-       url = 'http://'+api+'/MxChartDB/'+I+'/insert';
+       url = 'http://'+api+'/'+IndexDBName+'/'+I+'/insert';
        ch_utils.ajax_post(url, JSON.stringify({"ts": ts, "val": indexBuffer}), 
                                delete_old_index, fail);
     }
    function delete_old_index() {
-       var I = 'MxChartDB_Index';
+       var I = tableNameIndex;
        //console.log('clear table '+I);
-       url = 'http://'+api+'/MxChartDB/'+I+'/delete_prev?ts='+ts;
+       url = 'http://'+api+'/'+IndexDBName+'/'+I+'/delete_prev?ts='+ts;
        ch_utils.ajax_post(url, undefined, refresh_window, fail);
     }
    function refresh_window() {
@@ -719,7 +794,7 @@ function downloadChart(chartId, api) {
     var vLog = {};
 
     var chartIdDisp = chartId;
-    var chartIdDB = 'MxChartDB';
+    var chartIdDB = IndexDBName;
     var chartIdBase = chartId;
     //if other database:
     if (chartId.indexOf('.') > 0) {
@@ -804,7 +879,7 @@ function loadLocalFile(evt) {
     }
 
     var chartIdDisp = chartIdInput;
-    var chartIdDB = 'MxChartDB';
+    var chartIdDB = IndexDBName;
     var chartIdBase = chartIdInput;
     //if other database:
     if (chartIdInput.indexOf('.') > 0) {
@@ -891,17 +966,17 @@ function loadLocalFile(evt) {
         function correct_index() {
            indexBuffer[chartIdInput] = data.chartHeader.chartTitle;
            //console.log('indexBuffer', indexBuffer);
-           var I = 'MxChartDB_Index';
+           var I = tableNameIndex;
            //console.log('insert table '+I);
-           url = 'http://'+api+'/MxChartDB/'+I+'/insert';
+           url = 'http://'+api+'/'+IndexDBName+'/'+I+'/insert';
            ch_utils.ajax_post(url, JSON.stringify({"ts": ts, "val": indexBuffer}),
                                    delete_old_index, fail);
         } //correct_index
 
         function delete_old_index() {
-           var I = 'MxChartDB_Index';
+           var I = tableNameIndex;
            //console.log('clear table '+I);
-           url = 'http://'+api+'/MxChartDB/'+I+'/delete_prev?ts='+ts;
+           url = 'http://'+api+'/'+IndexDBName+'/'+I+'/delete_prev?ts='+ts;
            ch_utils.ajax_post(url, undefined, refresh_window, fail);
         } //delete_old_index
 

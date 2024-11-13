@@ -65,6 +65,14 @@
             de: 'keine Meßwerte gespeichert',
             en: 'no sensor values stored'
         },
+        {//16
+            de: 'durchschnittlich {0} Datensätze pro Stunde',
+            en: '{0} data records per hour on average'
+        },
+        {//16
+            de: '{0} Datensätze in der letzten Stunde',
+            en: '{0} data records in the latest hour'
+        },
     ];
 
 

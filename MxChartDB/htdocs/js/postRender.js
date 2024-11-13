@@ -12,13 +12,28 @@ function modulePostRender(control) {
         console.log("The value of chartTitle was changed to: " + this.getValue());
     }); */    
 
-    /* walk through all form inputs */   /*
+    /* walk through all form inputs */
+/*    
     $(":input").each(function(){
         var name = $(this).attr('name');
         var val = $(this).val();
         var id = $(this).attr('id');
-        console.log(id+': '+name+'='+val);
-    }); */
+        var type = $(this).attr('type');
+        if (!type) {
+            type = $(this).context.type;
+        }
+        if (type === 'checkbox') {
+            val = $(this).context.checked;
+        } else
+        if (type === 'button') {
+            name = $(this).context.title;
+        } else
+        if (type === 'submit') {
+            name = $(this).context.title;
+        }
+        console.log(type+' '+id+': '+name+'='+val);
+    });
+*/
 
     /* determine os */
     /* ============ */
@@ -56,30 +71,43 @@ function modulePostRender(control) {
     } /* getOS */
     var os = getOS();
 
-    /* set defaults  for all input fields */
-    /* ================================== */
+    /* set defaults  for input fields */
+    /* ============================== */
+    /* works only form simple input fields !! */
 
     var defaults = {nonnumericLabels_y3Labeling:    'on,off',
                     nonnumericLabels_y3Icons:       'switch-on,switch-off',
                     nonnumericLabels_y3IconsWidth:  2.5,
+                    axes_time_label: 'null',
+                    global_js_lines: 5,
+                    axes_y1Label: 'null',
+                    axes_y2Label: 'null',
     };  
+    
     /* walk through all input fields: */
+    var id, type, name, value, checked, positionYAxis_set, poll_method_set;
+    var global_js_lines;
     $(":input").each(function(){
-        var id = $(this).attr('id');
-        if ($(this).attr('type') === 'checkbox') {
-            if ($(this).attr('name') === 'nonnumericLabels_convertOnOff') {
-                console.log($(this).attr('name')+' = '+$(this).context.checked);
-            }
-        }
-        if (id && id.indexOf('alpaca') === 0) {
-            var val = $(this).val();
-            var name = $(this).attr('name');
-            if (!val) {
+        type = $(this).attr('type');
+        name = $(this).attr('name');
+
+        id = $(this).attr('id');
+        if (id) {
+            value = $(this).val();
+            console.log(id+': '+name+' == '+value);
+            if (!value) {
                 var new_value = defaults[name];
                 if (new_value) {
                     console.log(id+': '+name+' > '+new_value);
                     $(this).val(new_value);
+                    value = new_value;
                 }
+            }
+            if (name === 'global_js_lines') {
+                global_js_lines = value;
+            }
+            if (id === "global_js_code") {
+                $(this).attr('rows', global_js_lines);
             }
         }
     });
@@ -89,36 +117,47 @@ function modulePostRender(control) {
 
     $(".objectClass").css( "background-color", "#f8f8f8" );
     $(".objectClass").css('border-width', '5');
+    $(".objectClass").css('border-color', 'grey');
 
     $(".dataControl").css( "background-color", "#f8f8f8" );
     $(".dataControl").css('border-width', '5');
-    $(".nonnumericLabels").css( "background-color", "#f8f8f8" );
+    $(".dataControl").css('border-color', 'grey');
+
+    $(".nonnumericLabels").css( "background-color", "#e6e6ff" );
     $(".nonnumericLabels").css('border-width', '5');
+    $(".nonnumericLabels").css('border-color', 'grey');
+
     $(".specials").css( "background-color", "#f8f8f8" );
     $(".specials").css('border-width', '5');
-    $(".sensorsArray").css( "background-color", "#f8f8f8" );
+    $(".specials").css('border-color', 'grey');
+
+    $(".store_value_set").css( "background-color", "#f8f8f8" );
+    $(".store_value_set").css('border-width', '5');
+    $(".store_value_set").css('border-color', 'grey');
+
+    $(".axes").css( "background-color", "#e6e6ff" );
+    $(".axes").css('border-width', '5');
+    $(".axes").css('border-color', 'grey');
+
+    $(".sensorsArray").css( "background-color", "#e6ffff" );
     $(".sensorsArray").css('border-width', '5');
+    $(".sensorsArray").css('border-style', 'solid');
+    $(".sensorsArray").css('border-color', 'grey');
 
-    /* data control part */
-    /* ================= */
+    $(".sensorsFields").css('border-style', 'solid');
+    $(".sensorsFields").css('border-color', 'blue');
 
-    /* check at most 1 checkbox */
-    $('.dataControl').on('change', function(event){
-        var val = event.target.checked;
-        var name = event.target.name;
-        console.log('.dataControl: '+name+'='+val);
-        if (val === true) {
-            var classes = ["dC_new", "dC_continue"];
-            for (var i = 0; i < classes.length; i++) {
-                if ('dataControl_'+classes[i] !== name) {
-                    var oldVal = $('.'+classes[i]).find('input:checkbox')[0].checked;
-                    if (oldVal === true) { 
-                        $('.'+classes[i]).find('input:checkbox')[0].checked = false;
-                    }
-                }
-            }
-        }
-    });
+    $(".post_calc").css( "background-color", "#e6ffbb" );
+    $(".post_calc").css('border-width', '5');
+    $(".post_calc").css('border-style', 'solid');
+    $(".post_calc").css('border-color', 'grey');
+
+    $(".post_calcFields").css('border-style', 'solid');
+    $(".post_calcFields").css('border-color', 'blue');
+
+    $(".global_js").css( "background-color", "#e6e6ff" );
+    $(".global_js").css('border-width', '5');
+    $(".global_js").css('border-color', 'grey');
 
     /* metric part */
     /* ============ */
@@ -434,7 +473,7 @@ function modulePostRender(control) {
         });
     } /* setIndexes */
 
-    /* number sensor value indexes if empty (for old charts */
+    /* number sensor value indexes if empty (for old charts) */
     function setIndexesInit() {
         var indexFields = $('.index').children('input');
         /* indexFields.css( "background-color", "red" ); */
@@ -868,22 +907,32 @@ function modulePostRender(control) {
 
     /* check arithmetic for correct syntax */
     /* to test the formula with eval we must enter some values: */
-    var colorInvalid ="rgba(255,0,0,0.5)";
+    var colorInvalid ="rgba(255,0,0,0.2)";
     function checkFormula(alpacaId) {
         var val = $("#"+alpacaId).val();
         if (!val) {
             $("#"+alpacaId).css( "background-color", "white" );
             return;
         }
+
         var mess, patt, ____xxx, ____xx = [];
         var mathString = val.replace(/x\[-1\]/g, 1);
-            mathString = mathString.replace(/\bx\b/g, '____xxx'); 
+            mathString = mathString.replace(/\bx\b/g, '____xxx');
         ____xxx = 5;
         for (var i = 0; i <= sensorCount; i++) {
             ____xx.push(i+____xxx);
             patt = new RegExp('\\bx'+i+'\\b', "g");
             mathString = mathString.replace(patt, '____xx['+i+']');
         }
+
+        /* global functions: */
+        mathString = mathString.replace(/\bg\.\w+\s*\(/g, '____f('); 
+        function ____f() {
+            return 1;
+        }
+        /* global variables: */
+        mathString = mathString.replace(/\bg\.\w+\b/g, '____xxx'); 
+
         for (i = 0; i < 2; i++) {
             try {
                 /*jshint evil: true */
@@ -937,6 +986,7 @@ function modulePostRender(control) {
         if (s.color.length === 0) {return false;}
         return true;
     } /* isColor */
+
     function checkFill(alpacaId) {
         var str = $("#"+alpacaId).val().replace(/ /g, '');
         var valArr = str.split(':');
@@ -999,6 +1049,49 @@ function modulePostRender(control) {
     fillFields.each(function() {
         setFillColor($(this)[0].id);
     });
+
+    /* global_js part */
+    /* ============== */
+
+    /* react on code size change */
+    function resizeCode(event) {
+        var global_js_lines = $('#global_js_line').val();
+        $('#global_js_code').attr('rows', global_js_lines);
+    } /* resizeCode */
+    $('#global_js_line').on('change', resizeCode);
+
+    function checkJavascript(alpacaId) {
+        $("#"+alpacaId).css( "background-color", "yellow" );
+        var val = $("#"+alpacaId).val();
+        if (!val) {
+            $("#"+alpacaId).css( "background-color", "white" );
+            return;
+        } 
+
+        try {
+            var g = {};
+            /*jshint evil: true */
+            eval('g = '+val);
+            /*jshint evil: false */
+            $("#"+alpacaId).css( "background-color", "white" );
+            return;
+        } catch(err) {
+            var mess = err.message;
+            $("#"+alpacaId).css( "background-color", colorInvalid );
+            console.log(mess);
+            return mess;
+        }
+    } /* checkJavascript */
+
+    function javascriptOnChange(event) {
+        var alpacaId = event.target.id;
+        var ret = checkJavascript(alpacaId);
+        if (ret) {alert(ret);}
+    } /* javascriptOnChange */
+    $('#global_js_code').on('change', javascriptOnChange);
+
+    /* check color of global_js_code at start */
+    checkJavascript('global_js_code');
 
     console.log('postRender.js end');
 } /* modulePostRender */

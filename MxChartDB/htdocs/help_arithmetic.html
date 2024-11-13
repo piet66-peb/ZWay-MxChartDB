@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <title>MxChartDB: Sensor Arithmetic</title>
+      <link rel="shortcut icon" href="/ZAutomation/api/market_price/load/modulemedia/MxChartDB/icon.png">
+
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>    
+
+    <style>
+        {
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        tr:nth-child(even){background-color: #f2f2f2;}
+        tr:hover {background-color: #ddd;}
+        th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #04AA6D;
+            color: white;
+        }
+         .center {text-align:center;}
+    </style>
+
+   </head>
+   <body>
+      <h1>MxChartDB: Sensor Arithmetic</h1>
+
+      Sensor arithmetic allows the sensor values read from the database to be modified
+      before displaying.
+      <br>It is also possible to generate formula-based outputs without the existence of values in the database.
+      <br>
+      Javascript is used for these definitions.
+
+      <h3>Examples</h3>
+
+      <pre><code class="language-javascript">x/1000</code></pre>
+      <pre><code class="language-javascript">x != x[-1] ? x : null</code></pre>
+      <pre><code class="language-javascript">Math.round(x)</code></pre>
+      <pre><code class="language-javascript">Math.max(x1, x2)</code></pre>
+      <pre><code class="language-javascript">x8 &lt; x9 ? 'on' : null</code></pre>
+
+      <h3>Variables</h3>
+
+      <table>
+         <tr>
+            <th class="center">Name</th>
+            <th>Meaning</th>
+            <th class="center">Example</th>
+            <th class="center">Comment</th>
+         </tr>
+         <tr>
+            <td class="center">x</td>
+            <td>current sensor value read from the database</td>
+            <td class="center"></td>
+            <td>== null: value is not set</td>
+         </tr>
+         <tr>
+            <td class="center">x[-1]</td>
+            <td>last sensor value read from the database<br>
+                (from previous datapoint)</td>
+            <td class="center"></td>
+            <td>== null: value is not set<br>
+                               == undefined: datapoint is not read/ not existing
+            </td>
+         </tr>
+         <tr>
+            <td class="center">xi</td>
+            <td>current value of sensor i read from the database</td>
+            <td class="center">x1</td>
+            <td class="center"></td>
+         </tr>
+         <tr>
+            <td class="center">xi[-1]</td>
+            <td>last value of sensor i read from the database</td>
+            <td class="center">x1[-1]</td>
+            <td class="center"></td>
+         </tr>
+         <tr>
+            <td class="center">x0</td>
+            <td>current timestamp</td>
+            <td class="center"></td>
+            <td>local unix time in milliseconds</td>
+         </tr>
+         <tr>
+            <td class="center">g.vi</td>
+            <td>last computed value of sensor i</td>
+            <td class="center">g.v1</td>
+            <td><a rel='help' href='/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_global_js.html' target='_blank'><u>see detailed information (Shortening)</u></a>
+            </td>
+         </tr>
+      </table>
+
+      <h3>Global User Definitions</h3>
+
+      There are even more options with 
+      <a rel='help' href='/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_global_js.html' target='_blank'><u>Global User Definitions</u></a>.
+
+      <script>hljs.highlightAll();</script>
+   </body>
+</html>
+

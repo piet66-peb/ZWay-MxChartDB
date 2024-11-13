@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for HTML5 for Linux version 5.6.0">
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8"><!-- frame.html
+         call this page with:
+         http://IP:8083/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/frame.html?charts=CHARTLIST
+         with CHARTLIST=comma separated list of chart ids
+    -->
+  <title>Frame</title>
+  <link rel="shortcut icon" href="../icon.png">
+  <script src='js/ch_utils.js'></script>
+  <script src='../constants.js'></script>
+  <style>
+        .flex-container {
+            display: flex;
+            justify-content: center;
+        }    
+  </style>
+</head>
+<body>
+  <script>
+        console.log(window.location);
+        console.log('pathname='+window.location.pathname);
+        console.log('parameter='+window.location.search);
+        var path = window.location.pathname;
+        var search = window.location.search;
+        var searchNew = search.replace('?charts=', '');
+  </script> 
+  <script>
+        function addFrame(chart) {
+            //create frame
+            var url = './draw-chartjs.html?isAdmin=false&chartId='+chart+'&isFrame=true';
+            var div = document.createElement("div");
+            div.classList.add("flex-container");
+            var frame = document.createElement("iframe");
+            frame.src = url;
+            frame.width = frame_width;
+            frame.height = frame_height;
+            div.appendChild(frame);
+
+            //add minus button
+            var minus = ch_utils.convertToUTF8(' ➖ ');
+            var minusbutton = document.createElement("button");
+            minusbutton.textContent = minus;
+            minusbutton.style.maxHeight = "30px"; 
+            minusbutton.onclick = function() { 
+                searchNew = searchNew.replace(chart, '').replace(/^\,/, '').replace(',,', ',').replace(/\,$/, '');
+                window.open(path+'?charts='+searchNew, '_self'); 
+            };
+            div.appendChild(minusbutton);
+
+            //add plus button
+            var plus = ch_utils.convertToUTF8(' ➕ ');
+            var plusbutton = document.createElement("button");
+            plusbutton.textContent = plus;
+            plusbutton.style.maxHeight = "30px"; 
+            plusbutton.onclick = function() {
+                var searcharr = searchNew.split(',');
+                var currix = searcharr.indexOf(chart);
+                searcharr.splice(currix, 0, chart);
+                searchNew = searcharr.toString().replace(',,', ',').replace(/\,$/, '');
+                window.open(path+'?charts='+searchNew, '_self'); 
+            };            
+            div.appendChild(plusbutton);
+
+            //add up button
+            var up = ch_utils.convertToUTF8(' 🛆 ');
+            var upbutton = document.createElement("button");
+            upbutton.textContent = up;
+            upbutton.style.maxHeight = "30px"; 
+            upbutton.onclick = function() {
+                var searcharr = searchNew.split(',');
+                var currix = searcharr.indexOf(chart);
+                if (currix > 0) {
+                    searcharr[currix] = undefined;
+                    searcharr.splice(currix-1, 0, chart);
+                    searchNew = searcharr.toString().replace(',,', ',').replace(/\,$/, '');
+                    window.open(path+'?charts='+searchNew, '_self'); 
+                }
+            };            
+            div.appendChild(upbutton);
+
+            //add down button
+            var down = ch_utils.convertToUTF8(' ⛛ ');
+            var downbutton = document.createElement("button");
+            downbutton.textContent = down;
+            downbutton.style.maxHeight = "30px"; 
+            downbutton.onclick = function() { 
+                var searcharr = searchNew.split(',');
+                var currix = searcharr.indexOf(chart);
+                if (currix < searcharr.length-1) {
+                    searcharr.splice(currix+2, 0, chart);
+                    searcharr[currix] = undefined;
+                    searchNew = searcharr.toString().replace(/^\,/, '').replace(',,', ',');
+                    alert(searchNew);
+                    window.open(path+'?charts='+searchNew, '_self'); 
+                }
+            };
+            div.appendChild(downbutton);
+
+            //display
+            el = document.body;
+            el.appendChild(div);
+
+            var linebreak = document.createElement("br");
+            el.appendChild(linebreak);
+            el.appendChild(linebreak);
+
+        } //addFrame
+  </script> 
+  <script>
+        try {
+            var consts = ch_utils.evalConstants();
+            var frame_width = consts.frame.frame_width ||
+                              consts.standard_display.frame_width || '980px';
+            var frame_height = consts.frame.frame_height ||
+                               consts.standard_display.frame_height || '670px';
+            var chartnames = ch_utils.getParameter('charts');
+            chartnames.split(',').forEach(function(chart, i) {
+                addFrame(chart);
+            })
+        } catch(err) {
+            alert(err.message);
+        }
+  </script>
+</body>
+</html>

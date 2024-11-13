@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    
 //h Authors:      peb piet66
-//h Version:      V1.0.0 2024-05-04/peb
+//h Version:      V1.0.0 2024-08-07/peb
 //v History:      V1.0.0 2024-05-04/peb first version
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
@@ -27,8 +27,12 @@
 //-----------
 var MODULE='writes-chart.js';
 var VERSION='V1.0.0';
-var WRITTEN='2024-05-04/peb';
+var WRITTEN='2024-08-07/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
+
+var url;
+var IndexDBName;
+var tableNameIndex;
 
 //b Main
 //------
@@ -43,6 +47,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //ch_utils.convertCharset = true; //for all ajax inputs
     }
 
+    //detect index database name
+    // /ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/admin.html
+    url = window.location.pathname;
+    IndexDBName = url.split('/')[6];
+    tableNameIndex = IndexDBName+'_Index';
+    console.log('IndexDBName='+IndexDBName);
+
     ch_utils.getLanguage();
 
     //b get start parameters
@@ -56,7 +67,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     chartId = chartId.replace('__', '.');
     var chartIdDisp = chartId;
-    var chartIdDB = 'MxChartDB';
+    var chartIdDB = IndexDBName;
     var chartIdBase = chartId;
     //if other database:
     if (chartId.indexOf('.') > 0) {
