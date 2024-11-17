@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.1.0 2024-10-13/peb
+#h Version:      V2.1.1 2024-11-17/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -115,8 +115,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V2.1.0'
-WRITTEN = '2024-10-13/peb'
+VERSION = 'V2.1.1'
+WRITTEN = '2024-11-17/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -421,20 +421,28 @@ def change_loglevel(new_loglevel):
         app.logger.setLevel(LOGLEVEL)
         app.logger.warn('new loglevel='+str(LOGLEVEL))
 
-def usersize(size):
+def usersize(size, detailed=True):
     '''auxiliary function: convert byte size to user readable size string'''
-    stringsize = str(size)+' Byte'
+
+    stringsize = str(size)+' Bytes'
+    detailsize = stringsize
     if size >= 1024 * 1024 * 1024:
-        stringsize = stringsize + ' = ' + str(round(size/1024/1024/1024, 1)) + ' GiB'
+        stringsize = str(round(size/1024/1024/1024, 1)) + ' GiB'
+        detailsize = detailsize + ' = ' + stringsize
     elif size >= 1024 * 1024:
-        stringsize = stringsize + ' = ' + str(round(size/1024/1024, 1)) + ' MiB'
+        stringsize = str(round(size/1024/1024, 1)) + ' MiB'
+        detailsize = detailsize + ' = ' + stringsize
     elif size >= 1024:
-        stringsize = stringsize + ' = ' + str(round(size/1024, 1)) + ' KiB'
+        stringsize = str(round(size/1024, 1)) + ' KiB'
+        detailsize = detailsize + ' = ' + stringsize
+    if detailed:
+        return detailsize
     return stringsize
 
-def db_sizes(sizes):
+def convert_db_sizes(dbase, sizes):
     '''auxiliary function: convert db sizes into json structure'''
-    sizes_json = {"page count": sizes[0],
+    sizes_json = {"database name": dbase,
+                  "page count": sizes[0],
                   "unused pages": sizes[1],
                   "page size": usersize(sizes[2]),
                   "size complete": usersize(sizes[0]*sizes[2]),
@@ -442,6 +450,23 @@ def db_sizes(sizes):
                   "size free": usersize(sizes[1] *sizes[2])
                   }
     return sizes_json
+
+def get_db_sizes(dbase):
+    '''auxiliary function: get sizes of given db'''
+    try:
+        sql = "SELECT page_count, freelist_count, page_size "
+        sql += "FROM pragma_page_count(), pragma_freelist_count(), pragma_page_size();"
+        command = 'connect'
+        conn = get_db_connection(dbase)
+        command = 'fetchall'
+        sizes = conn.execute(sql).fetchall()[0]
+        command = 'conn.close()'
+        conn.close()
+        return sizes
+    except sqlite3.Error as error:
+        errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
+        conn.close()
+        return errtext
 
 def file_size(dbase):
     '''auxiliary function: get os size of a database file'''
@@ -508,14 +533,17 @@ def get_object_list(dbase, object_type="table"):
         sql = "SELECT name FROM sqlite_master "\
             "WHERE type ='"+object_type+"' AND name NOT LIKE 'sqlite_%';"
     app.logger.info(sql)
+
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
-        command = 'fetchall'
+        command = 'fetchall '+dbase
         rows = conn.execute(sql).fetchall()
     except sqlite3.Error as error:
         errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
         conn.close()
+        if "file is not a database" in errtext:
+            return []
         return errtext
 
     table_list = []
@@ -763,7 +791,8 @@ def route_api_commands():
 
               <tr><td>API version, set loglevel<br>20=info<br>30=error+warning</td><td>
                    GET</td><td>
-                   <a href='../version'><u><font color=blue>/version</font>[?loglevel=20|30]</u></a>
+                   <a href='../version'><u><font color=blue>/version</font></u></a>
+                   <a href='../version?loglevel=30'><u><font color=blue>[?loglevel=20|30]</font></u></a>
                    </td><td></td><td></td></tr>
               <tr><td>list all databases</td><td>
                    GET</td><td>
@@ -1081,6 +1110,11 @@ def route_api_list_databases():
     rownum = 0
     for dbase in dbs:
         dbs[rownum] = dbase.ljust(17)+file_size(dbase)
+        sizes = get_db_sizes(dbase)
+        if isinstance(sizes, tuple):
+            dbs[rownum] += ', ' + 'free: ' + usersize(sizes[1] *sizes[2], False)
+        else:
+            dbs[rownum] += ', ' + "doesn't include a database"
         rownum = rownum + 1
     return response_text(dbs)
 
@@ -1114,20 +1148,11 @@ def route_api_size(dbase):
     if not os.path.isfile(dbase+'.db'):
         return response_text('database '+dbase+" doesn't exist"), OK
 
-    sql = "SELECT page_count, freelist_count, page_size "
-    sql += "FROM pragma_page_count(), pragma_freelist_count(), pragma_page_size();"
-    try:
-        command = 'connect'
-        conn = get_db_connection(dbase)
-        command = 'fetchall'
-        sizes = conn.execute(sql).fetchall()[0]
-        command = 'conn.close()'
-        conn.close()
-    except sqlite3.Error as error:
-        errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
-        conn.close()
-        return errtext
-    sizes_json = db_sizes(sizes)
+    sizes = get_db_sizes(dbase)
+
+    if isinstance(sizes, str):
+        return sizes
+    sizes_json = convert_db_sizes(dbase, sizes)
     return jsonify(sizes_json), OK
 
 @app.route('/<dbase>/rebuild_db', methods=["GET"], endpoint='route_api_rebuild_db')

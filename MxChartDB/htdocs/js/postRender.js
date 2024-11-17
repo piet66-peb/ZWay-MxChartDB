@@ -1067,7 +1067,8 @@ function modulePostRender(control) {
             $("#"+alpacaId).css( "background-color", "white" );
             return;
         } 
-
+        
+        var mess;
         try {
             var g = {};
             /*jshint evil: true */
@@ -1076,7 +1077,7 @@ function modulePostRender(control) {
             $("#"+alpacaId).css( "background-color", "white" );
             return;
         } catch(err) {
-            var mess = err.message;
+            mess = err.message;
             $("#"+alpacaId).css( "background-color", colorInvalid );
             console.log(mess);
             return mess;

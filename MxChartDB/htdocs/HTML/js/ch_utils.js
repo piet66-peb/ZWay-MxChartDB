@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.1 2024-11-06/peb
+//h Version:      V1.0.1 2024-11-16/peb
 //v History:      V1.0.0 2022-01-02/peb first version
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
@@ -29,7 +29,7 @@
 //-----------
 var MODULE='ch-utils.js';
 var VERSION='V1.0.1';
-var WRITTEN='2024-11-06/peb';
+var WRITTEN='2024-11-16/peb';
 
 //-----------
 //b Functions
@@ -95,16 +95,18 @@ var ch_utils = {
 
     //check if any argument is not set (undefined or null) or no number
     noNumber: function() {
+        var ret = false;
         for (var i = 0; i < arguments.length; i++) {
-            if (arguments[i] === undefined ||
+            if ((arguments[i] === undefined ||
                 arguments[i] === null ||
                 typeof arguments[i] === 'string' &&  
                     arguments[i].trim() === '' ||
-                isNaN(arguments[i])) {
-                return true;
+                isNaN(arguments[i]))) {
+                ret = true;
+                break;
             }
-            return false;
         }
+        return ret;
     }, //noNumber
 
     //round a value to the given amount of decimals
@@ -563,7 +565,7 @@ var ch_utils = {
         }
     }, //isChecked
 
-    userTime: function (secs, bold) {
+    userTime: function (secs) {
         try {
             var msecs;
             if (secs === undefined) {
@@ -574,19 +576,7 @@ var ch_utils = {
             } else {
                 msecs = secs;
             }
-/*            
-            var tzo =  new Date().getTimezoneOffset() * 60 * 1000;
-
-            var d = new Date(msecs-tzo);
-            var s = d.toISOString().replace(/T/g, ' ').replace(/\.\d*Z$/g, '');
-            if (bold) {
-                var now = new Date();
-                var today = now.toISOString().replace(/T.*$/g, ' ');
-                if (s.indexOf(today) === 0) {
-                    s = "<font color='maroon'><b>"+s+"</b></font>";
-                }
-            }
-*/            
+           
             var dt = new Date(msecs);
             var s = dt.getFullYear()+'-'+
                     ((dt.getMonth()+1)+'').padStart(2,"0")+'-'+

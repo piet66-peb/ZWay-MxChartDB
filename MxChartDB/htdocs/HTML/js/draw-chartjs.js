@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-11-10/peb
+//h Version:      V2.1.0 2024-11-17/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -32,7 +32,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V2.1.0';
-var WRITTEN = '2024-11-10/peb';
+var WRITTEN = '2024-11-17/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 var url;
@@ -2888,14 +2888,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     //global Javascript code with standard objects
     var g = {
-        notSet: function() {
-            ch_utils.notSet(arguments);
-        },
-        noNumber: function() {
-            ch_utils.noNumber(arguments);
-        },
-        usertime: usertime,
-        round: round,
+        notSet: ch_utils.notSet,
+        noNumber: ch_utils.noNumber,
+        usertime: ch_utils.userTime,    //!!!!!
+        round: ch_utils.round,
     };
 
     function take_global_code(header_global_js) {
@@ -3185,14 +3181,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     function LAST(sensarray) {
         return sensarray[last_disp];
     } //LAST
-
-    function usertime(timestamp) {
-            return ch_utils.userTime(timestamp);
-    } //usertime
-
-    function round(value, decimals) {
-            return ch_utils.round(value, decimals);
-    } //round
 
     //---------------------------------------------------------------------
     // post_calc section end: in-display calculation
