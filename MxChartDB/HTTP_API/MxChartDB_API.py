@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.1.1 2024-11-17/peb
+#h Version:      V2.1.1 2024-11-18/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -116,7 +116,7 @@ import constants
 
 MODULE = 'MxChartDB_API.py'
 VERSION = 'V2.1.1'
-WRITTEN = '2024-11-17/peb'
+WRITTEN = '2024-11-18/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -807,7 +807,7 @@ def route_api_commands():
               <tr><td>rebuild the database (defragment, remove free space)<br>
                    This command has not been tested yet!!!!!</td><td>
                    GET</td><td>/&lt;db&gt;/rebuild_db</td><td>200</td><td>200</td></tr>
-              <tr><td>drop the database</td><td>
+              <tr><td>drop the database (remove file)</td><td>
                    POST</td><td>/&lt;db&gt;/drop_db</td><td>200</td><td>200</td></tr>
               <tr><td>list all user tables in the database</td><td>
                    GET</td><td>/&lt;db&gt;/list_tables</td><td>200</td><td>404</td></tr>
@@ -1114,7 +1114,7 @@ def route_api_list_databases():
         if isinstance(sizes, tuple):
             dbs[rownum] += ', ' + 'free: ' + usersize(sizes[1] *sizes[2], False)
         else:
-            dbs[rownum] += ', ' + "doesn't include a database"
+            dbs[rownum] += ',' + sizes.split(':')[1]
         rownum = rownum + 1
     return response_text(dbs)
 
