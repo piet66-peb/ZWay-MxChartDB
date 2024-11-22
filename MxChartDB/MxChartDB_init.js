@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.2 2024-11-12/peb
+//h Version:      V2.0.2 2024-11-22/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -33,7 +33,7 @@
 //-----------
 //var MODULE='MxChartDB_init.js';
 //var VERSION='V2.0.2';
-//var WRITTEN='2024-11-12/peb';
+//var WRITTEN='2024-11-22/peb';
 
 //-----------
 //b Functions
@@ -84,6 +84,16 @@ var init = function (self) {
         self.info('self.constants.ip', self.constants.ip, 
                   'self.constants.hostname', self.constants.hostname);
 
+        //for intChartUrl:
+        if (self.constants.hasOwnProperty('browser_client')) {
+            if (self.constants.browser_client.ip) {
+                self.constants.ip_browser = self.constants.browser_client.ip;
+            }
+            if (self.constants.browser_client.hostname) {
+                self.constants.hostname_browser = self.constants.browser_client.hostname;
+            }
+        }
+         
         //b check configuration
         //---------------------
         self.err = undefined;
