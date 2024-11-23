@@ -83,13 +83,13 @@
       In arithmetics:
       <br>
       in entry 1 (sensor 1), display market price[ct/kWh]: 
-      <pre><code class="language-javascript">g.market_price = x*100/1000; g.market_price</code></pre>
+      <pre><code class="language-javascript">(g.market_price = x*100/1000)</code></pre>
 
-      in entry 2 (formula), display customer price[ct/kWh]: 
-      <pre><code class="language-javascript">g.final_price = g.customer_price(x0, g.market_price); g.final_price</code></pre>
+      in entry 2 (formula), display final price[ct/kWh]: 
+      <pre><code class="language-javascript">(g.final_price = g.customer_price(x0, g.market_price))</code></pre>
 
-      in entry 3 (formula), display taxes and levies: 
-      <pre><code class="language-javascript">g.taxes_levies = g.final_price - g.market_price; g.taxes_levies</code></pre>
+      in entry 3 (formula), display taxes and levies[ct/kWh]: 
+      <pre><code class="language-javascript">(g.taxes_levies = g.final_price - g.market_price)</code></pre>
 
       in entry 4 (formula), display taxes and levies[%]: 
       <pre><code class="language-javascript">Math.round(g.taxes_levies/g.market_price*100*10)/10</code></pre>
@@ -123,7 +123,7 @@
       <pre><code class="language-javascript"> g.v2 - g.v1</code></pre>
 
       in entry 4 (formula), display taxes and levies[%]: 
-      <pre><code class="language-javascript">Math.round(g.v3/g.v1*100*10)/10</code></pre>
+      <pre><code class="language-javascript">g.round(g.v3/g.v1*100, 1)</code></pre>
 
       <br>
       Much shorter, but also less comprehensible.
@@ -146,6 +146,11 @@
             <td class="center">g.noNumber</td>
             <td>true|false = g.noNumber(&lt;arguments&gt;)</td>
             <td>check if one of the arguments is undefined, null or no number</td>
+         </tr>
+         <tr>
+            <td class="center">g.round</td>
+            <td>g.round(&lt;value&gt;, &lt;decimals&gt;)</td>
+            <td>rounds a floating point number to the given number of decimals</td>
          </tr>
       </table>
 
