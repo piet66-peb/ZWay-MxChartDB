@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.2 2024-11-22/peb
+//h Version:      V2.0.2 2024-11-28/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -33,7 +33,7 @@
 //-----------
 //var MODULE='MxChartDB_init.js';
 //var VERSION='V2.0.2';
-//var WRITTEN='2024-11-22/peb';
+//var WRITTEN='2024-11-28/peb';
 
 //-----------
 //b Functions
@@ -298,8 +298,9 @@ var init = function (self) {
             var i = self.controller.instances[ix];
            if (i.moduleId === self.moduleName && 
                 i.id !== self.id &&
+                (i.active === true || i.active === 'true') &&
                 i.params.chartId === chartIdTest) {
-                err = 'ChartId '+chartIdTest+' is already used by other instance '+i.id;
+                err = 'ChartId '+chartIdTest+' is already used by other MxChartDB instance '+i.id;
                 self.notifyError(err+help);
                 throw err;
                 }
