@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.2 2024-11-28/peb
+//h Version:      V2.0.2 2024-12-07/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -33,7 +33,7 @@
 //-----------
 //var MODULE='MxChartDB_init.js';
 //var VERSION='V2.0.2';
-//var WRITTEN='2024-11-28/peb';
+//var WRITTEN='2024-12-07/peb';
 
 //-----------
 //b Functions
@@ -270,14 +270,15 @@ var init = function (self) {
         self.log('*** init1');
         //b set chart index
         //-----------------
+        var chartIdTest = self.moduleName + self.id;
         if (!self.config.chartId ||
             self.config.dataControl.dc_method === 'dc_clear') {
-            self.config.chartId = self.moduleName + self.id;
+            self.config.chartId = chartIdTest;
+            self.config.dataControl.dc_method = 'dc_clear';
         }
     
         //b check if wrong chart id in configuration
         //------------------------------------------
-        var chartIdTest = self.moduleName + self.id;
         var err;
         var url = '/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_repair.html';
         var help = '<br>see '+
@@ -484,7 +485,7 @@ var init = function (self) {
         //-----------------
         var sensorsCount = self.config.sensors.length;
         _.each(self.config.sensors, function(sensor, ix) {
-            self.log(ix, sensor.index);
+            self.log('self.config.sensors', 'ix='+ix, 'sensor.index='+sensor.index);
             var devId, vDev, deviceType, title, scale, formula, chartLabel, intcharticon;
             self.log("sensor.entrytype", sensor.entrytype);
             if (sensor.entrytype === 'disabled') {
@@ -494,8 +495,8 @@ var init = function (self) {
                 intcharticon = false;
             } else
             if (sensor.entrytype === 'formula') {
-                if (sensor.formula.length === 0) {
-                    self.err = 'no formula defined for index '+ix;
+                if (!sensor.formula.length || sensor.formula.length === 0) {
+                    self.err = 'no formula defined for index '+sensor.index;
                 } 
                 if (self.err) {
                     self.notifyError(self.err);
@@ -508,20 +509,32 @@ var init = function (self) {
             } else
             if (sensor.entrytype === 'sensor') {
                 if (!sensor.device && poll_method !== 'poll_never') {
-                    self.err = 'no sensor defined for index '+ix;
+                    self.err = 'no sensor defined for index '+sensor.index;
                 } 
                 if (self.err) {
                     self.notifyError(self.err);
                     throw self.err;
                 }
-                devId = sensor.device;
-                vDev = self.controller.devices.get(devId);
-                deviceType = vDev.get("deviceType");
-                title = vDev.get("metrics:title");
-                scale = vDev.get("metrics:scaleTitle");
-                formula = sensor.formula;
-                chartLabel =  sensor.devlabel;
-                intcharticon = sensor.intcharticon || false;
+                if (sensor.device) {
+                    devId = sensor.device;
+                    vDev = self.controller.devices.get(devId);
+                    deviceType = vDev.get("deviceType");
+                    title = vDev.get("metrics:title");
+                    scale = vDev.get("metrics:scaleTitle");
+                    formula = sensor.formula;
+                    chartLabel =  sensor.devlabel;
+                    intcharticon = sensor.intcharticon || false;
+                } else {
+                    self.err = 'no sensor defined for index '+ix;
+                    self.warn(self.err);
+                    devId = null;
+                    deviceType = '';
+                    title = null;
+                    scale = null;
+                    formula = sensor.formula;
+                    chartLabel =  sensor.devlabel;
+                    intcharticon = null;
+                }
             } else {
                 sensor.entrytype = 'disabled';
                 devId = null;
@@ -627,7 +640,8 @@ var init = function (self) {
             self.sensors.push(item);
             self.log("sensor item", item);
     
-        });
+        }); //_.each(self.config.sensors
+
         //------------
         //TODO: rectangleDevices obsolete in new version
         if (typeof self.config.rectangleDevices !== "undefined") {

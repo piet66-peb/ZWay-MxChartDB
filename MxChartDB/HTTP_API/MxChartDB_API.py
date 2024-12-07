@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.1.1 2024-11-18/peb
+#h Version:      V2.1.1 2024-12-07/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -116,7 +116,7 @@ import constants
 
 MODULE = 'MxChartDB_API.py'
 VERSION = 'V2.1.1'
-WRITTEN = '2024-11-18/peb'
+WRITTEN = '2024-12-07/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -839,12 +839,17 @@ def route_api_commands():
                                     <br>val: stringified JSON array of values</td><td>
                    POST</td><td>/&lt;db&gt;/&lt;table&gt;/create_table</td><td>201</td><td>900 (db error)</td></tr>
               <tr><td>add a new row [, delete old rows with ts < timestamp]</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>data:{ts=&lt;timestamp&gt;,val=&lt;values&gt;}</td><td>200</td><td>900 (db error)</td></tr>
+                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>
+                   data:{&quot;ts&quot;:&lt;timestamp&gt;,&quot;val&quot;:[&lt;timestamp&gt;,&lt;value1&gt;,...]}</td>
+                   <td>200</td><td>900 (db error)</td></tr>
               <tr><td>bulk insert rows [, delete old rows with ts < timestamp]</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>data:[{ts=&lt;timestamp&gt;,val=&lt;values&gt;}, ...]</td><td>200</td><td>900 (db error)</td></tr>
+                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>
+                   data:[{&quot;ts&quot;:&lt;timestamp&gt;,&quot;val&quot;:[&lt;timestamp&gt;,&lt;value1&gt;,...]}, ...]</td>
+                   <td>200</td><td>900 (db error)</td></tr>
 
               <tr><td>read all next rows with ts > timestamp till end</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_next[?ts=&lt;timestamp&gt;]</td><td>200</td><td>ts=0: 404<br>ts>0: 304 (not modified)</td></tr>
+                   GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_next[?ts=&lt;timestamp&gt;]</td><td>200</td>
+                   <td>ts=0: 404<br>ts>0: 304 (not modified)</td></tr>
               <tr><td>read all rows &gt;= from_timestamp and &lt;= to_timestamp</td><td>
                    GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_range[?from=&lt;timestamp&gt;]
                                                                      [&amp;to=&lt;timestamp&gt;]</td>
@@ -854,15 +859,18 @@ def route_api_commands():
               <tr><td>read last ts in table</td><td>
                    GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_last_ts[?raw=yes]</td><td>200</td><td>404</td></tr>
               <tr><td>delete all previous rows with ts < timestamp from beginning</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/delete_prev?ts=&lt;timestamp&gt;</td><td>200</td><td>200</td></tr>
+                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/delete_prev?ts=&lt;timestamp&gt;</td>
+                   <td>200</td><td>200</td></tr>
               <tr><td>delete a row</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/delete?ts=&lt;timestamp&gt;</td><td>200</td><td>200</td></tr>
+                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/delete?ts=&lt;timestamp&gt;</td><td>200</td>
+                   <td>200</td></tr>
 
               <tr><td colspan=6 style="background-color: #f2f2f2;"><br>*** SQL: invoke any sql command *** 
                <br><br></td></tr>
 
               <tr><td>invoke a sql command<br> in select use val(n) for nth value of MxChartDB's JSON array val</td><td>
                    POST</td><td>/&lt;db&gt;/sql,<br>data:&lt;sql command&gt;</td><td>200</td><td>900 (db error)</td></tr>
+
               <tr><td>invoke a sql select command<br> in select use val(n) for nth value of MxChartDB's JSON array val</td><td>
                    GET</td><td>/&lt;db&gt;/sql?&lt;sql command&gt;</td><td>200</td><td>900 (db error)</td></tr>
 
@@ -1485,6 +1493,7 @@ def route_api_insert(dbase, table):
 
         #raw data (application/x-www-form-urlencoded):
         raw_data = request.get_data().decode('UTF-8')   # JSON.strigified
+        app.logger.info(raw_data)
 
         jdata = json.loads(raw_data)                        # json object
 
