@@ -13,7 +13,7 @@
         This is not a problem. No data will be lost.
         <br><br>
         This is because the API is multithreaded, but the SQLite engine is not. 
-        If there are too many write requests to the same database (file) at once, 
+        If there are too many write requests) at once, 
         the engine will temporarily lock that database for further writes.
         <br><br>
         The client removes the data from the send buffer only after it is 

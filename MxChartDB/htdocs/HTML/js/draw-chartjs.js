@@ -12,11 +12,13 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-11-17/peb
+//h Version:      V3.0.0 2024-12-28/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
 //v               V2.1.0 2024-01-09/peb [+]other database 
+//v               V2.1.0 2024-01-09/peb [+]other database 
+//v               V3.0.0 2024-12-13/peb [-]remove obsolete fill100
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -24,20 +26,25 @@
 
 /*jshint esversion: 5 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils */
+/*globals ch_utils, header_utils */
 'use strict';
 
 //-----------
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V2.1.0';
-var WRITTEN = '2024-11-17/peb';
+var VERSION = 'V3.0.0';
+var WRITTEN = '2024-12-28/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
+//-----------
+//b Variables
+//-----------
 var url;
 var IndexDBName;
 var tableNameIndex;
+
+var g; //object for global user defined functions
 
 //-----------
 //b Functions
@@ -84,8 +91,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     var ts_last; //last stored ts
 
     var config_data_datasets_save = [];
-    var fill100 = {}; //to fill completely from top to bottom (98+99)
-
     var chartArithmetics;
 
     //----------- text labels and icons ------------
@@ -202,18 +207,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 },
                 legend: {
                     display: true,
-                    //fill100: hide both lines by mouseclick on legend:
-                    onClick: function(event, legendItem, legend) {
-                        var hidden = legendItem.hidden ? false : true;
-                        config.data.datasets[legendItem.datasetIndex].hidden = hidden;
-                        Object.keys(fill100).forEach(function(fill100_ix) {
-                            if (fill100[fill100_ix] === legendItem.datasetIndex + 1) {
-                                config.data.datasets[fill100_ix - 1].hidden = hidden;
-                            }
-                        });
-                        config_data_datasets_save = config.data.datasets;
-                        window.myLine.update();
-                    },
                     //hide legend if label is empty:
                     labels: {
                         filter: function(legendItem, data) {
@@ -784,10 +777,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
             if (errText <= 0) {
                 //*** call read_values
-                post_calc_button(vLog.chartHeader.post_calc);
-                if (take_global_code(vLog.chartHeader.global_js)) {
-                    program_control(request_mode, from, to);
-                }
+                chartArithmetics = header_utils.prepare_formulas(vLog.chartHeader);
+                header_utils.enable_post_calc('post_calc', vLog.chartHeader);
+                program_control(request_mode, from, to);
             } else {
                 doRefresh = false;
                 showTooltipBox = false;
@@ -917,8 +909,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             //console.log(vLog.chartHeader.chartgraphTypes[i], sensorsOnlyChange[i]);
         }
-
-        chartArithmetics = vLog.chartHeader.chartArithmetics;
 
         //convert opacity
         if (vLog.chartHeader.hasOwnProperty('opacity')) {
@@ -1089,7 +1079,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             labels: [],
             datasets: []
         };
-        fill100 = {};
         y3LabelsUsed = {};
 
         //definitions for category part
@@ -1105,19 +1094,20 @@ document.addEventListener("DOMContentLoaded", function(event) {
             for (var ix1 = 1; ix1 < len1; ix1++) {
                 if (vLog.chartHeader.entrytypes[ix1] === 'disabled') {
                     vLog.chartHeader.chartLabels[ix1] = 'null';
-                    vLog.chartHeader.chartArithmetics[ix1] = 'null';
+                    chartArithmetics[ix1] = 'null';
                 }
             }
         }
+
+        //set/reset global object g
+        g = header_utils.take_global_code(vLog.chartHeader);
+        console.log(g);
+
         //*** call setDatasetHeader
         for (var label_ix = 1; label_ix < chartLabelsLen; label_ix++) {
             var label_text = vLog.chartHeader.chartLabels[label_ix];
-            data.datasets.push(setDatasetHeader(label_text, label_ix, null));
+            data.datasets.push(setDatasetHeader(label_text, label_ix));
         }
-        //add 2d part values for fill 100:
-        Object.keys(fill100).forEach(function(fill100_ix) {
-            data.datasets.push(setDatasetHeader('null', fill100[fill100_ix], fill100_ix));
-        });
 
         //restore user hidden line flag to the state before update 
         for (var ih = 0; ih < config_data_datasets_save.length; ih++) {
@@ -1131,57 +1121,74 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         //------------------- set line values data -------------------------------
 
-        //*** call setDatasetValues
+        //b for all data points ip
+        //------------------------
         var lengthChartValues = vLog.chartValues.length;
-        var valueSet;
-        for (var ipoint = 0; ipoint < lengthChartValues; ipoint++) {
-            valueSet = vLog.chartValues[ipoint];
-            if (!Array.isArray(valueSet)) {
-                console.log('error: at chartValues[' + ipoint + '}:');
-                console.log('valueSet is not an array:');
-                console.log(valueSet);
+        var ip, ix, X, Xprev, TOOLTIPs;
+        for (ip = 0; ip < lengthChartValues; ip++) {
+            if (!Array.isArray(vLog.chartValues[ip])) {
+                console.log('error: at chartValues[' + ip + '}:');
+                console.log('X is not an array:');
+                console.log(vLog.chartValues[ip]);
                 continue;
             }
 
-            var values_count = valueSet.length;
-            //add null value for subsequent added sensors without values
-            for (var ix = values_count; ix < chartLabelsLen; ix++) {
-                valueSet[ix] = null;
+            //b save the values of previous datapoint ip-1
+            //--------------------------------------------
+            if (typeof X !== 'undefined') {
+                Xprev = JSON.parse(JSON.stringify(X));
+            } else {
+                Xprev = new Array(lengthChartValues).fill(undefined);
             }
+            X = JSON.parse(JSON.stringify(vLog.chartValues[ip]));
+            TOOLTIPs = [];
+            //console.log(Xprev);
+            //console.log(X);
+
+            //b prepare values for all sensors ix of the current datapoint ip
+            //---------------------------------------------------------------
+            var values_count = X.length;
             for (ix = 0; ix < chartLabelsLen; ix++) {
-                var t = valueSet[ix];
-                var timestamp;
-                if (ix === 0) {
-                    timestamp = valueSet[ix];
+                //add null-value for subsequent added sensors without values
+                if (ix >= values_count) {X[ix] = null;}
+
+                //get tooltip
+                if (X[ix] && typeof X[ix] === 'object') {
+                    if (X[ix].hasOwnProperty('tooltip')) {
+                        TOOLTIPs[ix] = X[ix].tooltip.toString().replace(/\|/g, '\n');
+                    } else {
+                        TOOLTIPs[ix] = '';
+                    }
+                    if (X[ix].hasOwnProperty('value')) {
+                        X[ix] = X[ix].value;
+                    }
                 }
-                setDatasetValues(data, valueSet, ix, ix, ipoint, timestamp);
+            }
+
+            //b compute sensor values and store value (=>setDatasetValues)
+            //------------------------------------------------------------
+            for (ix = 0; ix < chartLabelsLen; ix++) {
+                setDatasetValues(data, X, ix, ix, ip, Xprev, TOOLTIPs);
             }
 
             //store last values
             for (ix = 1; ix < chartLabelsLen; ix++) {
-                var currValue = valueSet[ix];
+                var currValue = X[ix];
                 if (currValue && typeof currValue === 'object') {
                     currValue = currValue.value || null;
                 }
                 if (chartLastValues[ix].length === 0) {
-                    chartLastValues[ix] = [valueSet[0], currValue];
+                    chartLastValues[ix] = [X[0], currValue];
                 } else
                 if (!sensorsOnlyChange[ix]) {
-                    chartLastValues[ix] = [valueSet[0], currValue];
+                    chartLastValues[ix] = [X[0], currValue];
                 } else
                 if (typeof currValue !== typeof chartLastValues[ix][1] ||
                     currValue !== chartLastValues[ix][1]) {
-                    chartLastValues[ix] = [valueSet[0], currValue];
+                    chartLastValues[ix] = [X[0], currValue];
                 }
             }
-
-            //add 2d part values for fill 100:
-            /*jshint -W083 */
-            Object.keys(fill100).forEach(function(fill100_ix) {
-                setDatasetValues(data, valueSet, fill100[fill100_ix], fill100_ix * 1, ipoint);
-            });
-            /*jshint +W083 */
-        } //chartValues for ipoint
+        } //chartValues for ip
         //console.log('chartValues: '+(Date.now()-startRun)/1000+' sec');
 
         //------------------- set night background -------------------------------
@@ -1194,24 +1201,24 @@ document.addEventListener("DOMContentLoaded", function(event) {
             var currLevel, currTime, item = {};
 
             for (var ixx = 0; ixx < lengthChartValues; ixx++) {
-                valueSet = vLog.chartValues[ixx];
+                X = vLog.chartValues[ixx];
                 //get current daylight value
-                if (!valueSet[nightDeviceIndex]) { //value not set
-                    continue;
-                }
-                if (typeof valueSet[nightDeviceIndex] === 'object') {
-                    currLevel = valueSet[nightDeviceIndex].value || null;
+                if (!X[nightDeviceIndex]) { //value not set
+                    currLevel = lastLevel;
+                } else
+                if (typeof X[nightDeviceIndex] === 'object') {
+                    currLevel = X[nightDeviceIndex].value || lastLevel;
                 } else {
-                    currLevel = valueSet[nightDeviceIndex] || null;
+                    currLevel = X[nightDeviceIndex] || lastLevel;
                 }
 
                 //off > start, on > end:
                 if (currLevel && currLevel !== lastLevel) {
-                    currTime = valueSet[0];
+                    currTime = X[0];
                     if (currLevel === 'off' && (!lastLevel || lastLevel === 'on')) { //to night
                         item.start = currTime;
                     } else
-                    if (currLevel === 'on' && lastLevel === 'off') { //to day
+                    if (currLevel === 'on' && (!lastLevel || lastLevel === 'off')) { //to day
                         item.end = currTime;
                         nightArray.push(item);
                         item = {};
@@ -1222,12 +1229,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 //last value
                 if (ixx === lengthChartValues - 1 && currLevel === 'off' &&
                     item.hasOwnProperty('start')) {
-                    currTime = valueSet[0];
+                    currTime = X[0];
                     item.end = currTime;
                     nightArray.push(item);
                 }
             } //for
-            //console.log('nightArray', nightArray);
+            console.log('nightArray', nightArray);
 
             //build night annotations box
             var len = nightArray.length;
@@ -1459,8 +1466,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         config.plugins[0].afterRender = undefined;
     }
 
-    function setDatasetHeader(label, ix, fill100_ix) {
-        //console.log('setDatasetHeader', label, ix, fill100_ix);
+    function setDatasetHeader(label, ix) {
+        //console.log('setDatasetHeader', label, ix);
         //console.log('data', data);
 
         //set color
@@ -1594,14 +1601,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             fill0 = 'start';
                         } else if (fillArr[0] === 99) { //fill to top
                             fill0 = 'end';
-                        } else if (fillArr[0] === 100) { //fill completely from top to bottom
-                            if (fill100_ix) {
-                                fill0 = 'end';
-                            } else {
-                                fill0 = 'start';
-                                //store ix for 2d part of fill 100:
-                                fill100[Object.keys(fill100).length + chartLabelsLen] = ix;
-                            }
                         } else if (fillArr[0] >= 1) {
                             fill0 = fillArr[0] - 1;
                         }
@@ -1669,7 +1668,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     }
 
-    function store_maxValues(x, ix_store, ix, data, ipoint, timestamp, valueSet) {
+    function store_maxValues(x, ix_store, ix, data, ip, timestamp, X) {
         var mess, x_pre;
         if (x === null) {
             if (maxValues[ix_store - 1] === undefined) {
@@ -1677,7 +1676,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             if (scaleType[ix_store - 1] === undefined) {
                 scaleType[ix_store - 1] = null;
-                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ipoint+']='+x);
+                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
             }
             return x;
         } else
@@ -1686,87 +1685,79 @@ document.addEventListener("DOMContentLoaded", function(event) {
             x = x - 0;
             maxValues[ix_store - 1] = maxValues[ix_store - 1] ? Math.max(maxValues[ix_store - 1], x) : x;
             scaleType[ix_store - 1] = 'number';
-            //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ipoint+']='+x);
+            //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
             numberAxisNecessary = true;
             return Math.round(x * 100) / 100;
         } else
         if (typeof x === 'string') {
             if (maxValues[ix_store - 1]) {
-                x_pre = vLog.chartValues[ipoint - 1][ix];
+                x_pre = vLog.chartValues[ip - 1][ix];
                 if (x !== x_pre.toString()) {
-                    mess = ch_utils.buildMessage(27, ix, ipoint, ch_utils.userTime(timestamp), x_pre, x);
+                    mess = ch_utils.buildMessage(27, ix, ip, ch_utils.userTime(timestamp), x_pre, x);
                     setErrormessage(ix, mess, data.datasets[ix - 1]);
-                    console.log(valueSet);
+                    console.log(X);
                 }
                 return null;
             } else {
                 maxValues[ix_store - 1] = false;
                 scaleType[ix_store - 1] = 'string';
-                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ipoint+']='+x);
+                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
                 textAxisNecessary = true;
                 return x;
             }
         } else
         if (typeof x === 'number') {
             if (maxValues[ix_store - 1] === false) {
-                x_pre = vLog.chartValues[ipoint - 1][ix];
+                x_pre = vLog.chartValues[ip - 1][ix];
                 if (x.toString() !== x_pre) {
-                    mess = ch_utils.buildMessage(27, ix, ipoint, ch_utils.userTime(timestamp), x_pre, x);
+                    mess = ch_utils.buildMessage(27, ix, ip, ch_utils.userTime(timestamp), x_pre, x);
                     setErrormessage(ix, mess, data.datasets[ix - 1]);
-                    console.log(valueSet);
+                    console.log(X);
                 }
                 return null;
             } else {
                 maxValues[ix_store - 1] = maxValues[ix_store - 1] ? Math.max(maxValues[ix_store - 1], x) : x;
                 scaleType[ix_store - 1] = 'number';
-                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ipoint+']='+x);
+                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
                 numberAxisNecessary = true;
                 return Math.round(x * 100) / 100;
             }
         }
     } //store_maxValues
 
-    function setDatasetValues(data, valueSet, ix, ix_store, ipoint, timestamp) {
-        //console.log('setDatasetValues ipoint='+ipoint+ ' ix='+ix);
+    //h
+    //h setDatasetValues
+    //h computes sensor value for index ix by formula and stores value and
+    //h tooltip to dataset
+    //h setDatasetValues(...);
+    //-------------------------------------------------------------------------
+    function setDatasetValues(data, X, ix, ix_store, ip, Xprev, TOOLTIPs) {
+        //console.log('setDatasetValues ip='+ip+ ' ix='+ix);
+        //console.log(X);
 
-        //time
+        //b if timestamp
+        //--------------
         if (ix === 0) {
-            var t = valueSet[ix];
-            data.labels.push(t);
-            if (!startTime) {
-                startTime = t;
-            } else {
-                startTime = Math.min(startTime, t);
-            }
-            endTime = t;
+            //b push timestamp to data.labels
+            //-------------------------------
+            data.labels.push(X[0]);
+            if (!startTime) {startTime = X[0];}
+            else {startTime = Math.min(startTime, X[0]);}
+            endTime = X[0];
 
-            //store computed x value to g.vi
-            g['v' + ix] = t;
+            g.v0 = Xprev[0];
 
-        //take value and tooltip
+        //b else if sensor value
+        //----------------------
         } else {
-            var x_tooltip = ' ';
-            var x = valueSet[ix];
-            if (valueSet[ix] && typeof valueSet[ix] === 'object') {
-                if (valueSet[ix].hasOwnProperty('value')) {
-                    x = valueSet[ix].value;
-                }
-                if (valueSet[ix].hasOwnProperty('tooltip')) {
-                    x_tooltip = valueSet[ix].tooltip;
-                    if (x_tooltip === true) {
-                        x_tooltip = 'true';
-                    }
-                    if (x_tooltip === false) {
-                        x_tooltip = 'false';
-                    }
-                    if (typeof x_tooltip === 'string') {
-                        x_tooltip = x_tooltip.replace(/\|/g, '\n');
-                    }
-                }
-            }
+            var x = X[ix];
+            g.v = g['v' + ix];
 
-            //correct value by formula
+            //b correct value by formula
+            //--------------------------
+            //console.log(ip+'-'+ix);
             var formula = chartArithmetics[ix];
+            //console.log(formula);
             if (sensorsOnlyChange[ix] && chartLastValues[ix][1] === undefined) {
                 x = null;
                 formula = null;
@@ -1779,114 +1770,29 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 x = null;
             } else
             if (formula && formula !== 'null') {
-                //console.log('1 ************* ix='+ix+', formula="'+formula+'"');
-                var iy, y, patt;
-                if (formula.indexOf('x') >= 0) {
-                    //previous x value x[-1]
-                    if (formula.indexOf('[-1]') > 0) {
-                        //console.log('ipoint='+ipoint+' ix='+ix+' '+'x='+x+' '+formula);
-                        if (formula.indexOf('x[-1]') >= 0) {
-                            var x_prev;
-                            if (ipoint > 0) {
-                                x_prev = chartLastValues[ix][1] || null;
-                            }
-                            if (x_prev === undefined || x_prev === null) {
-                                formula = null;
-                            } else {
-                                patt = new RegExp('\\bx\\b\\[-1\\]', "g");
-                                formula = formula.replace(patt, x_prev);
-                            }
-                        } //x[-1]
-                        //console.log('x: '+formula);
-
-                        if (formula && formula.indexOf('x0[-1]') >= 0) {
-                            var x0_prev;
-                            if (ipoint > 0) {
-                                x0_prev = chartLastValues[ix][0] || null;
-                                //console.log('x0_prev='+x0_prev);
-                            }
-                            if (x0_prev === undefined || x0_prev === null) {
-                                formula = null;
-                            } else {
-                                patt = new RegExp('\\bx0\\b\\[-1\\]', "g");
-                                formula = formula.replace(patt, x0_prev);
-                            }
-                        } //x0[-1]
-                        //console.log('x0: '+formula);
-
-                        //previous parallel values xi[-1], x1 > x0
-                        patt = /\bx\d+\b\[-1\]/;
-                        if (formula && patt.test(formula)) {
-                            //exec formula with value(s) of further device(s)
-                            if (ipoint > 0) {
-                                for (iy = chartLabelsLen - 1; iy > 0; iy--) {
-                                    patt = new RegExp('\\bx' + iy + '\\b\\[-1\\]');
-                                    if (patt.test(formula)) {
-                                        var iy_prev = null;
-                                        iy_prev = chartLastValues[iy][1] || null;
-                                        if (iy_prev === undefined || iy_prev === null) {
-                                            formula = null;
-                                        } else {
-                                            patt = new RegExp('\\bx' + iy + '\\b\\[-1\\]', "g");
-                                            if (typeof iy_prev === 'string') {
-                                                formula = formula.replace(patt, '"' + iy_prev + '"');
-                                            } else {
-                                                formula = formula.replace(patt, iy_prev);
-                                            }
-
-                                        }
-                                    }
-                                } //for iy
-                            } else {
-                                formula = null;
-                            }
-                        } //xi[-1]
-                    } //[-1]
-
-                    //current parallel values xi
-                    patt = /\bx\d+\b/;
-                    if (patt.test(formula)) {
-                        //exec formula with value(s) of further device(s)
-                        for (iy = chartLabelsLen - 1; iy >= 0; iy--) {
-                            patt = new RegExp('\\bx' + iy + '\\b');
-                            if (patt.test(formula)) {
-                                y = null;
-                                if (iy > valueSet.length - 1) {
-                                    y = null;
-                                } else
-                                if (typeof valueSet[iy] !== 'object') {
-                                    y = valueSet[iy];
-                                } else
-                                if (valueSet[iy] && valueSet[iy].hasOwnProperty('value')) {
-                                    y = valueSet[iy].value;
-                                }
-                                patt = new RegExp('\\bx' + iy + '\\b', "g");
-                                if (typeof y === 'string') {
-                                    formula = formula.replace(patt, '"' + y + '"');
-                                } else {
-                                    formula = formula.replace(patt, y);
-                                }
-                            }
-                        }
-                    } //xi
-                } //x
-                //console.log('2 ************* ix='+ix+', formula="'+formula+'"');
-
                 var label = data.datasets[ix - 1].label;
-                var formula_orig = chartArithmetics[ix];
-                var errmess = ch_utils.buildMessage(24, ix, label, ch_utils.userTime(valueSet[0]));
+                var errmess = ch_utils.buildMessage(24, ix, label, X[0]+'='+ch_utils.userTime(X[0]));
 
                 try {
                     /*jshint evil: true */
-                    //console.log('ix='+ix+' formula='+formula);
                     x = eval(formula);
                     /*jshint evil: false */
 
+                    if (typeof x === 'number' && !isFinite(x)) {
+                        console.log(ch_utils.buildMessage(24, ix, label, ch_utils.userTime(X[0])));
+                        console.log(ch_utils.buildMessage(25));
+                        console.log('formula = "' + formula + '"');
+                        console.log(Xprev);
+                        console.log(X);
+                        console.log(g);
+                        setErrormessage(ix, '3 ' + errmess+'\n'+ch_utils.buildMessage(39), data.datasets[ix - 1]);
+                    } else
                     if (typeof x !== 'string' && x !== null && isNaN(x)) {
                         if (label.indexOf(ch_utils.buildMessage(34)) < 0) {
                             console.log(ch_utils.buildMessage(25));
-                            console.log('formula original = "' + formula_orig + '"');
-                            console.log('>> formula corrected = "' + formula + '"');
+                            console.log('formula = "' + formula + '"');
+                            console.log(Xprev);
+                            console.log(X);
                             console.log(g);
                             console.log('x=' + x);
                             setErrormessage(ix, '1 ' + errmess, data.datasets[ix - 1]);
@@ -1896,32 +1802,35 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     x = x === undefined ? null : x;
                 } catch (err) {
                     if (label.indexOf(ch_utils.buildMessage(34)) < 0) {
-                        console.log(ch_utils.buildMessage(24, ix, label, ch_utils.userTime(valueSet[0])));
+                        console.log(ch_utils.buildMessage(24, ix, label, ch_utils.userTime(X[0])));
                         console.log(ch_utils.buildMessage(25));
-                        console.log(ch_utils.buildMessage(0, 'formula original = "' + formula_orig + '"'));
-                        console.log(ch_utils.buildMessage(0, '>> formula corrected = "' + formula + '"'));
+                        console.log('formula = "' + formula + '"');
+                        console.log(Xprev);
+                        console.log(X);
                         console.log(g);
-                        setErrormessage(ix, '2 ' + errmess, data.datasets[ix - 1]);
+                        setErrormessage(ix, '2 ' + errmess+'\n'+err.message, data.datasets[ix - 1]);
                     }
                     x = null;
                 } //catch
             } //formula
+            //console.log('x='+x);
 
-            //convert on/off
+            //b convert on/off
+            //----------------
             if (vLog.chartHeader.convertOnOff) {
-                if (x === 'on') {
-                    x = 1;
-                }
-                if (x === 'off') {
-                    x = 0;
-                }
+                if (x === 'on')  {x = 1;}
+                if (x === 'off') {x = 0;}
             }
 
-            //x = store_maxValues (x, ix_store, ix, data, ipoint);
-            x = store_maxValues(x, ix_store, ix, data, ipoint, timestamp, valueSet);
+            //b store data for to build the scales
+            //------------------------------------
+            x = store_maxValues(x, ix_store, ix, data, ip, X[0], X);
 
+            //b if text value
+            //---------------
             if (typeof x === 'string') {
-                //add new, not defined text labels
+                //b add new, not defined text labels
+                //----------------------------------
                 if (y3Labels.indexOf(x) < 0) {
                     y3Labels.unshift(x);
                     y3reduceUnusedTicks = false;
@@ -1929,12 +1838,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 }
                 y3LabelsUsed[x] = 'used';
             }
-            data.datasets[ix_store - 1].data.push(x);
-            data.datasets[ix_store - 1].tooltips.push(x_tooltip);
 
-            //store computed x value to g.vi
+            //b store sensor value and tooltip to data.datasets
+            //-------------------------------------------------
+            data.datasets[ix_store - 1].data.push(x);
+            data.datasets[ix_store - 1].tooltips.push(TOOLTIPs[ix]);
+
+            //b store computed x value to g.vi
+            //--------------------------------
             g['v' + ix] = x;
-        } //take value and tooltip
+        } //else if sensor value
     } //setDatasetValues
 
     function formatColor(strColor) {
@@ -2873,71 +2786,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //handleVisibilityChange
 
     //---------------------------------------------------------------------
-    // global_js section begin: global/user definitions
-    //---------------------------------------------------------------------
-    function concatObjects(targetObj, newObj) {
-        //console.log('concatObjects');
-        for (var key in newObj) {
-            if (newObj.hasOwnProperty(key)) {
-                //console.log('key='+key);
-                //console.log('item='+newObj[key]);
-                targetObj[key] = newObj[key];
-            }
-        }
-    } //concatObjects
-
-    //global Javascript code with standard objects
-    var g = {
-        notSet: ch_utils.notSet,
-        noNumber: ch_utils.noNumber,
-        usertime: ch_utils.userTime,    //!!!!!
-        round: ch_utils.round,
-    };
-
-    function take_global_code(header_global_js) {
-        if (!header_global_js) {
-            return true;
-        }
-        if (!header_global_js.define_global_js) {
-            return true;
-        }
-        try {
-            var g_tmp = {};
-            /*jshint evil: true */
-            eval('g_tmp = ' + header_global_js.code);
-            /*jshint evil: false */
-
-            concatObjects(g, g_tmp);
-            console.log(g);
-
-            return true;
-        } catch (err) {
-            ch_utils.alertMessage(38, err.message);
-            return false;
-        }
-    } // take_global_code
-
-    //---------------------------------------------------------------------
-    // global_js section end: global/user definitions
-    //---------------------------------------------------------------------
-
-    //---------------------------------------------------------------------
     // post_calc section begin: in-display calculation
     //---------------------------------------------------------------------
     var first_disp, last_disp, first_buffer, last_buffer, first, last;
-
-    function post_calc_button(header) {
-        if (!header) {
-            ch_utils.buttonVisible('post_calc', false);
-            return;
-        }
-        if (header.length === 0) {
-            ch_utils.buttonVisible('post_calc', false);
-            return;
-        }
-        ch_utils.buttonText('post_calc', 32);
-        ch_utils.buttonVisible('post_calc', true);
-    } // post_calc_button
 
     //define variables
     var only_changed;

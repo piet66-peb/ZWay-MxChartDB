@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.2 2024-12-07/peb
+//h Version:      V2.0.2 2024-12-23/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -33,7 +33,7 @@
 //-----------
 //var MODULE='MxChartDB_init.js';
 //var VERSION='V2.0.2';
-//var WRITTEN='2024-12-07/peb';
+//var WRITTEN='2024-12-23/peb';
 
 //-----------
 //b Functions
@@ -407,6 +407,7 @@ var init = function (self) {
         var poll_method = self.config.store_value_set.poll_method;
         globalData = {
             chartTitle: self.config.chartTitle.trim(),
+            DBName: self.config.DBName,
             chartId: self.config.chartId,
             chartInterval: self.config.interval,
             initialInterval: self.config.initialInterval,
@@ -508,13 +509,10 @@ var init = function (self) {
                 intcharticon = false;
             } else
             if (sensor.entrytype === 'sensor') {
-                if (!sensor.device && poll_method !== 'poll_never') {
-                    self.err = 'no sensor defined for index '+sensor.index;
+                if (!sensor.device) {
+                    var err = 'entry '+sensor.index+': no virtual device defined';
+                    self.warn(err);
                 } 
-                if (self.err) {
-                    self.notifyError(self.err);
-                    throw self.err;
-                }
                 if (sensor.device) {
                     devId = sensor.device;
                     vDev = self.controller.devices.get(devId);
@@ -525,8 +523,6 @@ var init = function (self) {
                     chartLabel =  sensor.devlabel;
                     intcharticon = sensor.intcharticon || false;
                 } else {
-                    self.err = 'no sensor defined for index '+ix;
-                    self.warn(self.err);
                     devId = null;
                     deviceType = '';
                     title = null;
@@ -574,7 +570,7 @@ var init = function (self) {
                 }
             }
     
-            if (sensor.entrytype === 'sensor') {
+            if (item.id && item.entrytype === 'sensor') {
                 //b binary device?
                 //----------------
                 if (item.deviceType.indexOf('Binary') >= 0) {
@@ -637,12 +633,16 @@ var init = function (self) {
                 }
             } //sensor.entrytype === 'sensor'
     
+            //b no polling, if no device id
+            //-----------------------------
+            if (!item.id) {
+                item.polling = false;
+            }
             self.sensors.push(item);
             self.log("sensor item", item);
     
         }); //_.each(self.config.sensors
 
-        //------------
         //TODO: rectangleDevices obsolete in new version
         if (typeof self.config.rectangleDevices !== "undefined") {
             self.config.rectangleDevices = undefined; //obsolete
@@ -1040,8 +1040,9 @@ var init = function (self) {
         var chartHeader = {
             Timestamp: self.now,
             ZWayVersion: globalData.ZWayVersion,
-            ChartDBVersion: self.VERSION,
+            ChartDBVersion: self.meta.version,   //self.VERSION,
             chartTitle: globalData.chartTitle,
+            DBName: globalData.DBName,
             chartId: globalData.chartId,
             chartInstance: self.id,
             errText: 0,

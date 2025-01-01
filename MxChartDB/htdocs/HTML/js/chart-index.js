@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-11-12/peb
+//h Version:      V2.1.0 2024-12-21/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-11-12/peb';
+var WRITTEN='2024-12-21/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -43,7 +43,8 @@ var indexListStringPrev = '';
 var adminQuerystring = '';
 var ADMIN;
 var filterInput;
-var elOperate;
+var elActives;
+var elInActives;
 var elOrphaned;
 var elSnapshots;
 var target_chart, target_data;
@@ -84,11 +85,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } else {
         document.title = ch_utils.buildMessage(4);
         ch_utils.displayMessage(4);
+        ch_utils.buttonVisible('actives', false);
+        ch_utils.buttonVisible('activesT', false);
+        ch_utils.buttonVisible('inactives', false);
+        ch_utils.buttonVisible('inactivesT', false);
         ch_utils.buttonVisible('orphaned', false);
-        ch_utils.buttonVisible('orphanedT', false);
-    }
+        ch_utils.buttonVisible('orphanedT', false);    }
 
-    ch_utils.buttonText('operateT', 38);
+    ch_utils.buttonText('activesT', 38);
+    ch_utils.buttonText('inactivesT', 49);
     ch_utils.buttonText('orphanedT', 39);
     ch_utils.buttonText('snapshotsT', 40);
 
@@ -122,7 +127,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     filterInput.placeholder = ch_utils.buildMessage(36);
     filterInput.focus();
 
-    elOperate = document.getElementById("operate");
+    elActives = document.getElementById("actives");
+    elInActives = document.getElementById("inactives");
     elOrphaned = document.getElementById("orphaned");
     elSnapshots = document.getElementById("snapshots");
 
@@ -284,10 +290,10 @@ function buildIndexList(indexBuffer) {
     htmlText += '<tbody><tr><th id="title">'+t+'</th>'+
                 '<th id="chartid">'+i+'</th>';
     if (instancesRead) {
+        htmlText += '<th id="active">'+a+'</th>';
         if (ADMIN === 'YES') {
             htmlText += '<th id="inst">'+inst+'</th>';
         }
-        htmlText += '<th id="active">'+a+'</th>';
         if (ADMIN === 'YES') {
             htmlText += '<th id="polling">'+polling+'</th>';
             htmlText += '<th id="chartlength">'+chartLength+'</th>';
@@ -317,6 +323,7 @@ function buildIndexList(indexBuffer) {
     var last = '';
 
     //indexArray.forEach(function(chart, ix) {
+    console.log(indexArray);
     for (var ix = 0; ix < indexArray.length; ix++) {
         var htmlTextNew = '';
         var orphaned = false;
@@ -344,11 +351,69 @@ function buildIndexList(indexBuffer) {
             htmlTextNew += '<tr><td headers="chartid"><a href="'+uChart+'"'+target_chart+'>'+chartTitle+
                 '</td>';
         }
-
         //chart id
+        if (chartIdDisp.indexOf('.') < 0) {chartIdDisp = ' '+chartIdDisp;}
         htmlTextNew += '<td headers="chartid" ><center><a href="'+uJSON+'"'+target_data+'>'+chartIdDisp+'</a></td>';
 
+        var col, tex;
         if (instancesRead) {
+            if (chartIdDB === 'Snapshots') {
+                col = 'black';
+                tex = s;    //snapshot
+                orphaned = true;
+            } else
+            if (isCopy(chartIdBase)) {
+                col = 'black';
+                tex = c;    //copy
+                orphaned = true;
+            } else
+            if (!instancesList.hasOwnProperty(chartId)) {
+                col = 'red';
+                tex = o;    //orphaned
+                orphaned = true;
+            } else
+            if (instancesList[chartId].title !== chartTitle) {
+                //maybe open and save chart module.json to repair error
+                col = 'orange';
+                tex = e;    //error
+            } else
+            if (instancesList[chartId].active) {
+                col = 'green';
+                tex = y;    //active
+            } else {
+                col = 'black';
+                tex = n;    //inactive
+            }
+
+            //active
+            var disabled = '';
+            if (!isAdmin) { disabled = 'disabled';}
+            if (tex === y) {
+                htmlTextNew += '<td headers="active" align=center>'+
+                            '<input type="checkbox" id="active+'+chartId+'" checked '+disabled+'>'+
+                            '</td>';
+            } else
+            if (tex === n) {
+                htmlTextNew += '<td headers="active" align=center>'+
+                            '<input type="checkbox" id="active+'+chartId+'" '+disabled+'>'+
+                            '</td>';
+            } else
+            if (tex === e) {
+                htmlTextNew += '<td headers="active"><center><font color="'+col+'"><b>'+
+                            '<a href="javascript:alert(\''+
+                    ch_utils.buildMessage(20)+'\');">'+tex+'</a> '+
+                            '</b></font></td>';
+            } else
+            if (tex === c) {
+                htmlTextNew += '<td headers="active"><center>'+tex+'</td>';
+            } else
+            if (tex === s) {
+                htmlTextNew += '<td headers="active"><center>'+tex+'</td>';
+            } else {
+                htmlTextNew += '<td headers="active"><center><font color="'+col+'"><b>'+
+                    tex+'</b></font></td>';
+            }
+
             if (ADMIN === 'YES') {
                 //instance id
                 var instNo_orig;
@@ -366,62 +431,6 @@ function buildIndexList(indexBuffer) {
                             instNo_orig+'</b></font>';
                     }
                     htmlTextNew += '</td>';
-                }
-
-                var col, tex;
-                if (chartIdDB === 'Snapshots') {
-                    col = 'black';
-                    tex = s;    //snapshot
-                    orphaned = true;
-                } else
-                if (isCopy(chartIdBase)) {
-                    col = 'black';
-                    tex = c;    //copy
-                    orphaned = true;
-                } else
-                if (!instancesList.hasOwnProperty(chartId)) {
-                    col = 'red';
-                    tex = o;    //orphaned
-                    orphaned = true;
-                } else
-                if (instancesList[chartId].title !== chartTitle) {
-                    //maybe open and save chart module.json to repair error
-                    col = 'orange';
-                    tex = e;    //error
-                } else
-                if (instancesList[chartId].active) {
-                    col = 'green';
-                    tex = y;    //active
-                } else {
-                    col = 'black';
-                    tex = n;    //inactive
-                }
-
-                //active
-                if (tex === y) {
-                    htmlTextNew += '<td headers="active" align=center>'+
-                                '<input type="checkbox" id="active+'+chartId+'" checked>'+
-                                '</td>';
-                } else
-                if (tex === n) {
-                    htmlTextNew += '<td headers="active" align=center>'+
-                                '<input type="checkbox" id="active+'+chartId+'">'+
-                                '</td>';
-                } else
-                if (tex === e) {
-                    htmlTextNew += '<td headers="active"><center><font color="'+col+'"><b>'+
-                                '<a href="javascript:alert(\''+
-                        ch_utils.buildMessage(20)+'\');">'+tex+'</a> '+
-                                '</b></font></td>';
-                } else
-                if (tex === c) {
-                    htmlTextNew += '<td headers="active"><center>'+tex+'</td>';
-                } else
-                if (tex === s) {
-                    htmlTextNew += '<td headers="active"><center>'+tex+'</td>';
-                } else {
-                    htmlTextNew += '<td headers="active"><center><font color="'+col+'"><b>'+
-                        tex+'</b></font></td>';
                 }
 
                 //chart length (period)
@@ -491,17 +500,16 @@ function buildIndexList(indexBuffer) {
         htmlTextNew += '</tr>';
 
         //filter chart entry
-        if (chartIdDB === 'Snapshots') {
-            if (elSnapshots.checked === false) {
-                continue;
-            }
+        if (elSnapshots.checked === false && chartIdDB === 'Snapshots') {
+            continue;
         } else
-        if (orphaned === true) {
-            if (elOrphaned.checked === false) {
-                continue;
-            }
+        if (elOrphaned.checked === false && orphaned === true && chartIdDB !== 'Snapshots') {
+            continue;
         } else
-        if (elOperate.checked === false) {
+        if (elActives.checked === false && tex === y) {
+            continue;
+        } else
+        if (elInActives.checked === false && tex === n) {
             continue;
         }
         
@@ -524,7 +532,8 @@ function printHTML(indexList) {
     //console.log(checkboxList);
     /*jshint loopfunc:true */
     for (var i = 0; i < checkboxList.length; i++) {
-        if (checkboxList[i].id !== 'operate' &&
+        if (checkboxList[i].id !== 'actives' &&
+            checkboxList[i].id !== 'inactives' &&
             checkboxList[i].id !== 'orphaned' &&
             checkboxList[i].id !== 'snapshots') {
 
@@ -624,8 +633,6 @@ function handleVisibilityChange() {
     }
 } //handleVisibilityChange
     
-///////////////////77}); //document).ready
-
 function instOriginal(chartId, instNo) {
     if (IndexDBName+instNo === chartId.replace(/^.*\./, '')) {return true;}
     return false;

@@ -1,4 +1,4 @@
-    var ixButtonTextBase = 39;
+    var ixButtonTextBase = 40;
     var messageFormats = [
         //message texts (0+...):
         {//0
@@ -115,7 +115,6 @@
             de: '--- Vergrößern: mit Mausrad --- Ziehen: mit Maus --- Bereich wählen: mit Maus+Strg ---',
             en: '--- zoom: with mousewheel --- drag: with mouse --- drag to zoom: with mouse+Ctrl ---'
         },
-
         {//27
             de: 'Sensor={0}, Punkt={1}, Zeit={2}: numerische und Textwerte können nicht gemischt werden!'+
                 ' {3} >< {4}',
@@ -176,8 +175,12 @@
             de: "Fehler im globalen Javascript Code:\n{0}" ,
             en: "error in global Javascript code:\n{0}"
         },
+        {//39
+            de: "Division durch 0" ,
+            en: "the result is not an infinite number}"
+        },
 
-        //ixButtonTextBase button texts (39+...):
+        //ixButtonTextBase button texts (409+...):
         {//0
             de: 'Dateien durchsuchen...',
             en: 'Browse data...'

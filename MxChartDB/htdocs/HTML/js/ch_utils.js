@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.1 2024-11-16/peb
+//h Version:      V1.0.1 2024-12-18/peb
 //v History:      V1.0.0 2022-01-02/peb first version
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
@@ -27,9 +27,9 @@
 //-----------
 //b Constants
 //-----------
-var MODULE='ch-utils.js';
+var MODULE='ch_utils.js';
 var VERSION='V1.0.1';
-var WRITTEN='2024-11-16/peb';
+var WRITTEN='2024-12-18/peb';
 
 //-----------
 //b Functions
@@ -114,6 +114,12 @@ var ch_utils = {
         return +(value.toFixed(decimals));
     }, //round
 
+    //returns a default value
+    nvl: function(value, defaultvalue) {
+        if (!ch_utils.notSet(value)) {return value;} 
+        if (!ch_utils.notSet(defaultvalue)) {return defaultvalue;} 
+        return null;
+    }, //notSet
 
     evalConstants: function () {
         var consts = {

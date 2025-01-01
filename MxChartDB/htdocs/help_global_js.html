@@ -55,10 +55,10 @@
 {
       ts1: 1728968400000,
       ts2: 1730264400000,
-      customer_price: function (curr_ts, market_price) {
+      customer_price: function (timestamp, market_price) {
           if (market_price === null) {return null;}
-          if (curr_ts &lt; g.ts1) {return (-0.000107217*market_price*market_price + 1.19103*market_price + 18.2442);}
-          if (curr_ts &lt; g.ts2) {return (-0.0000248097*market_price*market_price + 1.19033*market_price + 16.7827);}
+          if (timestamp &lt; g.ts1) {return (-0.000107217*market_price*market_price + 1.19103*market_price + 18.2442);}
+          if (timestamp &lt; g.ts2) {return (-0.0000248097*market_price*market_price + 1.19033*market_price + 16.7827);}
           return (-0.000160312*market_price*market_price + 1.19448*market_price + 18.2124);
       },
 };
@@ -83,13 +83,13 @@
       In arithmetics:
       <br>
       in entry 1 (sensor 1), display market price[ct/kWh]: 
-      <pre><code class="language-javascript">(g.market_price = x*100/1000)</code></pre>
+      <pre><code class="language-javascript">g.market_price = x*100/1000</code></pre>
 
       in entry 2 (formula), display final price[ct/kWh]: 
-      <pre><code class="language-javascript">(g.final_price = g.customer_price(x0, g.market_price))</code></pre>
+      <pre><code class="language-javascript">g.final_price = g.customer_price(x0, g.market_price)</code></pre>
 
       in entry 3 (formula), display taxes and levies[ct/kWh]: 
-      <pre><code class="language-javascript">(g.taxes_levies = g.final_price - g.market_price)</code></pre>
+      <pre><code class="language-javascript">g.taxes_levies = g.final_price - g.market_price</code></pre>
 
       in entry 4 (formula), display taxes and levies[%]: 
       <pre><code class="language-javascript">Math.round(g.taxes_levies/g.market_price*100*10)/10</code></pre>
@@ -100,15 +100,17 @@
           <li>Set a new variable for the global object with: g.&lt;name&gt; = &lt;value&gt;;</li>
           <li>Read the variable with: g.&lt;name&gt;</li>
       </ul>
-      Please observe the right order: the variables are set and changed by increasing entry number.
-
+      Note: Please observe the right order: the variables are set and changed by increasing entry/sensor number.
+      <br>
+      Note: In case of redrawings the g object is reset to initial state. 
 
       <br><br>
       <h2>3. Shortening</h2>
 
-      For convenience the latest computed values are stored automatically into global variables after
-      computation:
-      <pre><code class="language-javascript">g.vi = arithmetic(sensor[i]);</code></pre>
+      For convenience the latest computed values are stored automatically into global 
+      variables <b>after</b> computation:
+      <pre><code class="language-javascript">g.vi = arithmetic(sensor[i]);   //with i=1,...</code></pre>
+      <pre><code class="language-javascript">g.v = arithmetic(sensor[i]);    //with i=current sensor index</code></pre>
       <br>
 
       The above example can therefore be shortened as follows:
@@ -139,12 +141,12 @@
          </tr>
          <tr>
             <td class="center">g.notSet</td>
-            <td>true|false = g.notSet(&lt;arguments&gt;)</td>
+            <td>true|false = g.notSet(&lt;list of arguments&gt;)</td>
             <td>check if one of the arguments is undefined or null</td>
          </tr>
          <tr>
             <td class="center">g.noNumber</td>
-            <td>true|false = g.noNumber(&lt;arguments&gt;)</td>
+            <td>true|false = g.noNumber(&lt;list of arguments&gt;)</td>
             <td>check if one of the arguments is undefined, null or no number</td>
          </tr>
          <tr>
@@ -152,16 +154,22 @@
             <td>g.round(&lt;value&gt;, &lt;decimals&gt;)</td>
             <td>rounds a floating point number to the given number of decimals</td>
          </tr>
+         <tr>
+            <td class="center">g.nvl</td>
+            <td>g.nvl(&lt;value&gt;, &lt;default value&gt;)</td>
+            <td>returns a default value</td>
+         </tr>
       </table>
 
       <br><h3>Examples</h3>
-      <pre><code class="language-javascript">g.notSet(x1. x2) ? null : x1 + x2</code></pre>
-      <pre><code class="language-javascript">g.noNumber(x. x[-1], x2) ? null : (x - x[-1])/ x2</code></pre>
+      <pre><code class="language-javascript">g.notSet(x1, x2) ? null : x1 + x2</code></pre>
+      <pre><code class="language-javascript">g.nvl(x, g.v)   //take the latest value, if x is not set</code></pre>
+      <pre><code class="language-javascript">g.noNumber(x, x[-1], x2) ? null : (x - x[-1])/ x2</code></pre>
       <pre><code class="language-javascript">
 {
     consumption: function(x_curr, x_prev) {
         if (g.noNumber(x_curr, x_prev)) {return null;}
-        return x_curr - x_prev;
+        return g.round(x_curr - x_prev, 1);
     },
 };
       </code></pre>

@@ -915,47 +915,54 @@ function modulePostRender(control) {
             return;
         }
 
-        var mess, patt, ____xxx, ____xx = [];
-        var mathString = val.replace(/x\[-1\]/g, 1);
-            mathString = mathString.replace(/\bx\b/g, '____xxx');
-        ____xxx = 5;
-        for (var i = 0; i <= sensorCount; i++) {
-            ____xx.push(i+____xxx);
-            patt = new RegExp('\\bx'+i+'\\b', "g");
-            mathString = mathString.replace(patt, '____xx['+i+']');
-        }
-
-        /* global functions: */
-        mathString = mathString.replace(/\bg\.\w+\s*\(/g, '____f('); 
-        function ____f() {
-            return 1;
-        }
-        /* global variables: */
-        mathString = mathString.replace(/\bg\.\w+\b/g, '____xxx'); 
-
-        for (i = 0; i < 2; i++) {
-            try {
-                /*jshint evil: true */
-                var testResult = eval(mathString);
-                console.log('eval='+testResult);
-                /*jshint evil: false */
-                if (testResult === undefined) {
-                    mess = 'result is undefined';
-                    break;
-                } else {
-                    if (i === 0) {
-                        ____xxx = 0;
-                        ____xx.fill(0);
-                        continue;
-                    }
-                    $("#"+alpacaId).css( "background-color", "white" );
-                    return;
-                }
-            } catch (err) {
-                mess = err.message;
-                break;
+        function replace_Xi(f, len) {
+            for (var ix = 0; ix < len; ix++) {
+               var patt = new RegExp('\\bx'+ix+'\\b', "g");
+               f = f.replace(patt, 'X['+ix+']');
             }
-        } /* for */
+            return f;
+        }
+
+        function replace_Xprevi(f, len) {
+            for (var ix = 0; ix < len; ix++) {
+               var patt = new RegExp('\\bx'+ix+'\\b\\[-1\\]', "g");
+               f = f.replace(patt, 'Xprev['+ix+']');
+            }
+            return f;
+        }
+
+        var X   = new Array(sensorCount).fill(1);
+        var Xprev = new Array(sensorCount).fill(5);
+        var ix = 1;
+
+        var mess, f = val;
+        f = replace_Xprevi(f, sensorCount);
+        f = replace_Xi(f, sensorCount);
+        f = f.replace(/\bx\b\[-1\]/g, 'Xprev[ix]');
+        f = f.replace(/\bx\b/g, 'X[ix]');
+
+        /* global variables and functions: */
+        var g = { variable: 1,
+                  function: function() {return 1;}
+        };
+        f = f.replace(/\bg\.\w+\b/g, 'g.variable'); 
+        f = f.replace(/\bg\.\w+\s*\(/g, 'g.function('); 
+
+        try {
+            /*jshint evil: true */
+            console.log(f);
+            var testResult = eval(f);
+            /*jshint evil: false */
+            if (testResult === undefined) {
+                mess = 'result is undefined';
+            } else {
+                $("#"+alpacaId).css( "background-color", "white" );
+                return;
+            }
+        } catch (err) {
+            mess = err.message;
+        }
+
         $("#"+alpacaId).css( "background-color", colorInvalid );
         console.log(val+' // '+mess);
         return mess;

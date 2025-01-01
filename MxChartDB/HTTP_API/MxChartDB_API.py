@@ -24,8 +24,10 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.1.1 2024-12-07/peb
+#h Version:      V2.3.0 2024-12-22/peb
 #v History:      V1.0.0 2022-03-14/peb first version
+#v               V2.2.0 2024-12-13/peb [+]enable WAL mode at connect
+#v               V2.3.0 2024-12-21/peb [+]treat_lock
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
 #h
@@ -33,59 +35,8 @@
 #h
 #h API interface:
 #h ==============
-#h MxChartDB_API version:
-#h      GET /version[?loglevel=20|30]
-#h list databases:
-#h      GET /list_databases
-#h create database:
-#h      POST /<db>/create_db
-#h check database:
-#h      GET /<db>/check_db
-#h get database size:
-#h      GET /<db>/size
-#h shrink the database:
-#h      GET /<db>/rebuild_db
-#h drop database:
-#h      POST /<db>/drop_db
-#h list all objects in database:
-#h      GET /<db>/list_tables
-#h      GET /<db>/list_views
-#h      GET /<db>/list_indexes
-#h      GET /<db>/list
+#h index.html
 #h
-#h create table:
-#h      POST /<db>/<table>/create_table
-#h check table/ view/ index:
-#h      GET /<db>/<db_object>/check
-#h describe table/ view/ index:
-#h      POST /<db>/<db_object>/describe
-#h drop table/ view/ index:
-#h      POST /<db>/<db_object>/drop
-#h clone table:
-#h      POST /<db>/<table>/clone?new=[<new db>.]<new table>[&where=<where statement>]
-#h
-#h add row, delete old ows:
-#h      POST /<db>/<table>/insert?ts=<timestamp>&val=<values>[&ts_del=<timestamp>]
-#h read next rows with ts > timestamp:
-#h      GET /<db>/<table>/select_next[?ts=<timestamp>]
-#h read all rows between from > timestamp and to <= timestamp:
-#h      GET /<db>/<table>/select_range[?from=<timestamp>][&to=<timestamp>]
-#h read first ts:
-#h      GET /<db>/<table>/select_first_ts
-#h read last ts:
-#h      GET /<db>/<table>/select_last_ts
-#h count entries:
-#h      GET /<db>/<table>/count
-#h delete previous rows with ts < timestamp:
-#h      POST /<db>/<table>/delete_prev?ts=<timestamp>
-#h delete row:
-#h      POST /<db>/<table>/delete?ts=<timestamp>
-#h
-#h SQL interface:
-#h ==============
-#h invoke SQL command
-#h      GET  /<db>/sql?<sql command>
-#h      POST /<db>/sql
 #h-------------------------------------------------------------------------------
 '''
 
@@ -93,7 +44,6 @@
 #pylint: disable=inconsistent-return-statements, too-many-return-statements
 #pylint: disable=too-many-branches, too-many-locals, too-many-statements
 
-import collections
 import time
 import platform
 import sqlite3
@@ -115,8 +65,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V2.1.1'
-WRITTEN = '2024-12-07/peb'
+VERSION = 'V2.3.0'
+WRITTEN = '2024-12-22/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -233,67 +183,73 @@ if not CORS_HOST is None:
 
 #----------------------------------------------------------------------------
 
-def manage_thread_list(func):
-    '''manage active thread list'''
+def treat_lock(newstate=False, text=None):
+    '''for analysis of database locks:
+       treat lock state of the database engine
+       to get the first locked database statement'''
 
-    def remove_el(element, queue):
-        # Helper queue to store the elements temporarily.
-        queue_tmp = collections.deque()
-        queue_length = len(queue)
-        cnt = 0
-        # Finding the value to be removed
-        while queue and queue[0] != element:
-            queue_tmp.append(queue.popleft())
-            cnt += 1
+    #reset lock state
+    if not newstate:
+        return newstate
 
-        # If element is not found
-        if len(queue) == 0:
-            print("element not found!!")
-            while queue_tmp:
-                queue.append(queue_tmp.popleft())
-        # If element is found
-        else:
-            queue.popleft()
-            while queue_tmp:
-                # Pushing all the elements back into q
-                queue.append(queue_tmp.popleft())
-            k = queue_length-cnt-1
-            while k:
-                # Pushing elements from front of q to its back
-                queue.append(queue.popleft())
-                k -= 1
+    #lock state true but not changed
+    if LOCK_STATE:
+        return newstate
 
-    def buildlist():
-        tmp = THREAD_LIST.copy()
-        ret = ''
-        while tmp:
-            ret += str(tmp.popleft())+','
-        return ret
+    #lock state changed to true
+    outtext = "### {}: database is locked".format(text)
+    app.logger.warn(outtext)
+    outtext = '### THREAD_LIST: {}'.format(THREAD_LIST)
+    app.logger.warn(outtext)
+    return newstate
+
+LOCK_STATE = treat_lock(newstate=False)
+
+def manage_thread_list(func, resetlockstate=False):
+    '''for analysis of database locks:
+        manage active thread list'''
 
     if func == 'create':
-        app.logger.info('create THREAD_LIST))')
-        return collections.deque()
+        app.logger.debug('create THREAD_LIST))')
+        return []
 
     if func == 'append':
         THREAD_LOCK.acquire()
         self = request.args.get('self', '?')
-        app.logger.info('append '+self+' '+str(request.path)+' to THREAD_LIST')
-        THREAD_LIST.append(self+' '+request.path)
-        buildlist = buildlist()
+        entry = self+' '+str(request.path)
+
+        if entry in THREAD_LIST:
+            app.logger.error('"{}" is already in THREAD_LIST'.format(entry))
+            THREAD_LIST.remove(entry)
+
+        app.logger.debug('append "{}" to THREAD_LIST'.format(entry))
+        THREAD_LIST.append(entry)
 
         thread_act = threading.active_count()
         if THRESHOLD_THREADS is not None and thread_act >= THRESHOLD_THREADS:
-            queuetext = '*** insert queue: '+buildlist
-            app.logger.warn(queuetext)
+            outtext = "*** active threads={} >= {}".format(thread_act, THRESHOLD_THREADS)
+            app.logger.warn(outtext)
+            outtext = '*** THREAD_LIST: {}'.format(THREAD_LIST)
+            app.logger.warn(outtext)
 
         THREAD_LOCK.release()
-        return buildlist
-    if func == 'remove_el':
+        return THREAD_LIST
+
+    if func == 'remove':
         THREAD_LOCK.acquire()
+        if resetlockstate:
+            treat_lock(newstate=False)
+
         self = request.args.get('self', '?')
-        app.logger.info('remove '+self+' '+str(request.path)+' from THREAD_LIST')
-        remove_el(self+' '+request.path, THREAD_LIST)
+        entry = self+' '+str(request.path)
+        app.logger.debug('remove "{}" from THREAD_LIST'.format(entry))
+        try:
+            THREAD_LIST.remove(entry)
+        except: #pylint: disable=bare-except
+            app.logger.warn('*** entry "{}" not found in THREAD_LIST'.format(entry))
+
         THREAD_LOCK.release()
+        return THREAD_LIST
 
 THREAD_LIST = manage_thread_list('create')
 THREAD_LOCK = threading.Lock()
@@ -308,11 +264,11 @@ def before_request():
         infotext = '*** '+str(thread_act)+' threads, request='+request.path
         app.logger.warn(infotext)
 
-    app.logger.info('requesting host: '+''.join(request.remote_addr))
-    app.logger.info('requesting method: '+request.method)
-    app.logger.info('requested host: '+request.host)
-    app.logger.info('requested path: '+request.path)
-    app.logger.info('requested query_string: '+str(request.query_string))
+    app.logger.debug('requesting host: '+''.join(request.remote_addr))
+    app.logger.debug('requesting method: '+request.method)
+    app.logger.debug('requested host: '+request.host)
+    app.logger.debug('requested path: '+request.path)
+    app.logger.debug('requested query_string: '+str(request.query_string))
 
     host = ''.join(request.remote_addr)
     if request.method == 'GET':
@@ -326,17 +282,16 @@ def before_request():
 
 def wild_search(list_in, string_in):
     '''auxiliary function: search with wildcards'''
-    app.logger.info('wild_search: '+string_in)
+    app.logger.debug('wild_search: '+string_in)
     try:
         in_list = list_in.index(string_in)
         if in_list >= 0:
-            app.logger.info(string_in+' found')
+            app.logger.debug(string_in+' found')
             return True
-#pylint: disable=bare-except
-    except:
+    except: #pylint: disable=bare-except
         for string_i in list_in:
             pattern = string_i.replace(".", r"\.").replace("*", ".*")
-            app.logger.info('check '+pattern+' for '+string_in)
+            app.logger.debug('check '+pattern+' for '+string_in)
             regex = re.compile("^"+pattern+"$")
             if bool(regex.match(string_in)):
                 return True
@@ -345,19 +300,19 @@ def wild_search(list_in, string_in):
 # Basic Authentication
 def auth_required(func):
     '''decorator to check authentication'''
-    app.logger.info('*** auth_required')
+    app.logger.debug('*** auth_required')
     @wraps(func)
     def decorator(*args, **kwargs):
         #skip authorization for /SQL/ GET selects
         if request.endpoint == 'route_sql_get':
-            app.logger.info('checking for SELECT...')
+            app.logger.debug('checking for SELECT...')
             sql = request.args.get('command')
             if sql is None:
                 return func(*args, **kwargs)
-            app.logger.info(sql)
+            app.logger.debug(sql)
             pos = sql.upper().lstrip().find('SELECT ')
             if pos == 0:
-                app.logger.info('SELECT: skipping authorization')
+                app.logger.debug('SELECT: skipping authorization')
                 return func(*args, **kwargs)
 
         if DISABLE_AUTHENTICATION:
@@ -414,8 +369,7 @@ def change_loglevel(new_loglevel):
     if new_loglevel not in ('10', '20', '30', '40', '50'):
         return
     new_loglevel = int(new_loglevel)
-#pylint: disable=global-statement
-    global LOGLEVEL
+    global LOGLEVEL #pylint: disable=global-statement
     if new_loglevel != LOGLEVEL:
         LOGLEVEL = new_loglevel
         app.logger.setLevel(LOGLEVEL)
@@ -499,7 +453,7 @@ def response_text(text):
 
 #def response_text_plain(text):
 #    '''auxiliary function: log info text + set mimetype=text/plain'''
-#    app.logger.info(text)
+#    app.logger.debug(text)
 #    response = make_response(text, 200)
 #    response.mimetype = "text/plain"
 #    return response
@@ -511,6 +465,15 @@ def get_db_connection(dbase):
     ## conn = sqlite3.connect(dbase+'.db', timeout=TIMEOUT, isolation_level=None)
     ## #isolation_level=None: autocommit on
     conn = sqlite3.connect(dbase+'.db', timeout=TIMEOUT)
+
+    # V2.2.0: check/enable wal mode for the database
+    cursor = conn.cursor()
+    cursor.execute('PRAGMA journal_mode;')
+    journal_mode = cursor.fetchone()[0]
+    app.logger.debug("current journal mode for {}: {}".format(dbase, journal_mode))
+    if journal_mode != 'wal':
+        conn.execute('PRAGMA journal_mode=WAL')
+        app.logger.debug("wal mode enabled for {}".format(dbase))
     return conn
 
 # get database list
@@ -532,7 +495,7 @@ def get_object_list(dbase, object_type="table"):
     else:
         sql = "SELECT name FROM sqlite_master "\
             "WHERE type ='"+object_type+"' AND name NOT LIKE 'sqlite_%';"
-    app.logger.info(sql)
+    app.logger.debug(sql)
 
     try:
         command = 'connect'
@@ -557,7 +520,7 @@ def get_object_list(dbase, object_type="table"):
 def select_first_ts(dbase, table, raw='no'):
     '''auxiliary function: select the first timestamp in table'''
     sql = "SELECT MIN(ts) FROM "+table
-    #app.logger.info(sql)
+    #app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -581,7 +544,7 @@ def select_first_ts(dbase, table, raw='no'):
 def select_last_ts(dbase, table, raw='no'):
     '''auxiliary function: select the last timestamp in table'''
     sql = "SELECT MAX(ts) FROM "+table
-    #app.logger.info(sql)
+    #app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -630,7 +593,7 @@ def count_entries_local(dbase, table, condition=None):
         sql = "SELECT COUNT(ts) FROM "+table+" WHERE "+condition+";"
     else:
         sql = "SELECT COUNT(ts) FROM "+table+";"
-    #app.logger.info(sql)
+    #app.logger.debug(sql)
     try:
         conn = get_db_connection(dbase)
         count = conn.execute(sql).fetchall()[0]
@@ -667,7 +630,7 @@ def route_html(module, chart_id):
         url += 'admin.html?ADMIN=YES&'
     else:
         url += 'draw-chartjs.html?chartId='+chart_id
-    app.logger.info('url='+url)
+    app.logger.debug('url='+url)
     return redirect(url, code=REDIRECT_PRESERVE)
     #return redirect(url, code=REDIRECTED)
 
@@ -743,140 +706,15 @@ def route_html_modal(module, chart_id):
 
 @app.route('/', methods=["GET"])
 def route_api_commands():
-    '''route: show api commands in a html page'''
+    '''route: show api commands in an html page'''
     app.logger.info(request)
-    html = """<title>HTTP API</title>
-              <style>
-                 {
-                 border-collapse: collapse;
-                 width: 100%;
-                 }
-                 td, th {
-                 border: 1px solid black;
-                 }
-                 tr:hover {background-color: #ddd;}
-                 th {
-                 padding-top: 12px;
-                 padding-bottom: 12px;
-                 text-align: left;
-                 background-color: #d3d3d3;
-                 color: black;
-                 }
-              </style>
-
-              <br>
-              <h2>HTTP API for SQLite and MxChartDB</h2>
-              <table>
-              <tr><th>Action</th><th>Method</th><th>URL-Path + Query-String</th><th>success</th><th>failed/not found</th></tr>
-
-              <tr><td colspan=6 style="background-color: #f2f2f2;"><br>*** HTML ***<br><br></td></tr>
-
-              <tr><td>functional survey</td><td>
-                   </td><td>/</td><td></td><td></td></tr>
-              <tr><td>database administration</td><td>
-                   </td><td>
-                   <a href='../ADMIN'><u><font color=blue>/ADMIN</font></u></a>
-                   </td><td></td><td></td></tr>
-              <tr><td>call chart index </td><td>
-                   </td><td>/HTML/&lt;module&gt;/Index</td><td></td><td></td></tr>
-              <tr><td>call chart administration </td><td>
-                   </td><td>/HTML/&lt;module&gt;/Admin</td><td></td><td></td></tr>
-              <tr><td>call chart html </td><td>
-                   </td><td>/HTML/&lt;module&gt;/&lt;chartId&gt;</td><td></td><td></td></tr>
-
-              <tr><td>invoke chart html in a Smarthome modal window</td><td>
-                   </td><td>/HTML_MODAL/&lt;module&gt;/&lt;chartId&gt;</td><td></td><td></td></tr>
-
-              <tr><td colspan=6 style="background-color: #f2f2f2;"><br>*** API *** (responds with JSON structure)<br><br></td></tr>
-
-              <tr><td>API version, set loglevel<br>20=info<br>30=error+warning</td><td>
-                   GET</td><td>
-                   <a href='../version'><u><font color=blue>/version</font></u></a>
-                   <a href='../version?loglevel=30'><u><font color=blue>[?loglevel=20|30]</font></u></a>
-                   </td><td></td><td></td></tr>
-              <tr><td>list all databases</td><td>
-                   GET</td><td>
-                   <a href='../list_databases'><u><font color=blue>/list_databases</font></u></a>
-                   </td><td>200</td><td>404</td></tr>
-              <tr><td>create a database</td><td>
-                   POST</td><td>/&lt;db&gt;/create_db</td><td>201</td><td></td></tr>
-              <tr><td>check the database for existence</td><td>
-                   GET</td><td>/&lt;db&gt;/check_db</td><td>200</td><td>404</td></tr>
-              <tr><td>get sizes of database (bytes)</td><td>
-                   GET</td><td>/&lt;db&gt;/size</td><td>200</td><td>404</td></tr>
-              <tr><td>rebuild the database (defragment, remove free space)<br>
-                   This command has not been tested yet!!!!!</td><td>
-                   GET</td><td>/&lt;db&gt;/rebuild_db</td><td>200</td><td>200</td></tr>
-              <tr><td>drop the database (remove file)</td><td>
-                   POST</td><td>/&lt;db&gt;/drop_db</td><td>200</td><td>200</td></tr>
-              <tr><td>list all user tables in the database</td><td>
-                   GET</td><td>/&lt;db&gt;/list_tables</td><td>200</td><td>404</td></tr>
-              <tr><td>list all user views in the database</td><td>
-                   GET</td><td>/&lt;db&gt;/list_views</td><td>200</td><td>404</td></tr>
-              <tr><td>list all user indexes in the database</td><td>
-                   GET</td><td>/&lt;db&gt;/list_indexes</td><td>200</td><td>404</td></tr>
-
-              <tr><td>check an object (table, view, index) for existence</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;object&gt;/check</td><td>200</td><td>404</td></tr>
-              <tr><td>describe an object (table, view, index)</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;object&gt;/describe</td><td>200</td><td>404</td></tr>
-              <tr><td>drop an object (table, view, index)</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;object&gt;/drop</td><td>200</td><td>200</td></tr>
-              <tr><td>clone a table with all it's contents</td><td>
-                   POST</td>
-                   <td>/&lt;db&gt;/&lt;table&gt;/clone?new=[&lt;new db&gt;.]&lt;new table&gt;
-                   [&amp;where=&lt;where statement&gt;]
-                   </td>
-                   <td>200</td><td>900 (db error)</td></tr>
-              <tr><td>count entries in an object (table, view)</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;object&gt;/count[?&lt;condition&gt;]</td><td>200</td><td>900 (db error)</td></tr>
-
-              <tr><td colspan=6 style="background-color: #f2f2f2;"><br>*** MxChartDB specific API functions *** 
-              <br><br></td></tr>
-
-              <tr><td>create a table<br>(ts INTEGER PRIMARY KEY, val TEXT),
-                                    <br>ts: timestamp in ms
-                                    <br>val: stringified JSON array of values</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/create_table</td><td>201</td><td>900 (db error)</td></tr>
-              <tr><td>add a new row [, delete old rows with ts < timestamp]</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>
-                   data:{&quot;ts&quot;:&lt;timestamp&gt;,&quot;val&quot;:[&lt;timestamp&gt;,&lt;value1&gt;,...]}</td>
-                   <td>200</td><td>900 (db error)</td></tr>
-              <tr><td>bulk insert rows [, delete old rows with ts < timestamp]</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>
-                   data:[{&quot;ts&quot;:&lt;timestamp&gt;,&quot;val&quot;:[&lt;timestamp&gt;,&lt;value1&gt;,...]}, ...]</td>
-                   <td>200</td><td>900 (db error)</td></tr>
-
-              <tr><td>read all next rows with ts > timestamp till end</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_next[?ts=&lt;timestamp&gt;]</td><td>200</td>
-                   <td>ts=0: 404<br>ts>0: 304 (not modified)</td></tr>
-              <tr><td>read all rows &gt;= from_timestamp and &lt;= to_timestamp</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_range[?from=&lt;timestamp&gt;]
-                                                                     [&amp;to=&lt;timestamp&gt;]</td>
-                   <td>200</td><td>404</td></tr>
-              <tr><td>read first ts in table</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_first_ts[?raw=yes]</td><td>200</td><td>404</td></tr>
-              <tr><td>read last ts in table</td><td>
-                   GET</td><td>/&lt;db&gt;/&lt;table&gt;/select_last_ts[?raw=yes]</td><td>200</td><td>404</td></tr>
-              <tr><td>delete all previous rows with ts < timestamp from beginning</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/delete_prev?ts=&lt;timestamp&gt;</td>
-                   <td>200</td><td>200</td></tr>
-              <tr><td>delete a row</td><td>
-                   POST</td><td>/&lt;db&gt;/&lt;table&gt;/delete?ts=&lt;timestamp&gt;</td><td>200</td>
-                   <td>200</td></tr>
-
-              <tr><td colspan=6 style="background-color: #f2f2f2;"><br>*** SQL: invoke any sql command *** 
-               <br><br></td></tr>
-
-              <tr><td>invoke a sql command<br> in select use val(n) for nth value of MxChartDB's JSON array val</td><td>
-                   POST</td><td>/&lt;db&gt;/sql,<br>data:&lt;sql command&gt;</td><td>200</td><td>900 (db error)</td></tr>
-
-              <tr><td>invoke a sql select command<br> in select use val(n) for nth value of MxChartDB's JSON array val</td><td>
-                   GET</td><td>/&lt;db&gt;/sql?&lt;sql command&gt;</td><td>200</td><td>900 (db error)</td></tr>
-
-              </table>
-              """
-    return html
+    try:
+        with open("index.html", "r") as fopen:
+            inhalt = fopen.read()
+        return inhalt
+    except Exception as error: #pylint: disable=broad-except
+        fehlertext = str(error)
+        return response_text_err(fehlertext), NOT_FOUND, ''
 
 @app.route('/ADMIN', methods=["GET"])
 def route_api_admin():
@@ -1233,7 +1071,7 @@ def route_api_create_table(dbase, table):
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
 
     sql = "CREATE TABLE "+table+" (ts INTEGER PRIMARY KEY , val TEXT);"
-    app.logger.info(sql)
+    app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -1258,7 +1096,7 @@ def route_api_check(dbase, db_object):
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
 
     sql = "SELECT type, name FROM sqlite_master WHERE name = '"+db_object+"';"
-    app.logger.info(sql)
+    app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -1283,7 +1121,7 @@ def route_api_describe(dbase, db_object):
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
 
     sql = "SELECT type, name, sql FROM sqlite_master WHERE name = '"+db_object+"';"
-    app.logger.info(sql)
+    app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -1311,16 +1149,16 @@ def route_api_drop(dbase, db_object):
     command = 'connect'
     conn = get_db_connection(dbase)
     sql = "SELECT type FROM sqlite_master WHERE name = '"+db_object+"';"
-    app.logger.info(sql)
+    app.logger.debug(sql)
     command = 'select'
     row = conn.execute(sql).fetchone()
-    app.logger.info(row)
+    app.logger.debug(row)
     if row is None:
         return response_text(db_object+" doesn't exist"), OK
 
     try:
         sql = 'DROP '+row[0]+' '+db_object+';'
-        app.logger.info(sql)
+        app.logger.debug(sql)
         command = 'drop '+db_object
         conn.execute(sql)
         command = 'commit'
@@ -1349,7 +1187,7 @@ def route_api_clone(dbase, table):
     if not bool(regex.match(new)):
         err_mess = "invalid target tablename format: "+new
         return response_text_err(err_mess), BAD_REQUEST
-    app.logger.info('clone table '+dbase+'.'+table+' to '+new)
+    app.logger.debug('clone table '+dbase+'.'+table+' to '+new)
 
     newsplit = new.split('.')
     if newsplit[0] == new:
@@ -1370,13 +1208,13 @@ def route_api_clone(dbase, table):
         conn = get_db_connection(dbase)
         if dbase_new != dbase:
             sql = 'ATTACH DATABASE "'+dbase_new+'.db" AS '+dbase_new
-            app.logger.info(sql)
+            app.logger.debug(sql)
             command = 'attach '+dbase_new
             conn.execute(sql)
             table_new = dbase_new+'.'+table_new
         #sql = 'CREATE TABLE '+table_new+' AS SELECT * FROM '+table+' WHERE ts IS NOT NULL;'
         sql = 'CREATE TABLE '+table_new+' AS SELECT * FROM '+table+where
-        app.logger.info(sql)
+        app.logger.debug(sql)
         command = 'create table '+table_new
         conn.execute(sql)
         command = 'commit'
@@ -1398,10 +1236,10 @@ def route_api_insert(dbase, table):
     '''route: insert new row(s) into table'''
     now = time.time()
     app.logger.info(request)
-    buildlist = manage_thread_list('append')
+    manage_thread_list('append')
 
     if not os.path.isfile(dbase+'.db'):
-        manage_thread_list('remove_el')
+        manage_thread_list(func='remove')
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
 
     # first delete öld rows:
@@ -1409,13 +1247,13 @@ def route_api_insert(dbase, table):
     ts_del = request.args.get('ts_del')
     if ts_del is not None:
         if not ts_del.isnumeric():
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text_err('ts_del = '+ts_del+' is invalid'), BAD_REQUEST
         if int(ts_del) < 0:
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text_err('ts_del = '+ts_del+' is invalid'), BAD_REQUEST
         sql_del = 'DELETE FROM '+table+' WHERE ts < '+ts_del+';'
-        app.logger.info(sql_del)
+        app.logger.debug(sql_del)
 
         rowcount = 0
         try:
@@ -1429,9 +1267,9 @@ def route_api_insert(dbase, table):
             commtext = command+'(delete '+dbase+'.'+table+')'
             errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
             conn.close()
-            manage_thread_list('remove_el')
             if errtext.find('database is locked') > 0:
-                app.logger.error('*** insert queue: '+buildlist)
+                treat_lock(newstate=True, text=commtext)
+            manage_thread_list(func='remove', resetlockstate=False)
             return response_text_err(errtext), DB_ERROR
 
         app.logger.info(str(rowcount)+' entries deleted')
@@ -1442,29 +1280,29 @@ def route_api_insert(dbase, table):
     if request.method == 'GET':
         ts_new = request.args.get('ts')
         if ts_new is None:
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text_err('ts is not defined'), BAD_REQUEST
         if not ts_new.isnumeric():
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text_err('ts = '+ts_new+' is invalid'), BAD_REQUEST
         ts_int = int(ts_new)
         if ts_int < 0:
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text_err('ts = '+ts_new+' is invalid'), BAD_REQUEST
 
         val = request.args.get('val')
         if val is None:
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text_err('val is not defined'), BAD_REQUEST
         try:
             val_json = json.loads(val)
         except json.JSONDecodeError as error:
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text_err('val='+val+' is no JSON object:  '+error.args[0]), BAD_REQUEST
         #printF('add row '+ts_new+' to '+table+ ':\nval ='+ val)
 
         sql = 'INSERT INTO '+table+ ' VALUES (?, ?);'
-        app.logger.info(sql)
+        app.logger.debug(sql)
         try:
             if not conn:
                 command = 'connect'
@@ -1479,12 +1317,12 @@ def route_api_insert(dbase, table):
             commtext = command+'(insert GET '+dbase+'.'+table+')'
             errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
             conn.close()
-            manage_thread_list('remove_el')
             if errtext.find('database is locked') > 0:
-                app.logger.error('*** insert queue: '+buildlist)
+                treat_lock(newstate=True, text=command)
+            manage_thread_list(func='remove', resetlockstate=False)
             return response_text_err(errtext), DB_ERROR
         check_threshold(now, dbase, table)
-        manage_thread_list('remove_el')
+        manage_thread_list(func='remove')
         return response_text('1 of 1 rows stored')
 
     if request.method == 'POST':
@@ -1493,31 +1331,31 @@ def route_api_insert(dbase, table):
 
         #raw data (application/x-www-form-urlencoded):
         raw_data = request.get_data().decode('UTF-8')   # JSON.strigified
-        app.logger.info(raw_data)
+        app.logger.debug(raw_data)
 
         jdata = json.loads(raw_data)                        # json object
 
         #single insert
         if isinstance(jdata, dict):
-            app.logger.info('single insert')
+            app.logger.debug('single insert')
             ts_int = jdata['ts']
             #printF('ts_int', ts_int)
             if ts_int is None:
-                manage_thread_list('remove_el')
+                manage_thread_list(func='remove')
                 return response_text_err('ts is not defined'), BAD_REQUEST
             if ts_int < 0:
-                manage_thread_list('remove_el')
+                manage_thread_list(func='remove')
                 return response_text_err('ts = '+str(ts_int)+' is invalid'), BAD_REQUEST
 
             val_json = jdata['val']                         # val as object
             val = json.dumps(val_json)                      # val as string
             #printF('val_json', val_json)
             if val_json is None:
-                manage_thread_list('remove_el')
+                manage_thread_list(func='remove')
                 return response_text_err('val is not defined'), BAD_REQUEST
 
             sql = 'INSERT INTO '+table+ ' VALUES (?, ?);'
-            app.logger.info(sql)
+            app.logger.debug(sql)
             try:
                 if not conn:
                     command = 'connect'
@@ -1532,30 +1370,30 @@ def route_api_insert(dbase, table):
                 commtext = command+'(insert POST '+dbase+'.'+table+')'
                 errtext = 'sqlite3.Error on '+commtext+': '+(' '.join(error.args))
                 conn.close()
-                manage_thread_list('remove_el')
                 if errtext.find('database is locked') > 0:
-                    app.logger.error('*** insert queue: '+buildlist)
+                    treat_lock(newstate=True, text=commtext)
+                manage_thread_list(func='remove', resetlockstate=False)
                 return response_text_err(errtext), DB_ERROR
             check_threshold(now, dbase, table)
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text('1 of 1 rows stored')
 
         # bulk inserts
         if isinstance(jdata, list):
-            app.logger.info('bulk insert')
+            app.logger.debug('bulk insert')
 
             ret = select_last_ts(dbase, table, 'yes')
-            app.logger.info(ret)
+            app.logger.debug(ret)
             if ret[1] == OK:
                 ts_last = ret[0]
             if ret[1] is None:
                 ts_last = 0
             else:
                 ts_last = 0
-            app.logger.info('ts_last='+str(ts_last))
+            app.logger.debug('ts_last='+str(ts_last))
 
             sql = 'INSERT INTO '+table+ ' VALUES (?, ?);'
-            app.logger.info(sql)
+            app.logger.debug(sql)
             i = 0
             ji_stored = 0
             if not conn:
@@ -1566,10 +1404,10 @@ def route_api_insert(dbase, table):
                 #printF('ts_int', ts_int)
                 if ts_int is None:
                     conn.close()
-                    manage_thread_list('remove_el')
+                    manage_thread_list(func='remove')
                     return response_text_err('line '+str(i)+': ts is not defined'), BAD_REQUEST
                 if ts_int <= ts_last:
-                    app.logger.info(str(ts_int)+' <= '+str(ts_last))
+                    app.logger.debug(str(ts_int)+' <= '+str(ts_last))
                     continue
 
                 val_json = jdata_i['val']                    # val as object
@@ -1577,7 +1415,7 @@ def route_api_insert(dbase, table):
                 #printF('val_json', val_json)
                 if val_json is None:
                     conn.close()
-                    manage_thread_list('remove_el')
+                    manage_thread_list(func='remove')
                     return response_text_err('line '+str(i)+': val is not defined'), BAD_REQUEST
 
                 try:
@@ -1591,9 +1429,9 @@ def route_api_insert(dbase, table):
                         app.logger.warning(errtext)
                         continue
                     conn.close()
-                    manage_thread_list('remove_el')
                     if errtext.find('database is locked') > 0:
-                        app.logger.error('*** insert queue: '+buildlist)
+                        treat_lock(newstate=True, text=commtext)
+                    manage_thread_list(func='remove', resetlockstate=False)
                     return response_text_err(errtext), DB_ERROR
 
             if ji_stored > 0:
@@ -1601,7 +1439,7 @@ def route_api_insert(dbase, table):
                 conn.commit()
             conn.close()
             check_threshold(now, dbase, table)
-            manage_thread_list('remove_el')
+            manage_thread_list(func='remove')
             return response_text(str(ji_stored)+' of '+str(i)+' rows stored')
 
 @app.route('/<dbase>/<table>/select_next', methods=["GET"])
@@ -1614,10 +1452,10 @@ def route_api_select_next(dbase, table):
     ts_last = request.args.get('ts', '0')
     if not ts_last.isnumeric():
         return response_text_err('ts = '+ts_last+' is invalid'), BAD_REQUEST
-    app.logger.info('read all next entries from '+table+ ' beginning after ' +ts_last)
+    app.logger.debug('read all next entries from '+table+ ' beginning after ' +ts_last)
 
     sql = "SELECT * FROM "+table+" WHERE ts > "+ts_last+";"
-    app.logger.info(sql)
+    app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -1661,13 +1499,13 @@ def route_api_select_range(dbase, table):
     ts_to = request.args.get('to', '0')
     if not ts_to.isnumeric():
         return response_text_err('to = '+ts_to+' is invalid'), BAD_REQUEST
-    app.logger.info('read all entries from '+table+ ' between '+ts_from+' and '+ts_to)
+    app.logger.debug('read all entries from '+table+ ' between '+ts_from+' and '+ts_to)
 
     if ts_to == '0':
         sql = "SELECT * FROM "+table+" WHERE ts >= "+ts_from+";"
     else:
         sql = "SELECT * FROM "+table+" WHERE ts >= "+ts_from+" AND ts <= "+ts_to+";"
-    app.logger.info(sql)
+    app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -1759,7 +1597,7 @@ def route_api_delete_prev(dbase, table):
         return response_text_err('ts = '+ts_next+' is invalid'), BAD_REQUEST
 
     sql = 'DELETE FROM '+table+' WHERE ts < '+ts_next+';'
-    app.logger.info(sql)
+    app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -1794,10 +1632,10 @@ def route_api_delete(dbase, table):
         return response_text_err('ts = '+ts_del+' is invalid'), BAD_REQUEST
     if int(ts_del) < 0:
         return response_text_err('ts = '+ts_del+' is invalid'), BAD_REQUEST
-    app.logger.info('delete row '+ts_del+' from '+table)
+    app.logger.debug('delete row '+ts_del+' from '+table)
 
     sql = 'DELETE FROM '+table+' WHERE ts = '+ts_del+';'
-    app.logger.info(sql)
+    app.logger.debug(sql)
     try:
         command = 'connect'
         conn = get_db_connection(dbase)
@@ -1857,7 +1695,7 @@ def route_sql_get(dbase):
         sql = urllib.parse.unquote(str(request.query_string, "utf-8"))
     if sql is None:
         return response_text_err('no sql command given'), OK    #BAD_REQUEST
-    app.logger.info(sql)
+    app.logger.debug(sql)
     command = 'connect'
     conn = get_db_connection(dbase)
     if sql.find("val(") > 0:
@@ -1893,11 +1731,11 @@ def route_sql_post(dbase):
     if not os.path.isfile(dbase+'.db'):
         return response_text_err('database '+dbase+' not found'), NOT_FOUND
 
-    app.logger.info(request.form)
+    app.logger.debug(request.form)
     for key in request.form.to_dict():
-        app.logger.info(key)
+        app.logger.debug(key)
         sql = key
-    app.logger.info(sql)
+    app.logger.debug(sql)
     if not sql:
         return response_text_err('sql command missing'), BAD_REQUEST
 

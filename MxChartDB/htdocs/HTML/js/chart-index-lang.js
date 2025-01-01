@@ -154,8 +154,8 @@
             en: 'instance {0} set to active={1}',
         },
         {//38
-            de: 'produktive Charts ',
-            en: 'productive charts '
+            de: 'aktive Charts ',
+            en: 'active charts '
         },
         {//39
             de: 'verwaiste Charts ',
@@ -196,5 +196,9 @@
         {//48
             de: 'Chart Id<br>korrigieren',
             en: 'Correct<br>Chart Id',
+        },
+        {//49
+            de: 'inaktive Charts ',
+            en: 'inactive charts '
         },
     ];
