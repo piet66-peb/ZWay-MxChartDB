@@ -226,9 +226,6 @@ var postcalc = {
             comp = '';
             if (form_calc) {
                 //console.log(form_calc);
-                form_calc = form_calc.replace(/g\.isChanged\s*\(\s*x\s*\)/g, 
-                                              'g.isChanged(x,x_last)');
-                //console.log(form_calc);
                 var c = abbrevs + form_calc;
                 try {
                     /*jshint evil: true */

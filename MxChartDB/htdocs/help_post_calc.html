@@ -170,11 +170,11 @@
          </tr>
          <tr>
             <td class="center"></td>
-            <td>COUNT(v3, 'x == "on" &amp;&amp; g.isChanged(x)'): the number of changes to 'on' of sensor 3</td>
+            <td>COUNT(v3, 'x == "on" &amp;&amp; x != x_last'): the number of changes to 'on' of sensor 3</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>COUNT(v3, 'g.isChanged(x)'): the number of any value changes of sensor 3</td>
+            <td>COUNT(v3, 'x != x_last'): the number of any value changes of sensor 3</td>
          </tr>
          <tr>
             <td class="center"></td>
