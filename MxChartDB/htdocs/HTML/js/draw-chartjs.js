@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.0.0 2024-12-28/peb
+//h Version:      V3.1.0 2025-01-21/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -24,17 +24,17 @@
 //h 
 //h-------------------------------------------------------------------------------
 
-/*jshint esversion: 5 */
+/*jshint esversion: 6 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils, header_utils */
+/*globals ch_utils, header_utils, postcalc */
 'use strict';
 
 //-----------
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.0.0';
-var WRITTEN = '2024-12-28/peb';
+var VERSION = 'V3.1.0';
+var WRITTEN = '2025-01-21/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -71,9 +71,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     var isZoomed = false;
     var isZoomActive = false;
-    var doRefresh = (ch_utils.getCookie('doRefresh') || 'true') === 'true' ? true : false;
-    var showTooltipBox = (ch_utils.getCookie('showTooltipBox') || 'true') === 'true' ? true : false;
-    var showShowIx = (ch_utils.getCookie('showShowIx') || 'false') === 'true' ? true : false;
+    var doRefresh = (ch_utils.getCookie('doRefresh') || 'true') === 
+        'true' ? true : false;
+    var showTooltipBox = (ch_utils.getCookie('showTooltipBox') || 'true') === 
+        'true' ? true : false;
+    var showShowIx = (ch_utils.getCookie('showShowIx') || 'false') === 
+        'true' ? true : false;
 
     //measure runtime
     var startRun;
@@ -169,7 +172,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     var label = el.$context.dataset.label;
                     ctx.fillText('    ' + label, x, y);
                     if (yValue !== yRaw) {
-                        ctx.fillText('    ' + xValue + ': ' + yRaw + ' = ' + yValue, x, y + 20);
+                        ctx.fillText('    ' + xValue + ': ' + yRaw + ' = ' + 
+                            yValue, x, y + 20);
                     } else {
                         ctx.fillText('    ' + xValue + ': ' + yValue, x, y + 20);
                     }
@@ -276,7 +280,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         },
                         onZoomComplete: function(chart) {
                             isZoomActive = false;
-                            currentIntervalMSEC = xRange().len;
+                            currentIntervalMSEC = header_utils.xRange().len;
                             //console.log('!!!!!!!!!!! currentIntervalMSEC='+currentIntervalMSEC);
                             display_startTime();
 
@@ -573,7 +577,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 correct_version = true;
             }
             if (!correct_version) {
-                alert('current API version: ' + version_string + ', you need at least API version V' + version_least);
+                alert('current API version: ' + version_string + 
+                    ', you need at least API version V' + version_least);
             }
         }
     } //check_API_version
@@ -605,12 +610,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     vLog.chartHeader.initialInterval =
                         vLog.chartHeader.chartInterval;
                 }
-                initialIntervalMSEC = initialInterval2msec(vLog.chartHeader.initialInterval);
+                initialIntervalMSEC = 
+                    initialInterval2msec(vLog.chartHeader.initialInterval);
                 if (initialIntervalMSEC) {
                     currentIntervalMSEC = initialIntervalMSEC;
-                    //console.log('!!!!!!!!!!! currentIntervalMSEC='+currentIntervalMSEC);
                 }
-                //???????????ßcount_chart_entries();
                 read_values(request_mode, initialIntervalMSEC, from, to);
                 break;
             case 6:
@@ -618,6 +622,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 try {
                     config.data = prepareData();
                     //console.log('prepareData: '+(Date.now()-startRun)/1000+' sec');
+
+                    //build up pointer array v_buf to data
+                    postcalc.create_v_buf(config.data);
+
                 } catch (err) {
                     ch_utils.alertMessage(0, 'prepareData: ' + err.message);
                     throw (err);
@@ -655,7 +663,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //count chart entries
     function count_chart_entries(request_mode, from, to) {
         var chartIdDisp = chartIdDB + '.' + chartIdBase;
-        var url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/count';
+        var url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/count';
         ch_utils.ajax_get(url, success, fail);
 
         function success(data) {
@@ -676,7 +684,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //read first ts
     function read_first_ts(request_mode, from, to) {
         var chartIdDisp = chartIdDB + '.' + chartIdBase;
-        url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_first_ts?raw=yes';
+        url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+            '/select_first_ts?raw=yes';
         ch_utils.ajax_get(url, success, fail, no_data);
 
         function success(data) {
@@ -697,7 +706,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         function fail(data) {
             ts_first = false;
-            var url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_first_ts?raw=yes';
+            var url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+                '/select_first_ts?raw=yes';
             console.log(url + ' command not defined');
         }
     } //read_first_ts
@@ -705,7 +715,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //read last ts
     function read_last_ts(request_mode, from, to) {
         var chartIdDisp = chartIdDB + '.' + chartIdBase;
-        url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_last_ts?raw=yes';
+        url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+            '/select_last_ts?raw=yes';
         ch_utils.ajax_get(url, success, fail, no_data);
 
         function success(data) {
@@ -727,7 +738,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         function fail(data) {
             ts_last = false;
-            var url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_first_ts?raw=yes';
+            var url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+                '/select_first_ts?raw=yes';
             console.log(url + ' command not defined');
         }
     } //read_last_ts
@@ -735,7 +747,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //read chart header
     function read_header(request_mode, from, to) {
         //console.log('read_header tsLastHeader old', tsLastHeader);
-        url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '_Header/select_next?ts=' + tsLastHeader;
+        url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+            '_Header/select_next?ts=' + tsLastHeader;
         ch_utils.ajax_get(url, success, fail, 31);
 
         function success(data) {
@@ -777,8 +790,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
             if (errText <= 0) {
                 //*** call read_values
-                chartArithmetics = header_utils.prepare_formulas(vLog.chartHeader);
-                header_utils.enable_post_calc('post_calc', vLog.chartHeader);
+                chartArithmetics = 
+                    header_utils.prepare_formulas(vLog.chartHeader);
+                postcalc.enable_post_calc('postcalcButton', vLog.chartHeader);
                 program_control(request_mode, from, to);
             } else {
                 doRefresh = false;
@@ -796,7 +810,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (status === 404) { //file not found
                 ch_utils.alertMessage(31);
             } else {
-                var mess = 'error reading ' + chartIdDisp + ' Header data: ' + status;
+                var mess = 'error reading '+chartIdDisp+' Header data: '+status;
                 console.log(mess);
                 alert(mess);
             }
@@ -812,7 +826,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (initialIntervalMSEC) {
                 //tsLastValues = Date.now() - initialIntervalMSEC;
                 tsLastValues = ts_last - initialIntervalMSEC;
-                console.log('ts_last=' + ts_last + ', initialIntervalMSEC=' + initialIntervalMSEC);
+                console.log('ts_last=' + ts_last + ', initialIntervalMSEC=' + 
+                    initialIntervalMSEC);
                 if (ts_first > 0) {
                     ts_first = ts_first - 1;
                 }
@@ -823,10 +838,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
             console.log('tsLastValues=' + tsLastValues);
         }
         if (request_mode === 'REQUEST_INTERVAL') {
-            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_range?from=' + from +
-                '&to=' + to;
+            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+                '/select_range?from=' + from + '&to=' + to;
         } else {
-            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_next?ts=' + tsLastValues;
+            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+                '/select_next?ts=' + tsLastValues;
         }
         ch_utils.ajax_get(url, success, fail, no_data);
 
@@ -865,24 +881,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (status === 304) { //not modified
                 //console.log('not modified: '+(Date.now()-startRun)/1000+' sec');
                 if (!headerChanged) {
-                    ch_utils.displayMessage2(8, ch_utils.userTime());
+                    ch_utils.displayMessage2(8, ch_utils.userTime('now'));
                     return;
-                    /*                   
-                                   } else 
-                                   //maybe no data available in the given interval
-                                   if (initialIntervalMSEC && !vLog.chartValues && tsLastValues > 0) {
-                                       console.log('no data in given interval > reread complete data');
-                                       headerChanged = false;
-                                       tsLastValues = 0;
-                                       step--;
-                                       program_control(request_mode, from, to);
-                    */
                 }
             } else
             if (status === 404) { //file not found
                 no_data();
             } else {
-                var mess = 'error reading ' + chartIdDisp + ' Header data: ' + status;
+                var mess = 'error reading '+chartIdDisp+' Header data: '+status;
                 console.log(mess);
                 alert(mess);
             }
@@ -898,16 +904,19 @@ document.addEventListener("DOMContentLoaded", function(event) {
         chartLastValues = new Array(chartLabelsLen); //item[sensor_ix] = [x0, x]
         chartLastValues.fill([]);
 
-        sensorsOnlyChange = new Array(chartLabelsLen); //item[sensor_ix] = true|false
+        sensorsOnlyChange = new Array(chartLabelsLen); //item[sensor_ix] = 
+                                                       //true|false
         sensorsOnlyChange.fill(false);
 
         for (i = 0; i < chartLabelsLen; i++) {
             if (['points', 'straightpoints', 'interpolatedpoints'].
-                //if (['points', 'straightpoints', 'interpolatedpoints', 'rectangle_left'].
+                //if (['points', 'straightpoints', 'interpolatedpoints', 
+                //'rectangle_left'].
                 indexOf(vLog.chartHeader.chartgraphTypes[i]) >= 0) {
                 sensorsOnlyChange[i] = true;
             }
-            //console.log(vLog.chartHeader.chartgraphTypes[i], sensorsOnlyChange[i]);
+            //console.log(vLog.chartHeader.chartgraphTypes[i], 
+            //sensorsOnlyChange[i]);
         }
 
         //convert opacity
@@ -916,7 +925,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 opacity = vLog.chartHeader.opacity;
             }
         }
-        opacityHex = (opacity * 255 / 100).toString(16).replace(/\..*$/, '').padStart(2, '0');
+        opacityHex = (opacity * 255 / 100).toString(16).
+            replace(/\..*$/, '').padStart(2, '0');
 
         //if daytime sensor defined, we use it for nighttime background
         if (vLog.chartHeader.nightBackground) {
@@ -933,13 +943,17 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     nightColor = '#cccccc50'; //default color
 
                     if (vLog.chartHeader.chartFill[nightDeviceIndex] &&
-                        vLog.chartHeader.chartFill[nightDeviceIndex].indexOf(':') >= 0) {
-                        nightColor = vLog.chartHeader.chartFill[nightDeviceIndex].split(':')[1];
+                        vLog.chartHeader.
+                        chartFill[nightDeviceIndex].indexOf(':') >= 0) {
+                        nightColor = vLog.chartHeader.
+                            chartFill[nightDeviceIndex].split(':')[1];
                     } else
                     if (vLog.chartHeader.chartColors[nightDeviceIndex]) {
-                        nightColor = vLog.chartHeader.chartColors[nightDeviceIndex] + '50';
+                        nightColor = 
+                            vLog.chartHeader.chartColors[nightDeviceIndex] + '50';
                     }
-                    //console.log(devId, 'ix='+nightDeviceIndex+', nightColor='+nightColor);
+                    //console.log(devId, 'ix='+nightDeviceIndex+', nightColor='+
+                    //nightColor);
 
                     //suppress displaying daylight sensor values
                     vLog.chartHeader.chartLabels[nightDeviceIndex] = 'null';
@@ -1029,7 +1043,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //category (text) labels
         var y3LabelsString = vLog.chartHeader.y3Labeling || '';
         if (y3LabelsString.indexOf('\\u') >= 0) {
-            y3LabelsString = decodeURIComponent(JSON.parse('"' + y3LabelsString + '"'));
+            y3LabelsString = decodeURIComponent(JSON.parse('"' + y3LabelsString +
+                '"'));
         }
         y3Labels = y3LabelsString.split(',');
         y3LabelsMaxWidth = 0;
@@ -1155,7 +1170,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 //get tooltip
                 if (X[ix] && typeof X[ix] === 'object') {
                     if (X[ix].hasOwnProperty('tooltip')) {
-                        TOOLTIPs[ix] = X[ix].tooltip.toString().replace(/\|/g, '\n');
+                        TOOLTIPs[ix] = X[ix].tooltip.toString().replace(/\|/g, 
+                            '\n');
                     } else {
                         TOOLTIPs[ix] = '';
                     }
@@ -1215,10 +1231,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 //off > start, on > end:
                 if (currLevel && currLevel !== lastLevel) {
                     currTime = X[0];
-                    if (currLevel === 'off' && (!lastLevel || lastLevel === 'on')) { //to night
+                    if (currLevel === 'off' && 
+                        (!lastLevel || lastLevel === 'on')) { //to night
                         item.start = currTime;
                     } else
-                    if (currLevel === 'on' && (!lastLevel || lastLevel === 'off')) { //to day
+                    if (currLevel === 'on' && 
+                        (!lastLevel || lastLevel === 'off')) { //to day
                         item.end = currTime;
                         nightArray.push(item);
                         item = {};
@@ -1249,7 +1267,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         borderWidth: 0
                     };
                 });
-                //console.log('annotations' ,config.options.plugins.annotation.annotations);
+                //console.log('annotations' ,
+                //config.options.plugins.annotation.annotations);
             }
         } //nightDeviceIndex
 
@@ -1353,7 +1372,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (y3reduceUnusedTicks) {
                 var y3LabelsNew = [];
                 var labelText, addRemaining = false;
-                for (var y3Labels_ix = 0; y3Labels_ix < y3LabelsCount; y3Labels_ix++) {
+                for (var y3Labels_ix = 0; y3Labels_ix < y3LabelsCount; 
+                    y3Labels_ix++) {
                     labelText = y3Labels[y3Labels_ix];
                     if (y3LabelsUsed[labelText] || addRemaining ||
                         y3Labels_ix >= y3LabelsCount - y3leastTicks) {
@@ -1419,7 +1439,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         return text.padStart(Math.ceil(y3IconsWidth), ' ');
                     },
                 };
-                config.options.scales.yLleft.ticks = config.options.scales.yLright.ticks;
+                config.options.scales.yLleft.ticks = 
+                    config.options.scales.yLright.ticks;
 
                 config.plugins[0].afterRender =
                     function(chart) {
@@ -1427,17 +1448,21 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             return;
                         }
                         if (!chartAreaBottomLast) {
-                            //postpone drawing till all afterRenders are through, cause 
-                            //only the last chartArea position is definitively useful
+                            //postpone drawing till all afterRenders are through,
+                            //cause 
+                            //only the last chartArea position is definitively 
+                            //useful
                             drawIconsTimer = setTimeout(drawIcons, 0, chart);
                         } else {
                             drawIcons(chart);
                         }
                     }; //afterRender
 
-                //in case the labels list was enhanced we must enhanced icons list too
+                //in case the labels list was enhanced we must enhanced icons 
+                //list too
                 if (y3IconsWidth > 0 && y3LabelsCount - y3Icons.length > 0) {
-                    for (var ii = 0; ii <= (y3LabelsCount - y3Icons.length); ii++) {
+                    for (var ii = 0; ii <= (y3LabelsCount - y3Icons.length); 
+                        ii++) {
                         y3Icons.unshift('');
                     }
                 }
@@ -1457,8 +1482,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }
 
     function resetScales() {
-        ['yUright', 'yLright', 'yUleft', 'yLleft'].forEach(function(scale) {
-            ['stack', 'stackWeight', 'offset', 'weight'].forEach(function(option) {
+        ['yUright','yLright','yUleft','yLleft'].forEach(function(scale) {
+            ['stack','stackWeight','offset','weight'].forEach(function(option) {
                 config.options.scales[scale][option] = undefined;
             });
             config.options.scales[scale].display = false;
@@ -1483,7 +1508,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
         //set charttype
         var chartType = 'line';
-        if (['bar', 'bar_overlap'].indexOf(vLog.chartHeader.chartgraphTypes[ix]) >= 0) {
+        if (['bar', 'bar_overlap'].indexOf(
+            vLog.chartHeader.chartgraphTypes[ix]) >= 0) {
             chartType = 'bar';
         }
 
@@ -1579,7 +1605,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         if (vLog.chartHeader.hasOwnProperty('chartFill')) {
             if (vLog.chartHeader.chartFill[ix] !== null) {
-                var fillStr = (vLog.chartHeader.chartFill[ix] + '').replace(/ /g, '');
+                var fillStr = (vLog.chartHeader.chartFill[ix] + '').replace(/ /g,
+                    '');
                 var fillArr = fillStr.split(':');
                 var fill0 = false,
                     fill1, fill2;
@@ -1619,14 +1646,18 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         // fill: set color transparent
                         if (item.fill && item.fill === fill0) {
                             if (item.backgroundColor.charAt(0) !== '#') {
-                                var col = w3color(item.backgroundColor).toHexString();
-                                //console.log('converted color '+item.backgroundColor+' to '+col);
+                                var col = w3color(item.backgroundColor).
+                                    toHexString();
+                                //console.log('converted color '+
+                                //item.backgroundColor+' to '+col);
                                 item.backgroundColor = col;
                             }
                             if (item.backgroundColor.charAt(0) === '#') {
                                 item.backgroundColor += opacityHex;
                             } else {
-                                console.log('cannot add opacity to backgroundColor=' + item.backgroundColor);
+                                console.log(
+                                    'cannot add opacity to backgroundColor=' + 
+                                    item.backgroundColor);
                             }
                         }
                     } else {
@@ -1676,16 +1707,20 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             if (scaleType[ix_store - 1] === undefined) {
                 scaleType[ix_store - 1] = null;
-                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
+                //console.log('scaletype of sensor='+ix+' is '+
+                //scaleType [ix_store-1]+' x['+ip+']='+x);
             }
             return x;
         } else
-        if (typeof x === 'string' && x !== '' && maxValues[ix_store - 1] && !isNaN(x - 0)) {
+        if (typeof x === 'string' && x !== '' && maxValues[ix_store - 1] && 
+            !isNaN(x - 0)) {
             //convert string to number
             x = x - 0;
-            maxValues[ix_store - 1] = maxValues[ix_store - 1] ? Math.max(maxValues[ix_store - 1], x) : x;
+            maxValues[ix_store - 1] = maxValues[ix_store - 1] ? 
+                Math.max(maxValues[ix_store - 1], x) : x;
             scaleType[ix_store - 1] = 'number';
-            //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
+            //console.log('scaletype of sensor='+ix+' is '+
+            //scaleType [ix_store-1]+' x['+ip+']='+x);
             numberAxisNecessary = true;
             return Math.round(x * 100) / 100;
         } else
@@ -1693,7 +1728,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (maxValues[ix_store - 1]) {
                 x_pre = vLog.chartValues[ip - 1][ix];
                 if (x !== x_pre.toString()) {
-                    mess = ch_utils.buildMessage(27, ix, ip, ch_utils.userTime(timestamp), x_pre, x);
+                    mess = ch_utils.buildMessage(27, ix, ip, 
+                        ch_utils.userTime(timestamp), x_pre, x);
                     setErrormessage(ix, mess, data.datasets[ix - 1]);
                     console.log(X);
                 }
@@ -1701,7 +1737,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             } else {
                 maxValues[ix_store - 1] = false;
                 scaleType[ix_store - 1] = 'string';
-                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
+                //console.log('scaletype of sensor='+ix+' is '+
+                //scaleType [ix_store-1]+' x['+ip+']='+x);
                 textAxisNecessary = true;
                 return x;
             }
@@ -1710,15 +1747,18 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (maxValues[ix_store - 1] === false) {
                 x_pre = vLog.chartValues[ip - 1][ix];
                 if (x.toString() !== x_pre) {
-                    mess = ch_utils.buildMessage(27, ix, ip, ch_utils.userTime(timestamp), x_pre, x);
+                    mess = ch_utils.buildMessage(27, ix, ip, 
+                        ch_utils.userTime(timestamp), x_pre, x);
                     setErrormessage(ix, mess, data.datasets[ix - 1]);
                     console.log(X);
                 }
                 return null;
             } else {
-                maxValues[ix_store - 1] = maxValues[ix_store - 1] ? Math.max(maxValues[ix_store - 1], x) : x;
+                maxValues[ix_store - 1] = maxValues[ix_store - 1] ? 
+                    Math.max(maxValues[ix_store - 1], x) : x;
                 scaleType[ix_store - 1] = 'number';
-                //console.log('scaletype of sensor='+ix+' is '+scaleType [ix_store-1]+' x['+ip+']='+x);
+                //console.log('scaletype of sensor='+ix+' is '+
+                //scaleType [ix_store-1]+' x['+ip+']='+x);
                 numberAxisNecessary = true;
                 return Math.round(x * 100) / 100;
             }
@@ -1771,7 +1811,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             } else
             if (formula && formula !== 'null') {
                 var label = data.datasets[ix - 1].label;
-                var errmess = ch_utils.buildMessage(24, ix, label, X[0]+'='+ch_utils.userTime(X[0]));
+                var errmess = ch_utils.buildMessage(24, ix, label, X[0]+'='+
+                    ch_utils.userTime(X[0]));
 
                 try {
                     /*jshint evil: true */
@@ -1779,13 +1820,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     /*jshint evil: false */
 
                     if (typeof x === 'number' && !isFinite(x)) {
-                        console.log(ch_utils.buildMessage(24, ix, label, ch_utils.userTime(X[0])));
+                        console.log(ch_utils.buildMessage(24, ix, label, 
+                            ch_utils.userTime(X[0])));
                         console.log(ch_utils.buildMessage(25));
                         console.log('formula = "' + formula + '"');
                         console.log(Xprev);
                         console.log(X);
                         console.log(g);
-                        setErrormessage(ix, '3 ' + errmess+'\n'+ch_utils.buildMessage(39), data.datasets[ix - 1]);
+                        setErrormessage(ix, '3 ' + errmess+'\n'+
+                            ch_utils.buildMessage(39), data.datasets[ix - 1]);
                     } else
                     if (typeof x !== 'string' && x !== null && isNaN(x)) {
                         if (label.indexOf(ch_utils.buildMessage(34)) < 0) {
@@ -1795,20 +1838,23 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             console.log(X);
                             console.log(g);
                             console.log('x=' + x);
-                            setErrormessage(ix, '1 ' + errmess, data.datasets[ix - 1]);
+                            setErrormessage(ix, '1 ' + errmess, 
+                                data.datasets[ix - 1]);
                         }
                         x = null;
                     }
                     x = x === undefined ? null : x;
                 } catch (err) {
                     if (label.indexOf(ch_utils.buildMessage(34)) < 0) {
-                        console.log(ch_utils.buildMessage(24, ix, label, ch_utils.userTime(X[0])));
+                        console.log(ch_utils.buildMessage(24, ix, label, 
+                            ch_utils.userTime(X[0])));
                         console.log(ch_utils.buildMessage(25));
                         console.log('formula = "' + formula + '"');
                         console.log(Xprev);
                         console.log(X);
                         console.log(g);
-                        setErrormessage(ix, '2 ' + errmess+'\n'+err.message, data.datasets[ix - 1]);
+                        setErrormessage(ix, '2 ' + errmess+'\n'+err.message, 
+                            data.datasets[ix - 1]);
                     }
                     x = null;
                 } //catch
@@ -1956,7 +2002,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.userTime(startTime),
             ch_utils.userTime(endTime),
             db_count);
-        ch_utils.displayMessage2(7, ch_utils.userTime());
+        ch_utils.displayMessage2(7, ch_utils.userTime('now'));
 
         // set initial displayed time period
         if (initialIntervalMSEC && !isZoomed) {
@@ -1980,13 +2026,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
             var ctx = document.getElementById('canvas').getContext('2d');
             window.myLine = new Chart(ctx, config);
             busyi.hide();
-            console.log('chart displayed: ' + (Date.now() - startRun) / 1000 + ' sec');
+            console.log('chart displayed: ' + (Date.now() - startRun) / 1000 + 
+                ' sec');
 
             //show buttons cause we now have a chart
             ch_utils.buttonText('dataJSON', 2);
 
             //date time picker:
-            ch_utils.buttonText('dt_calendar', 3);
+            ch_utils.buttonText('dtpickButton', 3);
             ch_utils.buttonText('dtpick_title', 18);
             ch_utils.buttonText('dtpick_date', 19);
             ch_utils.buttonText('dtpick_time', 20);
@@ -2001,13 +2048,33 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.buttonVisible('shiftRightLong', true);
             ch_utils.buttonVisible('showComplete', true);
             ch_utils.buttonVisible('chartIndex', true);
+            if (!isFrame && !isModal && !isMobile && displaySettings.main_width) {
+                ch_utils.buttonVisible('expand', true);
+            } else {
+                ch_utils.buttonVisible('expand', false);
+            }
+            if (isAdmin) {
+                ch_utils.buttonVisible('textShowIx', true);
+            } else {
+                ch_utils.buttonVisible('textShowIx', false);
+                showShowIx = false;
+            }
+            if (isAdmin) {
+                ch_utils.buttonVisible('textShowIx', true);
+            } else {
+                ch_utils.buttonVisible('textShowIx', false);
+                showShowIx = false;
+            }
             if (isModal) {
-                ch_utils.buttonVisible('dt_calendar', false);
+                ch_utils.buttonVisible('textShowIx', false);
+                ch_utils.buttonVisible('showIxCheckbox', false);
+                ch_utils.buttonVisible('configuration', false);
+                ch_utils.buttonVisible('dtpickButton', false);
                 ch_utils.buttonVisible('newTab', true);
                 ch_utils.buttonVisible('snapshot', false);
             }
             if (!isModal) {
-                ch_utils.buttonVisible('dt_calendar', true);
+                ch_utils.buttonVisible('dtpickButton', true);
                 ch_utils.buttonVisible('dataJSON', true);
                 if (snapshots_possible && (snapshotAdmin === false || isAdmin)) {
                     ch_utils.buttonVisible('snapshot', true);
@@ -2015,18 +2082,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             ch_utils.buttonVisible('textTooltip', true);
             ch_utils.buttonVisible('textRefresh', true);
-            if (isAdmin) {
-                ch_utils.buttonVisible('textShowIx', true);
-            } else {
-                ch_utils.buttonVisible('textShowIx', false);
-                showShowIx = false;
-            }
+            ch_utils.buttonVisible('postcalcModal', false);
+            ch_utils.buttonVisible('dtpickModal', false);
         } //REQUEST_FIRST
         else {
             //update chart
             window.myLine.update();
             busyi.hide();
-            console.log('chart updated: ' + (Date.now() - startRun) / 1000 + ' sec');
+            console.log('chart updated: ' + (Date.now() - startRun) / 1000 + 
+                ' sec');
         }
 
         ch_utils.displayMessageDiv('notif3', 4);
@@ -2069,8 +2133,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
         var chartDevTitles = vLog.chartHeader.chartDevTitles;
         var chartDevicesOld = vLog.chartHeader.chartDevices;
         var chartDevicesNew = vLog.chartHeader.chartDevicesNew;
-        htmlText += '<table><tbody><tr><th>' + t + '</th><th>' + o + '</th><th>' + n + '</th></tr>';
-        for (var i = 1; i < Math.max(chartDevicesOld.length, chartDevicesNew.length); i++) {
+        htmlText += '<table><tbody><tr><th>' + t + '</th><th>' + o + 
+            '</th><th>' + n + '</th></tr>';
+        for (var i = 1; i < Math.max(chartDevicesOld.length, 
+            chartDevicesNew.length); i++) {
             devTitles = chartDevTitles[i] ||
                 vLog.chartHeader.chartLabels[i] || '';
             devOld = toString(chartDevicesOld[i]);
@@ -2092,7 +2158,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (!isModal) {
             document.title = vLog.chartHeader.chartTitle;
         }
-        //ch_utils.displayMessage(0, vLog.chartHeader.chartTitle+' ('+chartIdDisp+')');
+        //ch_utils.displayMessage(0, vLog.chartHeader.chartTitle+' ('+
+        //chartIdDisp+')');
         ch_utils.displayMessage(0, ''); //empty notification line
         var varCanvasEl = document.getElementById("canvas");
         varCanvasEl.style.display = "none";
@@ -2100,7 +2167,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         showRefresh = false;
         showTooltipBox = false;
         showShowIx = false;
-        ch_utils.buttonVisible('dt_calendar', false);
+        ch_utils.buttonVisible('dtpickButton', false);
         ch_utils.buttonVisible('recoverData', false);
         ch_utils.buttonVisible('shiftLeftLong', false);
         ch_utils.buttonVisible('shiftLeft', false);
@@ -2113,7 +2180,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.buttonVisible('textRefresh', false);
         ch_utils.buttonVisible('textTooltip', false);
         ch_utils.buttonVisible('textShowIx', false);
-        ch_utils.buttonVisible('post_calc', false);
+        ch_utils.buttonVisible('postcalcButton', false);
 
         document.getElementById('htmlText').innerHTML = htmlText;
     } //buildErrorHTML
@@ -2222,7 +2289,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
     // Set the name of the hidden property and the change event for visibility
     var hidden, visibilityChange;
-    if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support 
+    if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 
+                                                  // and later support 
         hidden = "hidden";
         visibilityChange = "visibilitychange";
     } else if (typeof document.msHidden !== "undefined") {
@@ -2309,59 +2377,38 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     } //config_datepicker
 
-    function dtpicker_toggle_visibility(target_state) {
-        el = document.getElementById("dtpick");
-        if (target_state === undefined) {
-            el.style.visibility = (el.style.visibility === "visible") ? "hidden" : "visible";
+    function dtpicker_toggle_visibility(event, target_state) {
+        if (ch_utils.isVisible('dtpickModal')) {
+            ch_utils.buttonVisible('dtpickModal', false);
         } else {
-            el.style.visibility = target_state;
-        }
-        if (el.style.visibility === "visible") {
-            ch_utils.buttonVisible('dtpick', true);
+            ch_utils.buttonVisible('dtpickModal', true);
             config_datepicker();
-        } else {
-            ch_utils.buttonVisible('dtpick', false);
-        }
+         }
     } //dtpicker_toggle_visibility
 
-    document.getElementById('dt_calendar').onclick = function() {
-        dtpicker_toggle_visibility("visible");
-    }; //dt_calendar
+    document.getElementById('dtpickButton').onclick = function(event) {
+        dtpicker_toggle_visibility(event, "visible");
+    }; //dtpickButton
 
-    document.getElementById('dtpick_break').onclick = function() {
-        dtpicker_toggle_visibility();
+    document.getElementById('dtpick_break').onclick = function(event) {
+        dtpicker_toggle_visibility(event);
     }; //dtpick_break
 
-    function hide_post_calc_modal(event) {
-        var el = event.target;
-        var elId = el.id;
-        if (elId && elId.indexOf('post_calc') === 0) {
+    function hide_postcalcModal(event) {
+        var buttonEvent = ch_utils.buttonIdEvent(event);
+        if (['postcalcModal', 'postcalcContents'].indexOf(buttonEvent) >= 0) {
             return;
         }
+        ch_utils.buttonVisible('postcalcModal', false);
+    } //hide_postcalcModal
 
-        while (!elId) {
-            el = el.parentElement;
-            if (el === null) {
-                ch_utils.buttonVisible('post_calc_', false);
-                return;
-            }
-            elId = el.id;
-        }
-
-        if (elId.indexOf('post_calc_') === 0) {
-            return;
-        }
-
-        ch_utils.buttonVisible('post_calc_modal', false);
-    } //hide_post_calc_modal
-
-    function hide_dtpick_modal(event) {
+    function hide_dtpickModal(event) {
         var el = event.target;
         var elId = el.id;
         if (elId && elId.indexOf('dtpick_') === 0) {
             return;
         }
-        if (elId && elId.indexOf('dt_calendar') === 0) {
+        if (elId && elId.indexOf('dtpickButton') === 0) {
             return;
         }
 
@@ -2377,16 +2424,18 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (elId.indexOf('dtpick_') === 0) {
             return;
         }
-        ch_utils.buttonVisible('dtpick', false);
-    } //hide_dtpick_modal
+        ch_utils.buttonVisible('dtpickModal', false);
+    } //hide_dtpickModal
 
     // When the user clicks anywhere outside of the modal, close it
     window.onclick = function(event) {
-        if (ch_utils.isVisible('dtpick')) {
-            hide_dtpick_modal(event);
+        var buttonEvent = ch_utils.buttonIdEvent(event);
+        if (buttonEvent !== 'dtpickButton' && ch_utils.isVisible('dtpickModal')) {
+            hide_dtpickModal(event);
         }
-        if (ch_utils.isVisible('post_calc_modal')) {
-            hide_post_calc_modal(event);
+        if (buttonEvent !== 'postcalcButton' && 
+            ch_utils.isVisible('postcalcModal')) {
+            hide_postcalcModal(event);
         }
     }; //window.onclick
 
@@ -2403,20 +2452,21 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     } //dateToTimestamp
 
-    document.getElementById('dtpick_exec').onclick = function() {
-        dtpicker_toggle_visibility();
+    document.getElementById('dtpick_exec').onclick = function(event) {
+        dtpicker_toggle_visibility(event);
 
         var year_value = document.getElementById('dtpick_year').value;
         var month_value = document.getElementById('dtpick_month').value;
         var day_value = document.getElementById('dtpick_day').value;
         var hour_value = document.getElementById('dtpick_hour').value;
         var minute_value = document.getElementById('dtpick_minute').value;
-        var newDateTime = year_value + '-' + month_value + '-' + day_value + ' ' + hour_value + ':' + minute_value + ':00';
+        var newDateTime = year_value + '-' + month_value + '-' + day_value + 
+            ' ' + hour_value + ':' + minute_value + ':00';
         var newStart = dateToTimestamp(newDateTime);
 
         var length_value = document.getElementById('dtpick_intervallength').value;
         var type_value = document.getElementById('dtpick_intervaltype').value;
-        var type_length = [60, 3600, 86400, 604800, 2592000, 31536000][type_value];
+        var type_length = [60,3600,86400,604800,2592000,31536000][type_value];
         var newLength = length_value * type_length * 1000;
         var newEnd = newStart + newLength;
 
@@ -2429,12 +2479,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     }; //dtpick_exec
 
-    document.getElementById('recoverData').onclick = function() {
+    document.getElementById('recoverData').onclick = function(event) {
         if (isZoomed) {
             startRun = Date.now();
             isZoomed = false;
             window.myLine.resetZoom();
-            console.log('update time resetZoom: ' + (Date.now() - startRun) / 1000 + ' sec');
+            console.log('update time resetZoom: ' + (Date.now() - startRun) / 
+                1000 + ' sec');
             currentIntervalMSEC = initialIntervalMSEC || (endTime - startTime);
             //console.log('!!!!!!!!!!! currentIntervalMSEC='+currentIntervalMSEC);
 
@@ -2442,53 +2493,36 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     }; //recoverData
 
-    function xRange() {
-        var boxes = window.myLine.boxes;
-        for (var i = 0; i < boxes.length; i++) {
-            //console.log(boxes[i]);
-            if (boxes[i].axis === 'x') {
-                var xCurrMin = boxes[i]._range.min;
-                var xCurrMax = boxes[i]._range.max;
-                var xCurrLen = xCurrMax - xCurrMin;
-                //console.log(ch_utils.userTime(xCurrMin)+' '+ch_utils.userTime(xCurrMax));
-
-                return {
-                    min: xCurrMin,
-                    max: xCurrMax,
-                    len: xCurrLen
-                };
-            }
-        }
-    } //xRange
-
     function display_startTime() {
         //display user timestamp
-        var timeRange = xRange();
-        ch_utils.buttonText('interval_start', 5, ch_utils.userTime(timeRange.min));
+        var timeRange = header_utils.xRange();
+        ch_utils.buttonText('interval_start', 5, 
+            ch_utils.userTime(timeRange.min));
         ch_utils.buttonText('interval_end', 5, ch_utils.userTime(timeRange.max));
     } //display_startTime
 
-    document.getElementById('shiftLeft').onclick = function() {
+    document.getElementById('shiftLeft').onclick = function(event) {
         shiftleft(0.5);
     }; //shiftLeft
 
-    document.getElementById('shiftLeftLong').onclick = function() {
+    document.getElementById('shiftLeftLong').onclick = function(event) {
         shiftleft(1);
     }; //shiftLeftLong
 
-    document.getElementById('shiftRight').onclick = function() {
+    document.getElementById('shiftRight').onclick = function(event) {
         shiftRight(0.5);
     }; //shiftRight
 
-    document.getElementById('shiftRightLong').onclick = function() {
+    document.getElementById('shiftRightLong').onclick = function(event) {
         shiftRight(1);
     }; //shiftRightLong
 
     function shiftleft(length) {
-        var timeRange = xRange();
+        var timeRange = header_utils.xRange();
         timeRange.len = currentIntervalMSEC;
 
-        var xMin_target = Math.round(timeRange.min - Math.round(timeRange.len * length));
+        var xMin_target = Math.round(timeRange.min - Math.round(timeRange.len * 
+            length));
         var xMax_target = xMin_target + timeRange.len;
         if (completeValuesReceived && xMax_target <= startTime) {
             return;
@@ -2505,7 +2539,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             //xMax_target = Math.min(xMax_target, endTime);
             do_zoom(xMin_target, xMax_target);
         } else {
-            //console.log(timeRange.min+'='+ch_utils.userTime(timeRange.min)+' timeRange.len='+timeRange.len);  
+            //console.log(timeRange.min+'='+ch_utils.userTime(timeRange.min)+
+            //' timeRange.len='+timeRange.len);  
             requestPrevious(xMin_target, xMax_target);
         }
     } //shiftLeft
@@ -2516,7 +2551,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             min: from,
             max: to
         }, 'none');
-        console.log('update time do_zoom: ' + (Date.now() - startRun) / 1000 + ' sec');
+        console.log('update time do_zoom: ' + (Date.now() - startRun) / 1000 + 
+            ' sec');
         busyi.hide();
         currentIntervalMSEC = to - from;
         //console.log('!!!!!!!!!!! currentIntervalMSEC='+currentIntervalMSEC);
@@ -2525,10 +2561,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //do_zoom
 
     function shiftRight(length) {
-        var timeRange = xRange();
+        var timeRange = header_utils.xRange();
         timeRange.len = currentIntervalMSEC;
 
-        var xMax_target = Math.round(timeRange.max + Math.round(timeRange.len * length));
+        var xMax_target = Math.round(timeRange.max + Math.round(timeRange.len * 
+            length));
         var xMin_target = xMax_target - timeRange.len;
         if (xMin_target < endTime) {
             startRun = Date.now();
@@ -2536,14 +2573,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     } //shiftRight
 
-    document.getElementById('showComplete').onclick = function() {
+    document.getElementById('showComplete').onclick = function(event) {
         startRun = Date.now();
         do_zoom(startTime, endTime);
     }; //showComplete
 
     function requestInterval(from, to) {
         //console.log('requestInterval: from='+from+' to='+to);
-        console.log('requestInterval: from=' + ch_utils.userTime(from) + ' to=' + ch_utils.userTime(to));
+        console.log('requestInterval: from=' + ch_utils.userTime(from) + 
+            ' to=' + ch_utils.userTime(to));
         ch_utils.buttonVisible("refreshCheckbox", false);
         doRefresh = false;
         setRefreshInterval(doRefresh);
@@ -2560,7 +2598,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     function requestPrevious(from, to) {
         //console.log('requestPrevious: from='+from+' to='+to);
-        console.log('requestPrevious: from=' + ch_utils.userTime(from) + ' to=' + ch_utils.userTime(to));
+        console.log('requestPrevious: from=' + ch_utils.userTime(from) + 
+            ' to=' + ch_utils.userTime(to));
 
         function success_complete(data) {
             completeValuesReceived = true;
@@ -2575,7 +2614,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 ts_first > 0 &&
                 ts_first < vLog.chartValues[0][0]) {
                 console.log('fail_previous: ' + status + ' ' + responseText);
-                console.log('first ts in db: ' + ts_first + ' first ts in buffer: ' + vLog.chartValues[0][0]);
+                console.log('first ts in db: ' + ts_first + 
+                           ' first ts in buffer: ' + vLog.chartValues[0][0]);
                 console.log('length=' + (to - from + 1));
                 //display empty page:
                 do_zoom(from, to);
@@ -2584,7 +2624,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
         } //fail_previous
 
-
         startRun = Date.now();
         busyi.show();
 
@@ -2592,15 +2631,19 @@ document.addEventListener("DOMContentLoaded", function(event) {
         count_chart_entries();
         //console.log('requesting previous data from '+from+'...');
         if (from > 0) {
-            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_range?from=' + (from - 1) + '&to=' + (startTime - 1);
+            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+                '/select_range?from=' + (from - 1) + '&to=' + (startTime - 1);
             console.log('requestPrevious: from=' + ch_utils.userTime((from - 1)) +
-                ' to=' + ch_utils.userTime((startTime - 1)));
-            ch_utils.ajax_get(url, success_previous, fail_previous, nodata_previous);
+            ' to=' + ch_utils.userTime((startTime - 1)));
+            ch_utils.ajax_get(url, success_previous, 
+                fail_previous, nodata_previous);
         } else {
-            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + '/select_range?from=' + from + '&to=' + (startTime - 1);
+            url = 'http://' + api + '/' + chartIdDB + '/' + chartIdBase + 
+                '/select_range?from=' + from + '&to=' + (startTime - 1);
             console.log('requestPrevious: from=' + ch_utils.userTime((from - 1)) +
                 ' to=' + ch_utils.userTime((startTime - 1)));
-            ch_utils.ajax_get(url, success_complete, fail_previous, nodata_previous);
+            ch_utils.ajax_get(url, success_complete, fail_previous, 
+                nodata_previous);
         }
     } //requestPrevious
 
@@ -2630,7 +2673,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //process_fail_previous
 
     function process_previous(data, from, to) {
-        console.log('process_previous: from=' + ch_utils.userTime(from) + ' to=' + ch_utils.userTime(to));
+        console.log('process_previous: from=' + ch_utils.userTime(from) + 
+            ' to=' + ch_utils.userTime(to));
         console.log(data.length + ' values received: ' +
             ch_utils.userTime(data[0][0]) + ' ' +
             ch_utils.userTime(data[data.length - 1][0]));
@@ -2642,35 +2686,49 @@ document.addEventListener("DOMContentLoaded", function(event) {
         do_zoom((from || startTime), (to || endTime));
     } //process_previous
 
-    document.getElementById('newTab').onclick = function() {
+    document.getElementById('newTab').onclick = function(event) {
         var url = './draw-chartjs.html';
         url = url + '?chartId=' + chartId + '&isAdmin=' + isAdmin;
         console.log(url);
         window.open(url);
     }; //newTab
 
-    document.getElementById('dataJSON').onclick = function() {
+    document.getElementById('dataJSON').onclick = function(event) {
         var url = './data-json.html';
         url = url + '?chartId=' + chartId + '&isAdmin=' + isAdmin;
-        url += '&from=' + Math.ceil(xRange().min) + '&to=' + Math.floor(xRange().max);
+        url += '&from=' + Math.ceil(header_utils.xRange().min) + '&to=' + 
+            Math.floor(header_utils.xRange().max);
         console.log(url);
         window.open(url);
     }; //dataJSON
 
-    document.getElementById('chartIndex').onclick = function() {
+    document.getElementById('chartIndex').onclick = function(event) {
         var url = './index.html' + '?isAdmin=' + isAdmin;
         console.log(url);
         window.open(url);
     }; //chartIndex
 
-    document.getElementById('configuration').onclick = function() {
+    document.getElementById('expand').onclick = function(event) {
+        var el_main = document.getElementById('main');
+        var currWidth = el_main.style.width;
+        if (currWidth === '100%') {
+            ch_utils.buttonText('expand', 33);
+            el_main.style.width = 
+                correct_aspect('width', displaySettings.main_width);
+        } else {
+            ch_utils.buttonText('expand', 34);
+            el_main.style.width = '100%';
+        }
+    }; //expand
+
+    document.getElementById('configuration').onclick = function(event) {
         var url = '/smarthome/#/module/put/' + vLog.chartHeader.chartInstance;
         console.log(url);
         window.open(url);
     }; //configuration
 
-    document.getElementById('snapshot').onclick = function() {
-        var timeRange = xRange();
+    document.getElementById('snapshot').onclick = function(event) {
+        var timeRange = header_utils.xRange();
         var url = './take-snapshot.html';
         url = url + '?chartId=' + chartId +
             '&ts_from=' + timeRange.min +
@@ -2683,7 +2741,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     //------- auxiliary function definitions -------------------------
 
     function langTexts() {
-        //if (!isModal) {document.title = chartIdDisp;}
         ch_utils.buttonText('dataJSON', 2);
         ch_utils.buttonText('newTab', 4);
         ch_utils.buttonText('chartIndex', 13);
@@ -2693,6 +2750,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.buttonTitle('textRefresh', 9);
         ch_utils.buttonText('textTooltip', 16);
         ch_utils.buttonText('textShowIx', 17);
+        ch_utils.buttonText('expand', 33);
 
         ch_utils.buttonTitle('recoverData', 11);
         ch_utils.buttonTitle('shiftRightLong', 12);
@@ -2700,7 +2758,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.buttonTitle('shiftLeft', 15);
         ch_utils.buttonTitle('shiftLeftLong', 24);
         ch_utils.buttonTitle('showComplete', 25);
-        ch_utils.buttonTitle('dt_calendar', 26);
+        ch_utils.buttonTitle('dtpickButton', 26);
 
         var el = document.getElementById("refreshCheckbox");
         el.checked = doRefresh;
@@ -2755,7 +2813,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (set) {
             //set interval
             if (!IntervalId) {
-                IntervalId = setInterval(updateChart, 1 * 60 * 1000); //once a minute
+                IntervalId = setInterval(updateChart, 1 * 60 * 1000); 
+                //once a minute
                 //console.log('updateChart interval set');
             }
         } else {
@@ -2786,261 +2845,24 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //handleVisibilityChange
 
     //---------------------------------------------------------------------
-    // post_calc section begin: in-display calculation
+    // call postcalc modal window
     //---------------------------------------------------------------------
-    var first_disp, last_disp, first_buffer, last_buffer, first, last;
-
-    //define variables
-    var only_changed;
-    var abbrevs = '';
-    var v = [];
-
-    document.getElementById('post_calc').onclick = function() {
-        post_calc_exec(vLog.chartHeader.post_calc);
-    }; //post_calc
-
-    function post_calc_exec(header_post_calc) {
-        create_v_array();
-        set_v_array_times();
-
-        var i, form_calc, comp;
-        var post_calc_len = header_post_calc.length;
-
-        var result = '<table>\n';
-
-        for (i = 0; i < post_calc_len; i++) {
-            form_calc = header_post_calc[i].form_calc;
-            comp = '';
-            if (form_calc) {
-                form_calc = form_calc.replace('ONLY_CHANGED', 'only_changed = true;');
-                var c = abbrevs + form_calc;
-                try {
-                    only_changed = false;
-                    /*jshint evil: true */
-                    //console.log(c);
-                    comp = eval(c);
-                    /*jshint evil: false */
-                } catch (err) {
-                    comp = err.message;
-                }
-            }
-            result += '<tr><td>' + (header_post_calc[i].text_calc || '') + '</td>' +
-                '<td></td>' +
-                '<td>' + comp + '</td></tr>' +
-                '\n';
+    document.getElementById('postcalcButton').onclick = function(event) {
+        if (ch_utils.isVisible('postcalcModal')) {
+            hide_postcalcModal(event);
+        } else {
+            postcalc.post_calc_exec(vLog.chartHeader.post_calc);
         }
-        result += '</table>';
-        post_calc_display(result);
-    } // post_calc_exec
-
-    function post_calc_display(result) {
-        document.getElementById('post_calc_contents').innerHTML = result;
-        ch_utils.buttonVisible('post_calc_modal', true);
-    } // post_calc_display
-
-    function create_v_array() {
-        //create the complete 2-dimensional values array 
-        //and create abbreviations
-        v = [];
-        v[0] = config.data.labels;
-        var datasets = config.data.datasets;
-        var n = datasets.length;
-        abbrevs = 'var v0 = v[0];';
-        for (var i = 1; i <= n; i++) {
-            v[i] = datasets[i - 1].data;
-            abbrevs += 'var v' + i + ' = v[' + i + '];';
-        }
-    } //create_v_array;
-
-    function set_v_array_times() {
-        //set timestamps
-        var i;
-
-        //visible range of timestamps:
-        var timeRange = xRange();
-        var ts_first_disp = Math.ceil(timeRange.min),
-            ts_last_disp = Math.floor(timeRange.max);
-
-        //real timestamps array:
-        var labels = config.data.labels;
-        var len_labels = labels.length; //count of data points
-
-        //get first and last displayed index number within labels:
-        first_disp = 0;
-        last_disp = len_labels - 1;
-        first_buffer = 0;
-        last_buffer = len_labels - 1;
-        for (i = 0; i < len_labels; i++) {
-            if (labels[i] >= ts_first_disp) {
-                first_disp = i;
-                ts_first_disp = labels[i];
-                break;
-            }
-        }
-        for (i = len_labels - 1; i >= 0; i--) {
-            if (labels[i] <= ts_last_disp) {
-                last_disp = i;
-                ts_last_disp = labels[i];
-                break;
-            }
-        }
-        first = first_disp;
-        last = last_disp;
-    } //set_v_array_times;
-
-    function SUM(sensarray) {
-        if (sensarray.length === 0) {
-            return null;
-        }
-        var sensarray_disp = sensarray.slice(first_disp, last_disp + 1);
-        if (sensarray_disp.length === 0) {
-            return null;
-        }
-
-        function myFunc(total, num) {
-            if (num === null) {
-                return total;
-            }
-            if (only_changed && num === last_value) {
-                return total;
-            }
-            last_value = num;
-            var n = num - 0;
-            return total + n;
-        }
-        var last_value = null;
-        return sensarray_disp.reduce(myFunc, null);
-    } //SUM
-
-    function MAX(sensarray) {
-        if (sensarray.length === 0) {
-            return null;
-        }
-        var sensarray_disp = sensarray.slice(first_disp, last_disp + 1);
-        if (sensarray_disp.length === 0) {
-            return null;
-        }
-
-        function myFunc(total, num) {
-            if (num === null) {
-                return total;
-            }
-            var n = num - 0;
-            return Math.max(total, n);
-        }
-        return sensarray_disp.reduce(myFunc, null);
-    } //MAX
-
-    function MIN(sensarray) {
-        if (sensarray.length === 0) {
-            return null;
-        }
-        var sensarray_disp = sensarray.slice(first_disp, last_disp + 1);
-        if (sensarray_disp.length === 0) {
-            return null;
-        }
-
-        function myFunc(total, num) {
-            if (num === null) {
-                return total;
-            }
-            var n = num - 0;
-            return Math.min(total, n);
-        }
-        return sensarray_disp.reduce(myFunc, Number.MAX_VALUE);
-    } //MIN
-
-    function AVG(sensarray) {
-        if (sensarray.length === 0) {
-            return null;
-        }
-        var sensarray_disp = sensarray.slice(first_disp, last_disp + 1);
-        if (sensarray_disp.length === 0) {
-            return null;
-        }
-
-        function myFunc(total, num) {
-            if (num === null) {
-                return total;
-            }
-            if (only_changed && num === last_value) {
-                return total;
-            }
-            last_value = num;
-            count = count + 1;
-            var n = num - 0;
-            return total + n;
-        }
-
-        //filter not nulls:
-        var filtered = sensarray_disp.filter(function(x) {
-            return x;
-        });
-        if (filtered.length === 0) {
-            return null;
-        }
-        //add all:
-        var last_value = null;
-        var count = 0;
-        var sum = filtered.reduce(myFunc, null);
-        //buid avg:
-        var avg = sum / count;
-        return avg;
-    } //AVG
-
-    function COUNT(sensarray, value) {
-        if (sensarray.length === 0) {
-            return null;
-        }
-        var sensarray_disp = sensarray.slice(first_disp, last_disp + 1);
-        if (sensarray_disp.length === 0) {
-            return null;
-        }
-
-        function myFunc(total, num) {
-            if (num === null) {
-                return total;
-            }
-            if (only_changed && num === last_value) {
-                return total;
-            }
-            last_value = num;
-            if (value === undefined) {
-                return total + 1;
-            } else {
-                return total + (num === value ? 1 : 0);
-            }
-        }
-
-        //filter not nulls:
-        var filtered = sensarray_disp.filter(function(x) {
-            return x;
-        });
-        if (filtered.length === 0) {
-            return null;
-        }
-        //add all:
-        var last_value = null;
-        var count = filtered.reduce(myFunc, null);
-        return count;
-    } //COUNT
-
-    function FIRST(sensarray) {
-        return sensarray[first_disp];
-    } //FIRST
-
-    function LAST(sensarray) {
-        return sensarray[last_disp];
-    } //LAST
+    }; //onclick postcalcButton
 
     //---------------------------------------------------------------------
-    // post_calc section end: in-display calculation
+    // Escape: close all modal windows
     //---------------------------------------------------------------------
-
     document.addEventListener("keydown", function(event) {
         if (event.key === 'Escape') {
-            ch_utils.buttonVisible('post_calc_modal', false);
-            ch_utils.buttonVisible('dtpick', false);
+            ch_utils.buttonVisible('postcalcModal', false);
+            ch_utils.buttonVisible('dtpickModal', false);
         }
-    });
+    }); //keydown Escape
 }); //DOMContentLoaded
+

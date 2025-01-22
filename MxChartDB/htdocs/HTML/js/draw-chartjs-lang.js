@@ -313,4 +313,12 @@
             de: 'Berechnung',
             en: 'Calculation'
         },
+        {//33
+            de: 'Breite',
+            en: 'Width'
+        },
+        {//34
+            de: 'Breite',
+            en: 'Width'
+        },
     ];

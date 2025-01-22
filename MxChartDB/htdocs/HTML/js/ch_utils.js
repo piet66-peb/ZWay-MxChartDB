@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.1 2024-12-18/peb
+//h Version:      V1.1.0 2025-01-22/peb
 //v History:      V1.0.0 2022-01-02/peb first version
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
@@ -28,8 +28,8 @@
 //b Constants
 //-----------
 var MODULE='ch_utils.js';
-var VERSION='V1.0.1';
-var WRITTEN='2024-12-18/peb';
+var VERSION='V1.1.0';
+var WRITTEN='2025-01-22/peb';
 
 //-----------
 //b Functions
@@ -108,6 +108,18 @@ var ch_utils = {
         }
         return ret;
     }, //noNumber
+
+    //check if any argument is not set (undefined or null) or no number
+    notChanged: function(val1, val2) {
+        var ret = false;
+        if (val1 === val2) {ret = true;}
+        return ret;
+    }, //notChanged
+
+    isChanged: function(val1, val2) {
+        //console.log(val1, val2, !ch_utils.notChanged(val1, val2));
+        return !ch_utils.notChanged(val1, val2);
+    }, //isChanged
 
     //round a value to the given amount of decimals
     round: function(value, decimals) {
@@ -551,15 +563,27 @@ var ch_utils = {
         }
     }, //buttonVisible
 
+    buttonIdEvent: function (event) {
+        var el = event.target;
+        return el.id;
+    }, //buttonIdEvent
+
     isVisible: function (id) {
         var el = document.getElementById(arguments[0]);
+        var ret = true;
         if (!el) {
-            return false;
-        }
+            ret = false;
+        } else
         if (el.style.display === "none") {
-            return false;
+            ret = false;
+        } else
+        if (el.style.visibility === "hidden") {
+            ret = false;
         }
-        return true;
+        //console.log(id+' visibility='+ ret);
+        //console.log(id+' style.display='+el.style.display);
+        //console.log(id+' style.visibility='+el.style.visibility);
+        return ret;
     }, //isVisible
 
     isChecked: function (id) {
@@ -572,17 +596,19 @@ var ch_utils = {
     }, //isChecked
 
     userTime: function (secs) {
+        var msecs = secs;
+        if (secs ==='now') {
+            msecs = Date.now();
+        } else {
+            if (!secs) {return 'no time';}
+            if (isNaN(secs)) {return 'wrong time '+secs;}
+            if (secs < 1000000000) {return 'wrong time '+secs;}
+            if (secs > 3000000000000) {return 'wrong time '+secs;}
+        }
+        if (msecs < 1000000000000) {
+            msecs = secs * 1000;
+        }
         try {
-            var msecs;
-            if (secs === undefined) {
-                msecs = Date.now();
-            } else
-            if (secs < 1000000000000) {
-                msecs = secs * 1000;
-            } else {
-                msecs = secs;
-            }
-           
             var dt = new Date(msecs);
             var s = dt.getFullYear()+'-'+
                     ((dt.getMonth()+1)+'').padStart(2,"0")+'-'+
@@ -590,17 +616,14 @@ var ch_utils = {
                     (dt.getHours()+'').padStart(2,"0")+':'+
                     (dt.getMinutes()+'').padStart(2,"0")+':'+
                     (dt.getSeconds()+'').padStart(2,"0");
-
-
             return s;
         } catch (err) {
             alert(err);
-            return secs;
+            return 'wrong time '+secs;
         }
     }, //userTime
 
     isPageHidden: function (){
         return document.hidden || document.msHidden || document.webkitHidden || document.mozHidden;
     }, //isPageHidden
-
 };

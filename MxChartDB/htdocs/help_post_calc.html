@@ -80,7 +80,7 @@
          </tr>
          <tr>
             <td class="center">v[j][i]</td>
-            <td>2-dimensional array of all values stored in the browsers buffer
+            <td>2-dimensional array of all visible values stored in the browsers buffer
                <br>with:<br>
                j: index of the sensor/line,
                j=0: timestamps,
@@ -104,41 +104,6 @@
             <td>v3: array of all values of sensor/line 3</td>
             <td></td>
          </tr>
-         <tr>
-            <td class="center">first_buffer</td>
-            <td>the index of the first buffered data point (= 0)</td>
-            <td></td>
-         </tr>
-         <tr>
-            <td class="center">first_disp</td>
-            <td>the index of the first currently displayed data point</td>
-            <td class="center">first</td>
-         </tr>
-         <tr>
-            <td class="center"></td>
-            <td>v0[first]: timestamp of the first displayed data point</td>
-            <td></td>
-         </tr>
-         <tr>
-            <td class="center"></td>
-            <td>v3[first]: senser 3's value of the first displayed data point</td>
-            <td></td>
-         </tr>
-         <tr>
-            <td class="center">last_disp</td>
-            <td>the index of the last currently displayed data point</td>
-            <td class="center">last</td>
-         </tr>
-         <tr>
-            <td class="center">last_buffer</td>
-            <td>the index of the last buffered data point (= v0.length-1)</td>
-            <td></td>
-         </tr>
-         <tr>
-            <td class="center"></td>
-            <td>first_buffer &leq; first &leq; last &leq; last_buffer</td>
-            <td></td>
-         </tr>
       </table>
 
       <h3>Functions</h3>
@@ -148,21 +113,16 @@
             <th>Meaning</th>
          </tr>
          <tr>
-            <td class="center">ONLY_CHANGED</td>
-            <td>the following command(s) consider only changed values
-                <br>default: consider all data points</td>
-         </tr>
-         <tr>
             <td class="center">FIRST(sensor_array)</td>
             <td>returns the value of the given sensor array at the first data point in the current display</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>FIRST(v0): first timestamp in the current display</td>
+            <td>FIRST(v0): first timestamp in the current display = v0[0]</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>FIRST(v3): value of sensor 3 at the first data point in the current display</td>
+            <td>FIRST(v3): value of sensor 3 at the first data point in the current display = v3[0]</td>
          </tr>
          <tr>
             <td class="center">LAST(sensor_array)</td>
@@ -170,14 +130,14 @@
          </tr>
          <tr>
             <td class="center"></td>
-            <td>LAST(v0): last timestamp in the current display</td>
+            <td>LAST(v0): last timestamp in the current display = v0[v0.length-1]</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>LAST(v3): value of sensor 3 at the last data point in the current display</td>
+            <td>LAST(v3): value of sensor 3 at the last data point in the current display = v3[v3.length-1]</td>
          </tr>
          <tr>
-            <td class="center">SUM(sensor_array)</td>
+            <td class="center">SUM(sensor_array[, condition])</td>
             <td>sums up all values of the given sensor array in the current display</td>
          </tr>
          <tr>
@@ -185,32 +145,36 @@
             <td>SUM(v3): sums up all values of sensor 3 in the current display</td>
          </tr>
          <tr>
-            <td class="center">MIN(sensor_array)</td>
+            <td class="center">MIN(sensor_array[, condition])</td>
             <td>returns the minimum of all values of the given sensor array in the current display</td>
          </tr>
          <tr>
-            <td class="center">MAX(sensor_array)</td>
+            <td class="center"></td>
+            <td>MIN(v5.filter(function(x) {return x &gt; 0;})): The minimum of all values of sensor 5 &gt; 0 </td>
+         </tr>
+         <tr>
+            <td class="center">MAX(sensor_array[, condition])</td>
             <td>returns the maximum of all values of the given sensor array in the current display</td>
          </tr>
          <tr>
-            <td class="center">AVG(sensor_array)</td>
+            <td class="center">AVG(sensor_array[, condition])</td>
             <td>returns the average of all values of the given sensor array in the current display</td>
          </tr>
          <tr>
-            <td class="center">COUNT(sensor_array[, value])</td>
+            <td class="center">COUNT(sensor_array[, condition])</td>
             <td>returns the number of data points in the current display with the given value</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>COUNT(v3, 'on'): the number of datapoints = 'on' of sensor 3</td>
+            <td>COUNT(v3, 'x == "on"'): the number of datapoints = 'on' of sensor 3</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>ONLY_CHANGED; COUNT(v3, 'on'): the number of changes to 'on' of sensor 3</td>
+            <td>COUNT(v3, 'x == "on" &amp;&amp; g.isChanged(x)'): the number of changes to 'on' of sensor 3</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>ONLY_CHANGED; COUNT(v3): the number of any value changes of sensor 3</td>
+            <td>COUNT(v3, 'g.isChanged(x)'): the number of any value changes of sensor 3</td>
          </tr>
          <tr>
             <td class="center"></td>
@@ -219,6 +183,20 @@
          <tr>
             <td class="center"></td>
             <td>COUNT(v0): the number of datapoints in the current display</td>
+         </tr>
+         <tr>
+            <td class="center">FILTER(v_array, sensor, condition)</td>
+            <td>filters the 2 dimensional array by condition,
+            the source array is not changed</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.new_array = FILTER(v, 5, 'x &gt; 0'): only returns the array 
+                part with the value of sensor 5 &gt; 0</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>v = FILTER(v, 5, 'x &gt; 0'): changes the source array</td>
          </tr>
          <tr>
             <td class="center">g.usertime(timestamp)</td>

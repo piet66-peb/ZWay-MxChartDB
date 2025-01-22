@@ -46,66 +46,51 @@
          white-space: nowrap;
          }
       </style>
+
       <style>
-         #dtpick {
-         /*visibility: hidden;*/
-         position: absolute;
-         left: 0;
-         top: 0;
-         width:100%;
-         height:100%;
-         /*text-align:center;*/
-         z-index: 1000;
-         }
-         #dtpick div {
-         width:400px;
-         height: 200px;
-         margin: 100px auto;
-         background-color: #f2f2f2;
-         border-radius: 10px;
-         -webkit-border-radius: 10px;
-         border-radius:  10px;
-         border:1px solid #666666;
-         padding:50px;
-         /*text-align:center;*/
-         font-weight: bold;
-         font-size: 15px;
-         border: 3px solid #cccccc;
-         position: absolute;
-         left: 50%;
-         top: 160px;
-         transform: translate(-50%, -50%);
-         -ms-transform: translate(-50%, -50%);
-         -webkit-transform: translate(-50%, -50%);
-         }
-      </style>
-      <style>
-         /* post_calc_modal: The Modal (background) */
+         /* dtpickModal + postcalcModal: The Modal (background) */
          .modal {
-         display: none; /* Hidden by default */
-         position: fixed; /* Stay in place */
-         z-index: 1; /* Sit on top */
-         padding-top: 100px; /* Location of the box */
-         left: 0;
-         top: 0;
-         /*width: 100%; /* Full width */
-         height: 100%; /* Full height */
-         overflow: auto; /* Enable scroll if needed */
-         /*background-color: rgb(0,0,0); /* Fallback color */
-         /*background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            top: 20px; /* Location of the box */
+            left: 20px; /* Location of the box */
+            overflow: auto; /* Enable scroll if needed */
+            resize: both;
          }
+
          /* Modal Content */
          .modal-content {
-         background-color: #fefefe;
-         margin: auto;
-         padding: 20px;
-         border: 1px solid #888;
-         /*width: 80%;*/
-         /*width: auto;*/
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            background-color: #f2f2f2;
+            border: 1px solid #888;
          }
-         /* The Close Button */
-         .close {display: none;}
       </style>
+
+      <script>
+      var mouse_from;
+      function drag(event) {
+        mouse_from = {x: event.clientX, y: event.clientY};
+        event.dataTransfer.setData("text", event.target.id);
+      }
+
+      function allowDrop(event) {
+        event.preventDefault();
+      }
+
+      function drop(event) {
+        var mouse_to = {x: event.clientX, y: event.clientY};
+
+        var divId = event.dataTransfer.getData("text");
+        var el = document.getElementById(divId);
+        var pos_old = el.getBoundingClientRect();
+        el.style.top = (mouse_to.y - mouse_from.y + pos_old.y)+'px';
+        el.style.left = (mouse_to.x -mouse_from.x + pos_old.x)+'px';
+      }
+      </script>
+
    </head>
    <body>
       <script>
@@ -113,7 +98,7 @@
          console.log('pathname='+window.location.pathname);
          console.log('parameter='+window.location.search);
       </script>          
-      <div id='main'>
+      <div id='main' ondrop="drop(event)" ondragover= "allowDrop(event)">
          <div id="htmlText"></div>
          <!--<div style="width:100%">-->
          <div  id="canvas_container" class="chart-container" style="position: relative;">
@@ -122,12 +107,10 @@
          <div class='left_right'>
             <div id="interval_start" style='float: left;'>Date+Time</div>
             <div id="date_time_picker" style='text-align: center; float: none;'>
-               <!--            
-                  <button id="dt_calendar" onclick='datetimepicker()' 
-                          style='display:none; width:50px; font-size: 20px;'>date picker</button>
-                  -->                    
-               <button id="dt_calendar" onclick='datetimepicker()' style=''>date picker</button>
-               <button id="post_calc" onclick='post_calc()' style='display:none;'>post_calc</button>
+               <!--<button id="dtpickButton" onclick='datetimepicker()' style=''>date picker</button>
+               <button id="post_calc" onclick='post_calc()' style='display:none;'>post_calc</button>-->
+               <button id="dtpickButton" style=''>date picker</button>
+               <button id="postcalcButton" style='display:none;'>post_calc</button>
                <div id="interval_end" style='float: right;'>Date+Time</div>
             </div>
          </div>
@@ -157,6 +140,8 @@
          <label id='textShowIx' style="display:none;">Show Index
          <input type="checkbox" id="showIxCheckbox">
          </label>
+         &nbsp;
+         <button id="expand" style="display:none;">Expand.</button>
          <br>
          <div id="notif3" class="smaller"></div>
          <hr>
@@ -171,8 +156,9 @@
          </div>
 
          <!-- date time picker -->
-         <div id="dtpick" style="display:none;">
-            <div id="dtpick_child" >
+         <div id="dtpickModal"  class="modal" style="display:none;" 
+                draggable="true" ondragstart="drag(event)">
+            <div id="dtpick_child" class="modal-content">
                <table id="dtpick_table_interval" style="display:inline;">
                   <tr>
                      <th><label id='dtpick_title'>Display Interval </label></th>
@@ -232,9 +218,10 @@
          <!--dtpick-->
 
          <!-- in display calculation -->
-         <div id="post_calc_modal" class="modal">
+         <div id="postcalcModal" class="modal" draggable="true"
+                ondragstart="drag(event)">
             <div class="modal-content">
-               <div id='post_calc_contents'>Some text in the Modal..</div>
+               <div id='postcalcContents'>Some text in the Modal..</div>
             </div>
          </div>
          <!-- post_calc -->
