@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.0 2025-01-21/peb
+//h Version:      V3.1.0 2025-01-23/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -26,7 +26,7 @@
 
 /*jshint esversion: 6 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils, header_utils, postcalc */
+/*globals ch_utils, header_utils, postcalc, g: true */
 'use strict';
 
 //-----------
@@ -34,7 +34,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.1.0';
-var WRITTEN = '2025-01-21/peb';
+var WRITTEN = '2025-01-23/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -43,8 +43,6 @@ console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 var url;
 var IndexDBName;
 var tableNameIndex;
-
-var g; //object for global user defined functions
 
 //-----------
 //b Functions
@@ -1115,8 +1113,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
 
         //set/reset global object g
-        g = header_utils.take_global_code(vLog.chartHeader);
-        console.log(g);
+        header_utils.take_global_code(vLog.chartHeader);
 
         //*** call setDatasetHeader
         for (var label_ix = 1; label_ix < chartLabelsLen; label_ix++) {

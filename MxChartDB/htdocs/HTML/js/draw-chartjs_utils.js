@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.0 2025-01-22/peb
+//h Version:      V1.0.0 2025-01-23/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
@@ -28,7 +28,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V1.0.0';
-var WRITTEN='2025-01-22/peb';
+var WRITTEN='2025-01-23/peb';
 
 //b common: common functions
 //--------------------------
@@ -56,7 +56,7 @@ var header_utils = {
     take_global_code: function (header) {
         console.log('take_global_code');
 
-        var g = {
+        var g_ini = {
             notSet:   ch_utils.notSet,
             noNumber: ch_utils.noNumber,
             notChanged: ch_utils.notChanged,
@@ -78,21 +78,21 @@ var header_utils = {
         };
 
         if (!header.hasOwnProperty('global_js')) {
-            return g;
+            g = g_ini;
         }
         if (!header.global_js.define_global_js) {
-            return g;
+            g = g_ini;
         }
         try {
             var g_tmp = {};
             /*jshint evil: true */
             eval('g_tmp = ' + header.global_js.code);
             /*jshint evil: false */
-            common.concatObjects(g, g_tmp);
-            return g;
+            common.concatObjects(g_ini, g_tmp);
+            g = g_ini;
         } catch (err) {
             ch_utils.alertMessage(38, err.message);
-            return g;
+            g = g_ini;
         }
     }, // take_global_code
 
@@ -259,7 +259,7 @@ var postcalc = {
         var len = v_array[0].length;
         for (var i = 0; i < len; i++) {
             var x = v_array[sensor][i];
-            var x_last = v_array[sensor][i-1] || null;
+            var x_pre = v_array[sensor][i-1] || null;
             /*jshint evil: true */
             if (eval(condition))  {
             /*jshint evil: false */
@@ -281,21 +281,23 @@ var postcalc = {
         }
 
         function myFunc(total, x) {
+            i++;
             if (g.noNumber(x)) {
-                x_last = x; return total;
+                x_pre = x; return total;
             }
             if (condition) {
                 /*jshint evil: true */
                 if (eval(condition) === false)  {
-                    x_last = x; return total;
+                    x_pre = x; return total;
                 }
                 /*jshint evil: false */
             }
-            x_last = x;
+            x_pre = x;
             var n = x - 0;
             return total + n;
         }
-        var x_last = null;
+        var x_pre = null;
+        var i = -1;
         return sensarray.reduce(myFunc, null);
     }, //SUM
 
@@ -305,21 +307,23 @@ var postcalc = {
         }
 
         function myFunc(total, x) {
+            i++;
             if (g.noNumber(x)) {
-                x_last = x; return total;
+                x_pre = x; return total;
             }
             if (condition) {
                 /*jshint evil: true */
                 if (eval(condition) === false)  {
-                    x_last = x; return total;
+                    x_pre = x; return total;
                 }
                 /*jshint evil: false */
             }
-            x_last = x;
+            x_pre = x;
             var n = x - 0;
             return Math.max(total, n);
         }
-        var x_last = null;
+        var x_pre = null;
+        var i = -1;
         return sensarray.reduce(myFunc, null);
     }, //MAX
 
@@ -329,21 +333,23 @@ var postcalc = {
         }
 
         function myFunc(total, x) {
+            i++;
             if (g.noNumber(x)) {
-                x_last = x; return total;
+                x_pre = x; return total;
             }
             if (condition) {
                 /*jshint evil: true */
                 if (eval(condition) === false)  {
-                    x_last = x; return total;
+                    x_pre = x; return total;
                 }
                 /*jshint evil: false */
             }
-            x_last = x;
+            x_pre = x;
             var n = x - 0;
             return Math.min(total, n);
         }
-        var x_last = null;
+        var x_pre = null;
+        var i = -1;
         return sensarray.reduce(myFunc, Number.MAX_VALUE);
     }, //MIN
 
@@ -353,17 +359,18 @@ var postcalc = {
         }
 
         function myFunc(total, x) {
+            i++;
             if (g.noNumber(x)) {
-                x_last = x; return total;
+                x_pre = x; return total;
             }
             if (condition) {
                 /*jshint evil: true */
                 if (eval(condition) === false)  {
-                    x_last = x; return total;
+                    x_pre = x; return total;
                 }
                 /*jshint evil: false */
             }
-            x_last = x;
+            x_pre = x;
             count = count + 1;
             var n = x - 0;
             return total + n;
@@ -377,7 +384,8 @@ var postcalc = {
             return null;
         }
         //add all:
-        var x_last = null;
+        var x_pre = null;
+        var i = -1;
         var count = 0;
         var sum = filtered.reduce(myFunc, null);
         //buid avg:
@@ -389,17 +397,18 @@ var postcalc = {
         if (sensarray.length === 0) {return 0;}
 
         function myFunc(total, x) {
+            i++;
             if (x === null) {
-                x_last = x; return total;
+                x_pre = x; return total;
             }
             if (condition) {
                 /*jshint evil: true */
                 if (eval(condition) === false)  {
-                    x_last = x; return total;
+                    x_pre = x; return total;
                 }
                 /*jshint evil: false */
             }
-            x_last = x; return total + 1;
+            x_pre = x; return total + 1;
         }
 
         //filter not nulls:
@@ -409,7 +418,8 @@ var postcalc = {
         if (filtered.length === 0) {return 0;}
 
         //count all left entries:
-        var x_last = null;
+        var x_pre = null;
+        var i = -1;
         var count = filtered.reduce(myFunc, null);
         return count;
     }, //COUNT
@@ -428,6 +438,8 @@ var postcalc = {
         return sensarray[sensarray.length-1];
     }, //LAST
 }; //postcalc
+
+var g; //object for global user defined functions
 
 //abbrevations for the postcalc configuration
 var FILTER = postcalc.FILTER;

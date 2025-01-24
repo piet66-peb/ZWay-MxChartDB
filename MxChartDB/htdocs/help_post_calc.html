@@ -173,11 +173,11 @@
          </tr>
          <tr>
             <td class="center"></td>
-            <td>COUNT(v3, 'x == "on" &amp;&amp; x != x_last'): the number of changes to 'on' of sensor 3</td>
+            <td>COUNT(v3, 'x == "on" &amp;&amp; x != x_pre'): the number of changes to 'on' of sensor 3</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>COUNT(v3, 'x != x_last'): the number of any value changes of sensor 3</td>
+            <td>COUNT(v3, 'x != x_pre'): the number of any value changes of sensor 3</td>
          </tr>
          <tr>
             <td class="center"></td>
@@ -200,6 +200,15 @@
          <tr>
             <td class="center"></td>
             <td>v = FILTER(v, 5, 'x &gt; 0'): changes the source array</td>
+         </tr>
+         <tr>
+            <td class="center">condition</td>
+            <td>parameter for several functions with:<br>
+                &nbsp;&nbsp;x: sensor value of the current datapoint<br>
+                &nbsp;&nbsp;x_pre: sensor value of the previous datapoint<br>
+                &nbsp;&nbsp;i: index of the current datapoint
+            </td>
+
          </tr>
          <tr>
             <td class="center">g.usertime(timestamp)</td>
