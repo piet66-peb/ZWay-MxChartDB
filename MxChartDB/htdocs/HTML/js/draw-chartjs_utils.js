@@ -13,22 +13,23 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.0.0 2025-01-23/peb
+//h Version:      V3.1.2 2025-01-26/peb
 //v History:      V1.0.0 2024-12-16/peb first version
+//v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
 //h
 //h-------------------------------------------------------------------------------
 
-/*jshint esversion: 5 */
+/*jshint esversion: 6 */
 /*globals ch_utils, g */
 'use strict';
 
 //b version data
 //--------------
 var MODULE='chartjs_utils.js';
-var VERSION='V1.0.0';
-var WRITTEN='2025-01-23/peb';
+var VERSION='V3.1.2';
+var WRITTEN='2025-01-26/peb';
 
 //b common: common functions
 //--------------------------
@@ -67,8 +68,8 @@ var header_utils = {
             nvl:      ch_utils.nvl,
             isVisible: function(x) {
                 var timeRange = header_utils.xRange();
-                var ts_first_disp = Math.ceil(timeRange.min),
-                    ts_last_disp = Math.floor(timeRange.max);
+                var ts_first_disp = Math.floor(timeRange.min),
+                    ts_last_disp = Math.ceil(timeRange.max);
                 if ( x >= ts_first_disp && x <= ts_last_disp) {
                     return true;
                 } else {
@@ -204,74 +205,109 @@ var postcalc = {
             v_buf[i] = datasets[i - 1].data;
         }
     }, //create_v_buf;
- 
-    post_calc_exec: function (header_post_calc) {
-        //restrict buffer to visible part
-        v = postcalc.FILTER(v_buf, 0, 'g.isVisible(x)');
 
-        //create abbreviations
-        var i, abbrevs = 'var v0 = v[0];';
-        var n = v_buf.length - 1;
-        for (i = 1; i <= n; i++) {
+    create_abbrevs_v: function () {
+        //create short sensor array pointers 0..20
+        var i, n = v_buf.length - 1;
+        for (i = 0; i <= 20; i++) {
+            /*jshint evil: true */
+            eval('v'+i+' = v['+i+']');
+            /*jshint evil: false */
+        }
+
+        //create abbreviations for remaining sensors > 20
+        abbrevs = '';
+        for (i = 21; i <= n; i++) {
             abbrevs += 'var v'+i+'=v['+i+'];';
         }
+    }, //create_abbrevs_v;
+
+    post_calc_exec: function (header_post_calc) {
+
+        function exec_eval (form_calc) {
+            var comp, c = abbrevs + form_calc;
+            try {
+                /*jshint evil: true */
+                //console.log(c);
+                comp = eval(c);
+                /*jshint evil: false */
+            } catch (err) {
+                comp = err.message;
+            }
+            return comp;
+        }
+
+        //restrict buffer to visible part
+        v = undefined;
+        v = postcalc.FILTER(v_buf, 0, 'g.isVisible(x)', 'v');
 
         //execute post calculation
         var form_calc, comp;
         var post_calc_len = header_post_calc.length;
 
         var result = '<table>\n';
-        for (i = 0; i < post_calc_len; i++) {
-            form_calc = header_post_calc[i].form_calc;
+
+        for (var ix = 0; ix < post_calc_len; ix++) {
+            form_calc = header_post_calc[ix].form_calc;
             comp = '';
             if (form_calc) {
                 //console.log(form_calc);
-                var c = abbrevs + form_calc;
-                try {
-                    /*jshint evil: true */
-                    //console.log(c);
-                    comp = eval(c);
-                    /*jshint evil: false */
-                } catch (err) {
-                    comp = err.message;
+
+                //if v = FILTER: inject additional create_abbrevs_v
+                let res = form_calc.match(/\bv\b\s*=\s+FILTER\s*\([^)]*\)/g);
+                if (res) {
+                    for (var p in res) {             
+                        if (res.hasOwnProperty(p)) {
+                            var a = result[p];
+                            var b = a.replace(')', ',"v")');
+                            form_calc = form_calc.replace(a, b);
+                        }
+                    }
                 }
+                comp = exec_eval(form_calc);
             }
+
             result += '<tr>'+
-                '<td>' + (header_post_calc[i].text_calc || '') + '</td>'+
+                '<td>' + (header_post_calc[ix].text_calc || '') + '</td>'+
                 '<td></td>'+
                 '<td>' + comp + '</td></tr>'+
                 '\n';
-        }
+        } //for
         result += '</table>';
 
         document.getElementById('postcalcContents').innerHTML = result;
         ch_utils.buttonVisible('postcalcModal', true);
     }, // post_calc_exec
 
-    FILTER: function (v_array, sensor, condition) {
+    FILTER: function (v_array, sensor, condition, target) {
         //console.log('FILTER', v_array, sensor, condition);
+        var len = v_array[0].length;
         var v_length = v_array.length;
         var v_ret = new Array(v_length).fill([]);
-        if (typeof v_array === 'undefined') {return v_ret;}
-        if (typeof v_array[0] === 'undefined') {return v_ret;}
-
-        var n = -1;
-        var len = v_array[0].length;
-        for (var i = 0; i < len; i++) {
-            var x = v_array[sensor][i];
-            var x_pre = v_array[sensor][i-1] || null;
-            /*jshint evil: true */
-            if (eval(condition))  {
-            /*jshint evil: false */
-                n++;
-                for (var j = 0; j < v_length; j++) {
-                    if (n === 0) {v_ret[j] = [];}
-                    v_ret[j][n] = v_array[j][i];
+        if (typeof v_array !== 'undefined' &&
+            typeof v_array[0] !== 'undefined') {
+            var n = -1;
+            for (var i = 0; i < len; i++) {
+                var x = v_array[sensor][i];
+                var x_pre = v_array[sensor][i-1] || null;
+                /*jshint evil: true */
+                if (eval(condition))  {
+                /*jshint evil: false */
+                    n++;
+                    for (var j = 0; j < v_length; j++) {
+                        if (n === 0) {v_ret[j] = [];}
+                        v_ret[j][n] = v_array[j][i];
+                    }
                 }
             }
         }
         //console.log(v_array);
         //console.log(v_ret);
+
+        if (target === 'v') {
+            v = v_ret;
+            postcalc.create_abbrevs_v();
+        }
         return v_ret;
     }, //FILTER
 
@@ -442,6 +478,7 @@ var postcalc = {
 var g; //object for global user defined functions
 
 //abbrevations for the postcalc configuration
+var abbrevs = '';
 var FILTER = postcalc.FILTER;
 var SUM = postcalc.SUM;
 var MAX = postcalc.MAX;
@@ -454,4 +491,6 @@ var LAST = postcalc.LAST;
 //2-dimensional sensor arrays
 var v_buf;  //complete buffered, pointers to config
 var v;      //visible part of v_buf, copy
+var v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10;
+var v11, v12, v13, v14, v15, v16, v17, v18, v19, v20;
 

@@ -12,9 +12,10 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-11-04/peb
+//h Version:      V3.1.2 2025-01-26/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V2.1.0 2024-01-09/peb [+]other database 
+//v               V3.1.2 2025-01-26/peb [*]date arithmetic
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h
@@ -28,8 +29,8 @@
 //b Constants
 //-----------
 var MODULE='data-json.js';
-var VERSION='V2.1.0';
-var WRITTEN='2024-11-04/peb';
+var VERSION='V3.1.2';
+var WRITTEN='2025-01-26/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 var url;
@@ -510,11 +511,25 @@ document.addEventListener("DOMContentLoaded", function(event) {
         var newDateTime = year_value+'-'+month_value+'-'+day_value+' '+hour_value+':'+minute_value+':00';
         var newStart = dateToTimestamp(newDateTime);
 
-        var length_value = document.getElementById('dt_picker_intervallength').value;
-        var type_value = document.getElementById('dt_picker_intervaltype').value;
+        var length_value = document.getElementById('dt_picker_intervallength').value-0;
+        var type_value = document.getElementById('dt_picker_intervaltype').value-0;
         var type_length = [60, 3600, 86400, 604800, 2592000, 31536000][type_value];
         var newLength = length_value * type_length * 1000;
         var newEnd = newStart + newLength;
+
+        var d;
+        if (type_value === 4) {     //months
+            d = new Date(newDateTime);
+            newStart = d.getTime();
+            d.setMonth(d.getMonth() + length_value);
+            newEnd = d.getTime();          
+        } else
+        if (type_value === 5) {     //years
+            d = new Date(newDateTime);
+            newStart = d.getTime();
+            d.setFullYear(d.getFullYear() + length_value);
+            newEnd = d.getTime();          
+        }
 
         console.log('newStart='+newStart);
         console.log('newEnd='+newEnd);

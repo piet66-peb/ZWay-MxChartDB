@@ -12,13 +12,15 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.0 2025-01-23/peb
+//h Version:      V3.1.2 2025-01-26/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
 //v               V2.1.0 2024-01-09/peb [+]other database 
 //v               V2.1.0 2024-01-09/peb [+]other database 
 //v               V3.0.0 2024-12-13/peb [-]remove obsolete fill100
+//v               V3.1.2 2025-01-26/peb [*]date arithmetic
+//v                                     [*]post calc
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -33,8 +35,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.1.0';
-var WRITTEN = '2025-01-23/peb';
+var VERSION = 'V3.1.2';
+var WRITTEN = '2025-01-26/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -1211,45 +1213,61 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (nightDeviceIndex) {
             var lastLevel = null;
             var nightArray = [];
-            var currLevel, currTime, item = {};
+            var daytimeLevel, currTime, item;
 
-            for (var ixx = 0; ixx < lengthChartValues; ixx++) {
-                X = vLog.chartValues[ixx];
+            //for all datapoints
+            for (var i_dp = 0; i_dp < lengthChartValues; i_dp++) {
+
                 //get current daylight value
-                if (!X[nightDeviceIndex]) { //value not set
-                    currLevel = lastLevel;
+                var X_dp = vLog.chartValues[i_dp];
+                currTime = X_dp[0];
+                if (!X_dp[nightDeviceIndex]) { //value not set
+                    daytimeLevel = lastLevel;
                 } else
-                if (typeof X[nightDeviceIndex] === 'object') {
-                    currLevel = X[nightDeviceIndex].value || lastLevel;
+                if (typeof X_dp[nightDeviceIndex] === 'object') {
+                    daytimeLevel = X_dp[nightDeviceIndex].value || lastLevel;
                 } else {
-                    currLevel = X[nightDeviceIndex] || lastLevel;
+                    daytimeLevel = X_dp[nightDeviceIndex] || lastLevel;
                 }
 
-                //off > start, on > end:
-                if (currLevel && currLevel !== lastLevel) {
-                    currTime = X[0];
-                    if (currLevel === 'off' && 
-                        (!lastLevel || lastLevel === 'on')) { //to night
-                        item.start = currTime;
-                    } else
-                    if (currLevel === 'on' && 
-                        (!lastLevel || lastLevel === 'off')) { //to day
-                        item.end = currTime;
-                        nightArray.push(item);
-                        item = {};
-                    }
-                }
-                lastLevel = currLevel;
-
-                //last value
-                if (ixx === lengthChartValues - 1 && currLevel === 'off' &&
-                    item.hasOwnProperty('start')) {
-                    currTime = X[0];
+                //detect start and end of nighttimes
+                if (i_dp === 0 && daytimeLevel === 'on') {         //day
+                    item = {};
+                    //console.log(i_dp+' 1111 '+ch_utils.userTime(currTime));
+                } else
+                if (i_dp === 0 && daytimeLevel === 'off') {        //night start
+                    item = {};
+                    item.start = currTime;
+                    //console.log(i_dp+' 2222 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                } else
+                if (i_dp === lengthChartValues - 1 && lastLevel === 'off') {    //last point = night
                     item.end = currTime;
                     nightArray.push(item);
+                    //console.log(i_dp+' 3333 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                } else
+                if (i_dp < lengthChartValues - 1 && lastLevel === 'off' &&      //off > on: night end
+                    daytimeLevel === 'on') {
+                    item.end = currTime;
+                    nightArray.push(item);
+                    //console.log(i_dp+' 4444 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                } else
+                if (i_dp < lengthChartValues - 1 && lastLevel === 'on' &&       //on > off night start
+                    daytimeLevel === 'off') {
+                    item = {};
+                    item.start = currTime;
+                    //console.log(i_dp+' 5555 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                //} else {
+                //    console.log(i_dp+' 6666 '+ch_utils.userTime(currTime));
                 }
+                lastLevel = daytimeLevel;
             } //for
-            console.log('nightArray', nightArray);
+
+            //console.log('nightArray', nightArray);
+            //for (var i_na = 0; i_na < nightArray.length; i_na++) {
+            //    console.log(i_na+': '+
+            //        ch_utils.userTime(nightArray[i_na].start)+'-'+
+            //        ch_utils.userTime(nightArray[i_na].end));
+            //}
 
             //build night annotations box
             var len = nightArray.length;
@@ -1959,7 +1977,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     initialIntervalMSEC = 1000 * 60 * 60 * 24 * 7 * 2;
                     break;
                 case 'month':
-                    initialIntervalMSEC = 1000 * 60 * 60 * 24 * 30;
+                    var d = new Date();
+                    var now = d.getTime();          
+                    d.setMonth(d.getMonth()-1);
+                    var then = d.getTime();          
+                    initialIntervalMSEC = now - then;
                     break;
             }
             return initialIntervalMSEC;
@@ -2461,11 +2483,25 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ' ' + hour_value + ':' + minute_value + ':00';
         var newStart = dateToTimestamp(newDateTime);
 
-        var length_value = document.getElementById('dtpick_intervallength').value;
-        var type_value = document.getElementById('dtpick_intervaltype').value;
-        var type_length = [60,3600,86400,604800,2592000,31536000][type_value];
+        var length_value = document.getElementById('dtpick_intervallength').value-0;
+        var type_value = document.getElementById('dtpick_intervaltype').value-0;
+        var type_length = [60,3600,86400,604800,2592000,31536000][type_value];  //in secs
         var newLength = length_value * type_length * 1000;
         var newEnd = newStart + newLength;
+
+        var d;
+        if (type_value === 4) {     //months
+            d = new Date(newDateTime);
+            newStart = d.getTime();
+            d.setMonth(d.getMonth() + length_value);
+            newEnd = d.getTime();          
+        } else
+        if (type_value === 5) {     //years
+            d = new Date(newDateTime);
+            newStart = d.getTime();
+            d.setFullYear(d.getFullYear() + length_value);
+            newEnd = d.getTime();          
+        }
 
         var radio_values_hist = true;
         if (radio_values_hist) {

@@ -118,11 +118,11 @@
          </tr>
          <tr>
             <td class="center"></td>
-            <td>FIRST(v0): first timestamp in the current display = v0[0]</td>
+            <td>FIRST(v0): first timestamp in the current display (the same as v[0][0])</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>FIRST(v3): value of sensor 3 at the first data point in the current display = v3[0]</td>
+            <td>FIRST(v3): value of sensor 3 at the first data point in the current display (the same as v[3][0])</td>
          </tr>
          <tr>
             <td class="center">LAST(sensor_array)</td>
@@ -130,11 +130,11 @@
          </tr>
          <tr>
             <td class="center"></td>
-            <td>LAST(v0): last timestamp in the current display = v0[v0.length-1]</td>
+            <td>LAST(v0): last timestamp in the current display (the same as v[0][v0.length-1])</td>
          </tr>
          <tr>
             <td class="center"></td>
-            <td>LAST(v3): value of sensor 3 at the last data point in the current display = v3[v3.length-1]</td>
+            <td>LAST(v3): value of sensor 3 at the last data point in the current display (the same as v[3][v0.length-1])</td>
          </tr>
          <tr>
             <td class="center">SUM(sensor_array[, condition])</td>
@@ -194,8 +194,8 @@
          </tr>
          <tr>
             <td class="center"></td>
-            <td>g.new_array = FILTER(v, 5, 'x &gt; 0'): only returns the array 
-                part with the value of sensor 5 &gt; 0</td>
+            <td>g.new_array = FILTER(v, 5, 'x &gt; 0'): creates a new array with the values of sensor 5 &gt; 0<br>
+                for newly defined arrays with different names, there exist no abbreviations v[j] and vj!</td>
          </tr>
          <tr>
             <td class="center"></td>
@@ -204,7 +204,7 @@
          <tr>
             <td class="center">condition</td>
             <td>parameter for several functions with:<br>
-                &nbsp;&nbsp;x: sensor value of the current datapoint<br>
+                &nbsp;&nbsp;x: sensor value of the current datapoint <br>
                 &nbsp;&nbsp;x_pre: sensor value of the previous datapoint<br>
                 &nbsp;&nbsp;i: index of the current datapoint
             </td>
