@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-01-26/peb
+//h Version:      V3.1.2 2025-01-27/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.1.2';
-var WRITTEN='2025-01-26/peb';
+var WRITTEN='2025-01-27/peb';
 
 //b common: common functions
 //--------------------------
@@ -225,6 +225,7 @@ var postcalc = {
     post_calc_exec: function (header_post_calc) {
 
         function exec_eval (form_calc) {
+            //console.log('exec_eval form_calc='+form_calc);
             var comp, c = abbrevs + form_calc;
             try {
                 /*jshint evil: true */
@@ -251,16 +252,18 @@ var postcalc = {
             form_calc = header_post_calc[ix].form_calc;
             comp = '';
             if (form_calc) {
-                //console.log(form_calc);
+                //console.log('form_calc='+form_calc);
 
                 //if v = FILTER: inject additional create_abbrevs_v
-                let res = form_calc.match(/\bv\b\s*=\s+FILTER\s*\([^)]*\)/g);
+                var res = form_calc.match(/\bv\b\s*=\s+FILTER\s*\([^)]*\)/g);
+                //console.log('res', res);
                 if (res) {
                     for (var p in res) {             
                         if (res.hasOwnProperty(p)) {
-                            var a = result[p];
+                            var a = res[p];
                             var b = a.replace(')', ',"v")');
                             form_calc = form_calc.replace(a, b);
+                            //console.log('form_calc new='+form_calc);
                         }
                     }
                 }
@@ -280,21 +283,21 @@ var postcalc = {
     }, // post_calc_exec
 
     FILTER: function (v_array, sensor, condition, target) {
-        //console.log('FILTER', v_array, sensor, condition);
-        var len = v_array[0].length;
-        var v_length = v_array.length;
-        var v_ret = new Array(v_length).fill([]);
+        //console.log('FILTER', v_array, sensor, condition, target);
+        var countDatapoints = v_array[0].length;
+        var countSensors = v_array.length;
+        var v_ret = new Array(countSensors).fill([]);
         if (typeof v_array !== 'undefined' &&
             typeof v_array[0] !== 'undefined') {
             var n = -1;
-            for (var i = 0; i < len; i++) {
+            for (var i = 0; i < countDatapoints; i++) {
                 var x = v_array[sensor][i];
                 var x_pre = v_array[sensor][i-1] || null;
                 /*jshint evil: true */
                 if (eval(condition))  {
                 /*jshint evil: false */
                     n++;
-                    for (var j = 0; j < v_length; j++) {
+                    for (var j = 0; j < countSensors; j++) {
                         if (n === 0) {v_ret[j] = [];}
                         v_ret[j][n] = v_array[j][i];
                     }
@@ -304,9 +307,13 @@ var postcalc = {
         //console.log(v_array);
         //console.log(v_ret);
 
+        //console.log('v_array[0].length', v_array[0].length);
+        //console.log('v_ret[0].length', v_ret[0].length);
         if (target === 'v') {
             v = v_ret;
+            //console.log('v[0].length', v[0].length);
             postcalc.create_abbrevs_v();
+            //console.log('v0.length', v0.length);
         }
         return v_ret;
     }, //FILTER
