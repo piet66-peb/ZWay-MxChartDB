@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-01-27/peb
+//h Version:      V3.1.2 2025-01-28/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.1.2';
-var WRITTEN='2025-01-27/peb';
+var WRITTEN='2025-01-28/peb';
 
 //b common: common functions
 //--------------------------
@@ -254,18 +254,22 @@ var postcalc = {
             if (form_calc) {
                 //console.log('form_calc='+form_calc);
 
-                //if v = FILTER: inject additional create_abbrevs_v
-                var res = form_calc.match(/\bv\b\s*=\s+FILTER\s*\([^)]*\)/g);
+                var patt, res;
+                //no nesting
+                //patt = /\bv\b\s*=\s+FILTER\s*\([^)]*\)/g;
+                //maximum nesting of (): 1
+                patt = /\bv\b\s*=\s+FILTER\s*\([^()]*(\([^()]*\)[^()]*)*\)/g;
+                res = form_calc.match(patt);
                 //console.log('res', res);
                 if (res) {
                     for (var p in res) {             
                         if (res.hasOwnProperty(p)) {
                             var a = res[p];
-                            var b = a.replace(')', ',"v")');
+                            var b = a.replace(/\)$/, ',"v")');
                             form_calc = form_calc.replace(a, b);
-                            //console.log('form_calc new='+form_calc);
                         }
                     }
+                    //console.log('form_calc new='+form_calc);
                 }
                 comp = exec_eval(form_calc);
             }
