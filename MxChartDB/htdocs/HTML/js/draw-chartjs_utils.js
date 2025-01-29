@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-01-28/peb
+//h Version:      V3.1.2 2025-01-29/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.1.2';
-var WRITTEN='2025-01-28/peb';
+var WRITTEN='2025-01-29/peb';
 
 //b common: common functions
 //--------------------------
@@ -80,21 +80,28 @@ var header_utils = {
 
         if (!header.hasOwnProperty('global_js')) {
             g = g_ini;
-        }
+        } else
         if (!header.global_js.define_global_js) {
             g = g_ini;
+        } else {
+            var comm ='';
+            try {
+                var g_tmp = {};
+                comm = 'g_tmp = ' + header.global_js.code;
+                /*jshint evil: true */
+                eval(comm);
+                /*jshint evil: false */
+                comm = 'common.concatObjects';
+                common.concatObjects(g_ini, g_tmp);
+                g = g_ini;
+            } catch (err) {
+                console.log(err.message);
+                console.log('at '+comm);
+                ch_utils.alertMessage(38, err.message);
+                g = g_ini;
+            }
         }
-        try {
-            var g_tmp = {};
-            /*jshint evil: true */
-            eval('g_tmp = ' + header.global_js.code);
-            /*jshint evil: false */
-            common.concatObjects(g_ini, g_tmp);
-            g = g_ini;
-        } catch (err) {
-            ch_utils.alertMessage(38, err.message);
-            g = g_ini;
-        }
+        console.log(g);
     }, // take_global_code
 
     //h

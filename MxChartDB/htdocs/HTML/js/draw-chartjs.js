@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-01-26/peb
+//h Version:      V3.1.2 2025-01-29/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -36,7 +36,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.1.2';
-var WRITTEN = '2025-01-26/peb';
+var WRITTEN = '2025-01-29/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -1841,7 +1841,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         console.log('formula = "' + formula + '"');
                         console.log(Xprev);
                         console.log(X);
-                        console.log(g);
+                        //console.log(g);
                         setErrormessage(ix, '3 ' + errmess+'\n'+
                             ch_utils.buildMessage(39), data.datasets[ix - 1]);
                     } else
@@ -1851,7 +1851,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             console.log('formula = "' + formula + '"');
                             console.log(Xprev);
                             console.log(X);
-                            console.log(g);
+                            //console.log(g);
                             console.log('x=' + x);
                             setErrormessage(ix, '1 ' + errmess, 
                                 data.datasets[ix - 1]);
@@ -1867,7 +1867,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         console.log('formula = "' + formula + '"');
                         console.log(Xprev);
                         console.log(X);
-                        console.log(g);
+                        //console.log(g);
                         setErrormessage(ix, '2 ' + errmess+'\n'+err.message, 
                             data.datasets[ix - 1]);
                     }
