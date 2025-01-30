@@ -931,13 +931,13 @@ function modulePostRender(control) {
             return f;
         }
 
-        var X   = new Array(sensorCount).fill(1);
-        var Xprev = new Array(sensorCount).fill(5);
+        var X = new Array(sensorCount+1).fill(1);
+        var Xprev = new Array(sensorCount+1).fill(5);
         var ix = 1;
 
         var mess, f = val;
-        f = replace_Xprevi(f, sensorCount);
-        f = replace_Xi(f, sensorCount);
+        f = replace_Xprevi(f, sensorCount+1);
+        f = replace_Xi(f, sensorCount+1);
         f = f.replace(/\bx\b\[-1\]/g, 'Xprev[ix]');
         f = f.replace(/\bx\b/g, 'X[ix]');
 
