@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.3 2025-02-02/peb
+//h Version:      V3.2.1 2025-02-03/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -22,6 +22,7 @@
 //v               V3.1.2 2025-01-26/peb [*]date arithmetic
 //v                                     [*]post calc
 //v               V3.1.3 2025-02-02/peb [+]date picker: end time
+//v               V3.2.0 2025-02-03/peb [+]ad hoc analysis
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -36,8 +37,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.1.3';
-var WRITTEN = '2025-02-02/peb';
+var VERSION = 'V3.2.1';
+var WRITTEN = '2025-02-03/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -2094,6 +2095,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 ch_utils.buttonVisible('snapshot', false);
             }
             if (!isModal) {
+                ch_utils.buttonVisible('adHocCalcButton', true);
                 ch_utils.buttonVisible('dtpickButton', true);
                 ch_utils.buttonVisible('dataJSON', true);
                 if (snapshots_possible && (snapshotAdmin === false || isAdmin)) {
@@ -2104,6 +2106,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.buttonVisible('textRefresh', true);
             ch_utils.buttonVisible('postcalcModal', false);
             ch_utils.buttonVisible('dtpickModal', false);
+            ch_utils.buttonVisible('adHocCalcModal', false);
+            ch_utils.buttonVisible('adHocCalcResult', false);
         } //REQUEST_FIRST
         else {
             //update chart
@@ -2462,6 +2466,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
     // When the user clicks anywhere outside of the modal, close it
     window.onclick = function(event) {
         var buttonEvent = ch_utils.buttonIdEvent(event);
+        var parentEvent = event.target.parentNode.id;
+        //console.log(buttonEvent);
+        //console.log(event.target.parentNode.id);
         if (buttonEvent !== 'dtpickButton' && 
             ch_utils.isVisible('dtpickModal')) {
             hide_dtpickModal(event);
@@ -2469,6 +2476,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (buttonEvent !== 'postcalcButton' && 
             ch_utils.isVisible('postcalcModal')) {
             hide_postcalcModal(event);
+        }
+        if (buttonEvent.indexOf('adHocCalc') !== 0 &&
+            parentEvent.indexOf('adHocCalc') !== 0) {
+            if (ch_utils.isVisible('adHocCalcModal')) {
+                ch_utils.buttonVisible('adHocCalcModal', false);
+            }
+            if (ch_utils.isVisible('adHocCalcResult')) {
+                ch_utils.buttonVisible('adHocCalcResult', false);
+            }
         }
     }; //window.onclick
 
@@ -2817,6 +2833,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.buttonText('expand', 33);
         ch_utils.buttonText('showComplete', 36);
         ch_utils.buttonText('recoverData', 35);
+        ch_utils.buttonText('adHocCalcButton', 37);
 
         ch_utils.buttonTitle('recoverData', 11);
         ch_utils.buttonTitle('shiftRightLong', 12);
@@ -2928,6 +2945,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (event.key === 'Escape') {
             ch_utils.buttonVisible('postcalcModal', false);
             ch_utils.buttonVisible('dtpickModal', false);
+            ch_utils.buttonVisible('adHocCalcModal', false);
+            ch_utils.buttonVisible('adHocCalcResult', false);
         }
     }); //keydown Escape
 }); //DOMContentLoaded

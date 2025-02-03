@@ -61,6 +61,7 @@
             left: 20px; /* Location of the box */
             overflow: auto; /* Enable scroll if needed */
             resize: both;
+  font-size: 13px;
          }
 
          /* Modal Content */
@@ -115,6 +116,7 @@
                <button id="post_calc" onclick='post_calc()' style='display:none;'>post_calc</button>-->
                <button id="dtpickButton" style=''>date picker</button>
                <button id="postcalcButton" style='display:none;'>post_calc</button>
+               <button id="adHocCalcButton" style='display:none;'>ad Hoc</button>
                <div id="interval_end" style='float: right;'>Date+Time</div>
             </div>
          </div>
@@ -265,6 +267,21 @@
             </div>
          </div>
          <!-- post_calc -->
+
+         <!-- adHocCalc calculation -->
+         <div id="adHocCalcModal" class="modal" draggable="true"
+                ondragstart="drag(event)">
+            <div id='adHocCalcPage' class="modal-content">
+               <div id='adHocCalcContents'>Some text in the Modal..</div>
+            </div>
+         </div>
+         <div id="adHocCalcResult" class="modal" draggable="true"
+                ondragstart="drag(event)">
+            <div id='adHocCalcResultPage' class="modal-content">
+               <div id='adHocCalcResultContents'>Some text in the Modal..</div>
+            </div>
+         </div>
+         <!-- adHocCalc -->
 
       </div>
       <!--main-->

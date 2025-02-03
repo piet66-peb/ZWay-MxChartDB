@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-01-29/peb
+//h Version:      V3.1.2 2025-02-03/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.1.2';
-var WRITTEN='2025-01-29/peb';
+var WRITTEN='2025-02-03/peb';
 
 //b common: common functions
 //--------------------------
@@ -511,4 +511,98 @@ var v_buf;  //complete buffered, pointers to config
 var v;      //visible part of v_buf, copy
 var v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10;
 var v11, v12, v13, v14, v15, v16, v17, v18, v19, v20;
+
+//b adHocCalc: postcalc functions
+//-------------------------------
+var adHocCalc = {
+    raiseModal: function() {
+
+        var html = [
+            '<style>',
+            'textarea {',
+            '  resize: true;',
+            '}',
+            '</style>',
+            '<div id="adHocCalcCodeI">',
+            'This function makes it possible to define and execute',
+            '<br>ad hoc commands for evaluating the displayed data.',
+            '<br>',
+            'For further information see:',
+            '<input id="adHocCalcHelp" type="button" value="Help" onclick="adHocCalc.Help();" />',
+            '',
+            '<p><label for="adHocCalcCode">Javascript code:</label></p>',
+            '',
+            '<textarea id="adHocCalcCode" name="adHocCalcCode" rows="15" cols="60">',
+            adHocCode,
+            '</textarea><br><br>',
+            '<input id="adHocCalcBreak" type="button" value="Break" onclick="adHocCalc.Break();" />',
+            '<input id="adHocCalcClear" type="button" value="Clear" onclick="adHocCalc.Clear();" />',
+            '<input id="adHocCalcStore" type="button" value="Store" onclick="adHocCalc.Store();" />',
+            '<input id="adHocCalcExecute" type="button" value="Execute" onclick="adHocCalc.Execute();" />',
+            '</div>'
+        ].join("\n");
+
+        document.getElementById('adHocCalcContents').innerHTML = html;
+        ch_utils.buttonVisible('adHocCalcModal', true);
+        document.getElementById("adHocCalcCode").focus();
+    },
+
+    Help: function() {
+        window.open('http:/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_post_calc.html', '_blank');
+    },
+    Break: function() {
+        ch_utils.buttonVisible('adHocCalcModal', false);
+        ch_utils.buttonVisible('adHocCalcResult', false);
+    },
+    Clear: function() {
+        document.getElementById('adHocCalcCode').value = '';
+        document.getElementById("adHocCalcCode").focus();
+    },
+    Store: function() {
+        adHocCode = document.getElementById('adHocCalcCode').value;
+        document.getElementById("adHocCalcCode").focus();
+    },
+    Return: function() {
+        ch_utils.buttonVisible('adHocCalcResult', false);
+        adHocCalc.raiseModal();
+    },
+    Execute: function() {
+        adHocCode = document.getElementById('adHocCalcCode').value;
+        ch_utils.buttonVisible('adHocCalcModal', false);
+
+        //restrict buffer to visible part
+        v = undefined;
+        v = postcalc.FILTER(v_buf, 0, 'g.isVisible(x)', 'v');
+
+        var result = '';
+        try {
+            /*jshint evil: true */
+            result += eval(abbrevs + adHocCode);
+            /*jshint evil: false */
+        } catch(err) {
+            console.log(err.message);
+            console.log(adHocCode);
+            result += err.message;
+        }
+
+        result += '<br><br>'+
+            '<input id="adHocCalcBreak" type="button" value="OK" onclick="adHocCalc.Break();" />';
+        result += ' '+
+            '<input id="adHocCalcReturn" type="button" value="Return" onclick="adHocCalc.Return();" />';
+        document.getElementById('adHocCalcResultContents').innerHTML = result;
+        ch_utils.buttonVisible('adHocCalcResult', true);
+    },
+}; //adHocCalc
+
+var adHocCode = '';
+
+document.getElementById('adHocCalcButton').onclick = function(event) {
+    ch_utils.buttonVisible('adHocCalcResult', false);
+    adHocCalc.raiseModal();
+
+}; //onclick adHocCalc
+
+
+
+
 

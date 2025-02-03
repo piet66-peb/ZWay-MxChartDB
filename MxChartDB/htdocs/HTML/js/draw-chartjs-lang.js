@@ -329,4 +329,8 @@
             de: ' < \u25A3 > ',
             en: ' < \u25A3 > '
         },
+        {//37
+            de: 'Ad-hoc Analyse',
+            en: 'Ad hoc Analysis'
+        },
     ];
