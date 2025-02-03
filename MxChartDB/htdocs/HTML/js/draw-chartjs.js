@@ -2076,15 +2076,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             if (isAdmin) {
                 ch_utils.buttonVisible('textShowIx', true);
+                ch_utils.buttonVisible('adHocCalcButton', true);
             } else {
                 ch_utils.buttonVisible('textShowIx', false);
                 showShowIx = false;
-            }
-            if (isAdmin) {
-                ch_utils.buttonVisible('textShowIx', true);
-            } else {
-                ch_utils.buttonVisible('textShowIx', false);
-                showShowIx = false;
+                ch_utils.buttonVisible('adHocCalcButton', false);
             }
             if (isModal) {
                 ch_utils.buttonVisible('textShowIx', false);
@@ -2093,9 +2089,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 ch_utils.buttonVisible('dtpickButton', false);
                 ch_utils.buttonVisible('newTab', true);
                 ch_utils.buttonVisible('snapshot', false);
+                ch_utils.buttonVisible('adHocCalcButton', false);
             }
             if (!isModal) {
-                ch_utils.buttonVisible('adHocCalcButton', true);
                 ch_utils.buttonVisible('dtpickButton', true);
                 ch_utils.buttonVisible('dataJSON', true);
                 if (snapshots_possible && (snapshotAdmin === false || isAdmin)) {
