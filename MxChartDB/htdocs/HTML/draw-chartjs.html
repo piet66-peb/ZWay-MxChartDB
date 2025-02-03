@@ -119,14 +119,14 @@
             </div>
          </div>
          <hr style="height:5px; visibility:hidden;" />
-         <button id="showComplete" style="display:none;"><b>&nbsp; &lt;&nbsp;&#x1F78F;&nbsp;&gt; &nbsp;</b></button>
+         <button id="showComplete" style="display:none; font-weight:bold">howComplete</button>
          <div id="taskbar" style="display:inline;">
             <button id="shiftLeftLong" style="display:none;"><b>&nbsp; &lt;&lt;&nbsp;</b></button>
             <button id="shiftLeft" style="display:none;"><b>&nbsp; &lt;&nbsp;</b></button>
             <button id="shiftRight" style="display:none;"><b>&nbsp;&gt; &nbsp;</b></button>
             <button id="shiftRightLong" style="display:none;"><b>&nbsp;&gt;&gt; &nbsp;</b></button>
          </div>
-         <button id="recoverData" style="display:none;"><b>&nbsp; &gt;&nbsp;&#x1F78F;&nbsp;&lt; &nbsp;</b></button>
+         <button id="recoverData" style="display:none;; font-weight:bold">recover</button>
          <button id="newTab" style="display:none;">New Window</button>
          <button id="dataJSON" style="display:none;">Data</button>
          <button id="chartIndex" style="display:none;">Chart Index</button>
@@ -172,35 +172,70 @@
                      <th></th>
                      <th></th>
                   </tr>
+
+                  <!-- start time -->
                   <tr>
                      <td>
-                        <label id='dtpick_date'>Date Start: </label>
+                        <label id='dtpick_date_start'>Date Start: </label>
                      </td>
                      <td>
-                        <select name="year" id="dtpick_year">
+                        <select name="year_start" id="dtpick_year_start">
                         </select>
                         -
-                        <select name="month" id="dtpick_month">
+                        <select name="month_start" id="dtpick_month_start">
                         </select>
                         -
-                        <select name="day" id="dtpick_day">
+                        <select name="day_start" id="dtpick_day_start">
                         </select>
                      </td>
                   </tr>
                   <tr>
                      <td>
-                        <label id='dtpick_time'>Time Start: </label>
+                        <label id='dtpick_time_start'></label>
                      </td>
                      <td>
-                        <select name="hour" id="dtpick_hour">
+                        <select name="hour_start" id="dtpick_hour_start">
                         </select>
                         :
-                        <select name="minute" id="dtpick_minute">
+                        <select name="minute_start" id="dtpick_minute_start">
+                        </select>
+                     </td>
+                  </tr>
+
+                  <!-- end time -->
+                  <tr>
+                     <td>
+                        <input type="radio" id='dtpick_nointerval' name="intervalRadio">
+                        <label id='dtpick_date_end'>Date End: </label>
+                     </td>
+                     <td>
+                        <select name="year_end" id="dtpick_year_end">
+                        </select>
+                        -
+                        <select name="month_end" id="dtpick_month_end">
+                        </select>
+                        -
+                        <select name="day_end" id="dtpick_day_end">
                         </select>
                      </td>
                   </tr>
                   <tr>
                      <td>
+                        <label id='dtpick_time_end'></label>
+                     </td>
+                     <td>
+                        <select name="hour_end" id="dtpick_hour_end">
+                        </select>
+                        :
+                        <select name="minute_end" id="dtpick_minute_end">
+                        </select>
+                     </td>
+                  </tr>
+
+                  <!-- interval length -->
+                  <tr>
+                     <td>
+                        <input type="radio" id='dtpick_interval' name="intervalRadio" checked>
                         <label id='dtpick_length'>Interval Length: </label>
                      </td>
                      <td>
@@ -210,6 +245,7 @@
                         </select>
                      </td>
                   </tr>
+
                </table>
                <br><br>
                <label id="dtpick_count_text"></label>

@@ -258,16 +258,16 @@
             en: 'Display Interval'
         },
         {//19
-            de: 'Startdatum: ',
-            en: 'Start Date: '
+            de: '\u2007 \u2007 von: ',
+            en: '\u2007 \u2007 from: '
         },
         {//20
-            de: 'Startzeit: ',
-            en: 'Start Time '
+            de: 'bis: ',
+            en: 'to: '
         },
         {//21
-            de: 'Intervall Länge ',
-            en: 'Interval Length '
+            de: 'Intervall: ',
+            en: 'Interval: '
         },
         {//22
             de: 'Chart Anzeigen',
@@ -320,5 +320,13 @@
         {//34
             de: 'Breite',
             en: 'Width'
+        },
+        {//35
+            de: ' > \u25A3 < ',
+            en: ' > \u25A3 < '
+        },
+        {//36
+            de: ' < \u25A3 > ',
+            en: ' < \u25A3 > '
         },
     ];

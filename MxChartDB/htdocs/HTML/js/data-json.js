@@ -12,10 +12,11 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-01-26/peb
+//h Version:      V3.1.3 2025-02-02/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V2.1.0 2024-01-09/peb [+]other database 
 //v               V3.1.2 2025-01-26/peb [*]date arithmetic
+//v               V3.1.3 2025-02-02/peb [+]date picker: end time
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h
@@ -29,8 +30,8 @@
 //b Constants
 //-----------
 var MODULE='data-json.js';
-var VERSION='V3.1.2';
-var WRITTEN='2025-01-26/peb';
+var VERSION='V3.1.3';
+var WRITTEN='2025-02-02/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 var url;
@@ -186,8 +187,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
 
         ch_utils.buttonText('dt_picker_title', 6);
-        ch_utils.buttonText('dt_picker_date', 7);
-        ch_utils.buttonText('dt_picker_time', 8);
+        ch_utils.buttonText('dt_picker_date_start', 7);
+        ch_utils.buttonText('dt_picker_date_end', 8);
         ch_utils.buttonText('dt_picker_length', 9);
         ch_utils.buttonText('dt_picker_exec', 10);
         ch_utils.buttonText('header_only_text', 11);
@@ -271,13 +272,35 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 lenStart = Math.ceil(len/lenYear);
                 typeStart = 6;
             }
-        }
+        } //from
 
-        config_datepicker_numeric("dt_picker_month", 1, 12, true, monthStart);
-        config_datepicker_numeric("dt_picker_day", 1, 31, true, dayStart);
-        config_datepicker_numeric("dt_picker_hour", 0, 23, true, hourStart);
-        config_datepicker_numeric("dt_picker_minute", 0, 59, true, minuteStart);
-        config_datepicker_numeric("dt_picker_year", yearFirst, yearLast, false, yearStart);
+        d = new Date(to*1);
+        console.log(d);
+        var yearEnd;
+        var monthEnd;
+        var dayEnd;
+        var hourEnd;
+        var minuteEnd;
+        if (!isNaN(d)) {
+            yearEnd = d.getFullYear();
+            monthEnd = d.getMonth() + 1;
+            dayEnd = d.getDate();
+            hourEnd = d.getHours();
+            minuteEnd = d.getMinutes();
+
+        } //to
+
+        config_datepicker_numeric("dt_picker_month_start", 1, 12, true, monthStart);
+        config_datepicker_numeric("dt_picker_day_start", 1, 31, true, dayStart);
+        config_datepicker_numeric("dt_picker_hour_start", 0, 23, true, hourStart);
+        config_datepicker_numeric("dt_picker_minute_start", 0, 59, true, minuteStart);
+        config_datepicker_numeric("dt_picker_year_start", yearFirst, yearLast, false, yearStart);
+
+        config_datepicker_numeric("dt_picker_month_end", 1, 12, true, monthEnd);
+        config_datepicker_numeric("dt_picker_day_end", 1, 31, true, dayEnd);
+        config_datepicker_numeric("dt_picker_hour_end", 0, 23, true, hourEnd);
+        config_datepicker_numeric("dt_picker_minute_end", 0, 59, true, minuteEnd);
+        config_datepicker_numeric("dt_picker_year_end", yearFirst, yearLast, false, yearLast);
 
         config_datepicker_numeric("dt_picker_intervallength", 1, 20, false, Math.min(20, lenStart));
         var list = ch_utils.buildMessage(5);
@@ -503,34 +526,47 @@ document.addEventListener("DOMContentLoaded", function(event) {
             return;
         }
 
-        var year_value = document.getElementById('dt_picker_year').value;
-        var month_value= document.getElementById('dt_picker_month').value;
-        var day_value= document.getElementById('dt_picker_day').value;
-        var hour_value= document.getElementById('dt_picker_hour').value;
-        var minute_value= document.getElementById('dt_picker_minute').value;
+        //start
+        var year_value = document.getElementById('dt_picker_year_start').value;
+        var month_value= document.getElementById('dt_picker_month_start').value;
+        var day_value= document.getElementById('dt_picker_day_start').value;
+        var hour_value= document.getElementById('dt_picker_hour_start').value;
+        var minute_value= document.getElementById('dt_picker_minute_start').value;
         var newDateTime = year_value+'-'+month_value+'-'+day_value+' '+hour_value+':'+minute_value+':00';
         var newStart = dateToTimestamp(newDateTime);
 
-        var length_value = document.getElementById('dt_picker_intervallength').value-0;
-        var type_value = document.getElementById('dt_picker_intervaltype').value-0;
-        var type_length = [60, 3600, 86400, 604800, 2592000, 31536000][type_value];
-        var newLength = length_value * type_length * 1000;
-        var newEnd = newStart + newLength;
-
-        var d;
-        if (type_value === 4) {     //months
-            d = new Date(newDateTime);
-            newStart = d.getTime();
-            d.setMonth(d.getMonth() + length_value);
-            newEnd = d.getTime();          
-        } else
-        if (type_value === 5) {     //years
-            d = new Date(newDateTime);
-            newStart = d.getTime();
-            d.setFullYear(d.getFullYear() + length_value);
-            newEnd = d.getTime();          
+        var el = document.getElementById("dt_picker_nointerval");
+        var newEnd;
+        if (el.checked) {
+            //end
+            year_value = document.getElementById('dt_picker_year_end').value;
+            month_value= document.getElementById('dt_picker_month_end').value;
+            day_value= document.getElementById('dt_picker_day_end').value;
+            hour_value= document.getElementById('dt_picker_hour_end').value;
+            minute_value= document.getElementById('dt_picker_minute_end').value;
+            newDateTime = year_value+'-'+month_value+'-'+day_value+' '+hour_value+':'+minute_value+':00';
+            newEnd = dateToTimestamp(newDateTime);
+        } else {
+            //interval
+            var length_value = document.getElementById('dt_picker_intervallength').value-0;
+            var type_value = document.getElementById('dt_picker_intervaltype').value-0;
+            var type_length = [60, 3600, 86400, 604800, 2592000, 31536000][type_value];
+            var newLength = length_value * type_length * 1000;
+            newEnd = newStart + newLength;
+            var d;
+            if (type_value === 4) {     //months
+                d = new Date(newDateTime);
+                newStart = d.getTime();
+                d.setMonth(d.getMonth() + length_value);
+                newEnd = d.getTime();          
+            } else
+            if (type_value === 5) {     //years
+                d = new Date(newDateTime);
+                newStart = d.getTime();
+                d.setFullYear(d.getFullYear() + length_value);
+                newEnd = d.getTime();          
+            }
         }
-
         console.log('newStart='+newStart);
         console.log('newEnd='+newEnd);
        

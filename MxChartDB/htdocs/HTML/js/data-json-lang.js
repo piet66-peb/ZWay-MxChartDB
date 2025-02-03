@@ -30,16 +30,16 @@
             en: 'Display Interval'
         },
         {//7
-            de: 'Startdatum: ',
-            en: 'Start Date: '
+            de: '\u2007 \u2007 von: ',
+            en: '\u2007 \u2007 from: '
         },
         {//8
-            de: 'Startzeit: ',
-            en: 'Start Time '
+            de: 'bis: ',
+            en: 'to: '
         },
         {//9
-            de: 'Intervall Länge ',
-            en: 'Interval Length '
+            de: 'Intervall: ',
+            en: 'Interval: '
         },
         {//10
             de: 'Chart Anzeigen',

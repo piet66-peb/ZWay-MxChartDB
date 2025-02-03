@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-01-29/peb
+//h Version:      V3.1.3 2025-02-02/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -21,6 +21,7 @@
 //v               V3.0.0 2024-12-13/peb [-]remove obsolete fill100
 //v               V3.1.2 2025-01-26/peb [*]date arithmetic
 //v                                     [*]post calc
+//v               V3.1.3 2025-02-02/peb [+]date picker: end time
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -35,8 +36,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.1.2';
-var WRITTEN = '2025-01-29/peb';
+var VERSION = 'V3.1.3';
+var WRITTEN = '2025-02-02/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -2054,8 +2055,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             //date time picker:
             ch_utils.buttonText('dtpickButton', 3);
             ch_utils.buttonText('dtpick_title', 18);
-            ch_utils.buttonText('dtpick_date', 19);
-            ch_utils.buttonText('dtpick_time', 20);
+            ch_utils.buttonText('dtpick_date_start', 19);
+            ch_utils.buttonText('dtpick_date_end', 20);
             ch_utils.buttonText('dtpick_length', 21);
             ch_utils.buttonText('dtpick_exec', 22);
             ch_utils.buttonText('dtpick_break', 23);
@@ -2372,18 +2373,30 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //config_datepicker_list
 
     function config_datepicker() {
+        //start time
         var monthStart = new Date(ts_first).getMonth() + 1;
-        config_datepicker_numeric("dtpick_month", 1, 12, true, monthStart);
+        config_datepicker_numeric("dtpick_month_start", 1, 12, true, monthStart);
         var dayStart = new Date(ts_first).getDate();
-        config_datepicker_numeric("dtpick_day", 1, 31, true, dayStart);
-        config_datepicker_numeric("dtpick_hour", 0, 23, true);
-        config_datepicker_numeric("dtpick_minute", 0, 59, true);
+        config_datepicker_numeric("dtpick_day_start", 1, 31, true, dayStart);
+        config_datepicker_numeric("dtpick_hour_start", 0, 23, true);
+        config_datepicker_numeric("dtpick_minute_start", 0, 59, true);
         config_datepicker_numeric("dtpick_intervallength", 1, 20, false);
 
         var yearStart = new Date(ts_first).getFullYear();
         var yearEnd = new Date().getFullYear();
-        config_datepicker_numeric("dtpick_year", yearStart, yearEnd, false);
+        config_datepicker_numeric("dtpick_year_start", yearStart, yearEnd, false);
 
+        //end time
+        var monthEnd = new Date().getMonth() + 1;
+        var dayEnd = new Date().getDate();
+        config_datepicker_numeric("dtpick_month_end", 1, 12, true, monthEnd);
+        config_datepicker_numeric("dtpick_day_end", 1, 31, true, dayEnd);
+        config_datepicker_numeric("dtpick_hour_end", 0, 23, true, 23);
+        config_datepicker_numeric("dtpick_minute_end", 0, 59, true, 59);
+        config_datepicker_numeric("dtpick_intervallength", 1, 20, false);
+        config_datepicker_numeric("dtpick_year_end", yearStart, yearEnd, true, yearEnd);
+
+        //interval
         var list = ch_utils.buildMessage(ixButtonTextBase + 7);
         config_datepicker_list("dtpick_intervaltype", list, 2);
         ch_utils.buttonVisible("dtpick_table_interval", true);
@@ -2415,7 +2428,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     function hide_postcalcModal(event) {
         var buttonEvent = ch_utils.buttonIdEvent(event);
-        if (['postcalcModal', 'postcalcContents'].indexOf(buttonEvent) >= 0) {
+        if (['postcalcModal', 'postcalcContents', 'noIntervalRadio', 'noIntervalRadio'].indexOf(buttonEvent) >= 0) {
             return;
         }
         ch_utils.buttonVisible('postcalcModal', false);
@@ -2449,7 +2462,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     // When the user clicks anywhere outside of the modal, close it
     window.onclick = function(event) {
         var buttonEvent = ch_utils.buttonIdEvent(event);
-        if (buttonEvent !== 'dtpickButton' && ch_utils.isVisible('dtpickModal')) {
+        if (buttonEvent !== 'dtpickButton' && 
+            ch_utils.isVisible('dtpickModal')) {
             hide_dtpickModal(event);
         }
         if (buttonEvent !== 'postcalcButton' && 
@@ -2474,33 +2488,50 @@ document.addEventListener("DOMContentLoaded", function(event) {
     document.getElementById('dtpick_exec').onclick = function(event) {
         dtpicker_toggle_visibility(event);
 
-        var year_value = document.getElementById('dtpick_year').value;
-        var month_value = document.getElementById('dtpick_month').value;
-        var day_value = document.getElementById('dtpick_day').value;
-        var hour_value = document.getElementById('dtpick_hour').value;
-        var minute_value = document.getElementById('dtpick_minute').value;
+        //start
+        var year_value = document.getElementById('dtpick_year_start').value;
+        var month_value = document.getElementById('dtpick_month_start').value;
+        var day_value = document.getElementById('dtpick_day_start').value;
+        var hour_value = document.getElementById('dtpick_hour_start').value;
+        var minute_value = document.getElementById('dtpick_minute_start').value;
         var newDateTime = year_value + '-' + month_value + '-' + day_value + 
             ' ' + hour_value + ':' + minute_value + ':00';
         var newStart = dateToTimestamp(newDateTime);
 
-        var length_value = document.getElementById('dtpick_intervallength').value-0;
-        var type_value = document.getElementById('dtpick_intervaltype').value-0;
-        var type_length = [60,3600,86400,604800,2592000,31536000][type_value];  //in secs
-        var newLength = length_value * type_length * 1000;
-        var newEnd = newStart + newLength;
+        var el = document.getElementById("dtpick_nointerval");
+        var newEnd;
+        if (el.checked) {
+            //end
+            year_value = document.getElementById('dtpick_year_end').value;
+            month_value = document.getElementById('dtpick_month_end').value;
+            day_value = document.getElementById('dtpick_day_end').value;
+            hour_value = document.getElementById('dtpick_hour_end').value;
+            minute_value = document.getElementById('dtpick_minute_end').value;
+            newDateTime = year_value + '-' + month_value + '-' + day_value + 
+            ' ' + hour_value + ':' + minute_value + ':00';
+            newEnd = dateToTimestamp(newDateTime);
 
-        var d;
-        if (type_value === 4) {     //months
-            d = new Date(newDateTime);
-            newStart = d.getTime();
-            d.setMonth(d.getMonth() + length_value);
-            newEnd = d.getTime();          
-        } else
-        if (type_value === 5) {     //years
-            d = new Date(newDateTime);
-            newStart = d.getTime();
-            d.setFullYear(d.getFullYear() + length_value);
-            newEnd = d.getTime();          
+        } else {
+            //interval
+            var length_value = document.getElementById('dtpick_intervallength').value-0;
+            var type_value = document.getElementById('dtpick_intervaltype').value-0;
+            var type_length = [60,3600,86400,604800,2592000,31536000][type_value];  //in secs
+            var newLength = length_value * type_length * 1000;
+            newEnd = newStart + newLength;
+    
+            var d;
+            if (type_value === 4) {     //months
+                d = new Date(newDateTime);
+                newStart = d.getTime();
+                d.setMonth(d.getMonth() + length_value);
+                newEnd = d.getTime();          
+            } else
+            if (type_value === 5) {     //years
+                d = new Date(newDateTime);
+                newStart = d.getTime();
+                d.setFullYear(d.getFullYear() + length_value);
+                newEnd = d.getTime();          
+            }
         }
 
         var radio_values_hist = true;
@@ -2784,6 +2815,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.buttonText('textTooltip', 16);
         ch_utils.buttonText('textShowIx', 17);
         ch_utils.buttonText('expand', 33);
+        ch_utils.buttonText('showComplete', 36);
+        ch_utils.buttonText('recoverData', 35);
 
         ch_utils.buttonTitle('recoverData', 11);
         ch_utils.buttonTitle('shiftRightLong', 12);

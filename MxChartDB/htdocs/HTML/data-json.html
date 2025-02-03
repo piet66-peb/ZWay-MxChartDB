@@ -53,35 +53,69 @@
          <label id=dt_picker_title>Time Interval </label>
          <br><br>
          <table>
+            <!-- start time -->
             <tr>
                <td>
-                  <label id=dt_picker_date>Date Start: </label>
+                  <label id=dt_picker_date_start>Date Start: </label>
                </td>
                <td>
-                  <select name="year" id="dt_picker_year">
+                  <select name="year_start" id="dt_picker_year_start">
                   </select>
                   -
-                  <select name="month" id="dt_picker_month">
+                  <select name="month_start" id="dt_picker_month_start">
                   </select>
                   -
-                  <select name="day" id="dt_picker_day">
+                  <select name="day_start" id="dt_picker_day_start">
                   </select>
                </td>
             </tr>
             <tr>
                <td>
-                  <label id=dt_picker_time>Time Start: </label>
+                  <label id=dt_picker_time_start></label>
                </td>
                <td>
-                  <select name="hour" id="dt_picker_hour">
+                  <select name="hour_start" id="dt_picker_hour_start">
                   </select>
                   :
-                  <select name="minute" id="dt_picker_minute">
+                  <select name="minute_start" id="dt_picker_minute_start">
+                  </select>
+               </td>
+            </tr>
+
+            <!-- end time -->
+            <tr>
+               <td>
+                  <input type="radio" id='dt_picker_nointerval' name="intervalRadio">
+                  <label id=dt_picker_date_end>Date End: </label>
+               </td>
+               <td>
+                  <select name="year_end" id="dt_picker_year_end">
+                  </select>
+                  -
+                  <select name="month_end" id="dt_picker_month_end">
+                  </select>
+                  -
+                  <select name="day_end" id="dt_picker_day_end">
                   </select>
                </td>
             </tr>
             <tr>
                <td>
+                  <label id=dt_picker_time_end></label>
+               </td>
+               <td>
+                  <select name="hour_end" id="dt_picker_hour_end">
+                  </select>
+                  :
+                  <select name="minute_end" id="dt_picker_minute_end">
+                  </select>
+               </td>
+            </tr>
+
+            <!-- interval -->
+            <tr>
+               <td>
+                  <input type="radio" id='dt_picker_interval' name="intervalRadio" checked>
                   <label id=dt_picker_length>Interval Length: </label>
                </td>
                <td>
@@ -91,6 +125,7 @@
                   </select>
                </td>
             </tr>
+
          </table>
          </div>
          <br>
