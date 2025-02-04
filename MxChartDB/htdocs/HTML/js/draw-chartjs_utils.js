@@ -532,7 +532,7 @@ var adHocCalc = {
             '',
             '<p><label for="adHocCalcCode">Javascript code:</label></p>',
             '',
-            '<textarea id="adHocCalcCode" name="adHocCalcCode" rows="15" cols="60">',
+            '<textarea id="adHocCalcCode" rows="15" cols="60"">',
             adHocCode,
             '</textarea><br><br>',
             '<input id="adHocCalcBreak" type="button" value="Break" onclick="adHocCalc.Break();" />',
