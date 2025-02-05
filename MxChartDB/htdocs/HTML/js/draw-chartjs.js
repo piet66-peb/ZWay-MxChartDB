@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.2.1 2025-02-03/peb
+//h Version:      V3.2.1 2025-02-05/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -38,7 +38,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.2.1';
-var WRITTEN = '2025-02-03/peb';
+var WRITTEN = '2025-02-05/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -903,11 +903,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         var i;
         chartLabelsLen = vLog.chartHeader.chartLabels.length;
-        chartLastValues = new Array(chartLabelsLen); //item[sensor_ix] = [x0, x]
+        chartLastValues = new Array(chartLabelsLen);
         chartLastValues.fill([]);
 
-        sensorsOnlyChange = new Array(chartLabelsLen); //item[sensor_ix] = 
-                                                       //true|false
+        sensorsOnlyChange = new Array(chartLabelsLen);
         sensorsOnlyChange.fill(false);
 
         for (i = 0; i < chartLabelsLen; i++) {
@@ -1215,7 +1214,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (nightDeviceIndex) {
             var lastLevel = null;
             var nightArray = [];
-            var daytimeLevel, currTime, item;
+            var daytimeLevel, currTime, itemNight;
 
             //for all datapoints
             for (var i_dp = 0; i_dp < lengthChartValues; i_dp++) {
@@ -1233,35 +1232,40 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 }
 
                 //detect start and end of nighttimes
+                if (i_dp === 0 && !daytimeLevel) {         //shoulöd not occur
+                    daytimeLevel = 'off';                  //>>night
+                }
                 if (i_dp === 0 && daytimeLevel === 'on') {         //day
-                    item = {};
+                    itemNight = {};
                     //console.log(i_dp+' 1111 '+ch_utils.userTime(currTime));
                 } else
                 if (i_dp === 0 && daytimeLevel === 'off') {        //night start
-                    item = {};
-                    item.start = currTime;
-                    //console.log(i_dp+' 2222 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                    itemNight = {};
+                    itemNight.start = currTime;
+                    //console.log(i_dp+' 2222 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
                 } else
                 if (i_dp === lengthChartValues - 1 && lastLevel === 'off') {    //last point = night
-                    item.end = currTime;
-                    nightArray.push(item);
-                    //console.log(i_dp+' 3333 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                    itemNight.end = currTime;
+                    nightArray.push(itemNight);
+                    //console.log(i_dp+' 3333 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
                 } else
                 if (i_dp < lengthChartValues - 1 && lastLevel === 'off' &&      //off > on: night end
                     daytimeLevel === 'on') {
-                    item.end = currTime;
-                    nightArray.push(item);
-                    //console.log(i_dp+' 4444 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                    itemNight.end = currTime;
+                    nightArray.push(itemNight);
+                    //console.log(i_dp+' 4444 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
                 } else
                 if (i_dp < lengthChartValues - 1 && lastLevel === 'on' &&       //on > off night start
                     daytimeLevel === 'off') {
-                    item = {};
-                    item.start = currTime;
-                    //console.log(i_dp+' 5555 '+ch_utils.userTime(currTime)+' '+JSON.stringify(item));
+                    itemNight = {};
+                    itemNight.start = currTime;
+                    //console.log(i_dp+' 5555 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
                 //} else {
                 //    console.log(i_dp+' 6666 '+ch_utils.userTime(currTime));
                 }
-                lastLevel = daytimeLevel;
+                if (daytimeLevel) {
+                    lastLevel = daytimeLevel;
+                }
             } //for
 
             //console.log('nightArray', nightArray);
@@ -1274,12 +1278,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
             //build night annotations box
             var len = nightArray.length;
             if (len > 0) {
-                nightArray.forEach(function(item, ix) {
+                nightArray.forEach(function(itemNight2, ix) {
                     config.options.plugins.annotation.annotations['box' + ix] = {
                         type: 'box',
                         drawTime: 'beforeDraw',
-                        xMin: item.start,
-                        xMax: item.end,
+                        xMin: itemNight2.start,
+                        xMax: itemNight2.end,
                         backgroundColor: nightColor,
                         borderWidth: 0
                     };
@@ -1291,6 +1295,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         //------------------- set scales and ticks -------------------------------
 
+console.log('HHHHHHHHHHHHHHHHHHHHHHHHH');        
         var yAxis1 = false;
         var yAxis2 = false;
         resetScales();
