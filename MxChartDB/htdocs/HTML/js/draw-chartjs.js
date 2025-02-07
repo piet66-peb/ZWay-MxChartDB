@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.2.1 2025-02-05/peb
+//h Version:      V3.3.0 2025-02-07/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -30,15 +30,15 @@
 
 /*jshint esversion: 6 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils, header_utils, postcalc, g: true */
+/*globals ch_utils, header_utils, postcalc, g: true, nightTimes */
 'use strict';
 
 //-----------
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.2.1';
-var WRITTEN = '2025-02-05/peb';
+var VERSION = 'V3.3.0';
+var WRITTEN = '2025-02-07/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -119,9 +119,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     var opacity = 60;
     var opacityHex;
     var NOFILL = '#ffffff00';
-
-    var nightColor;
-    var nightDeviceIndex;
 
     var chartColors = {
         //http://www.farb-tabelle.de/de/farbtabelle.htm
@@ -929,42 +926,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
         opacityHex = (opacity * 255 / 100).toString(16).
             replace(/\..*$/, '').padStart(2, '0');
 
-        //if daytime sensor defined, we use it for nighttime background
-        if (vLog.chartHeader.nightBackground) {
-            var nightBackDev = vLog.chartHeader.nightBackDev || 'Daylight';
-            var val_len = vLog.chartHeader.chartDevices.length;
-            for (var val_i = 1; val_i < val_len; val_i++) {
-                if (vLog.chartHeader.entrytypes &&
-                    vLog.chartHeader.entrytypes[val_i] === 'disabled') {
-                    continue;
-                }
-                var devId = vLog.chartHeader.chartDevices[val_i];
-                if (devId && devId.indexOf(nightBackDev) >= 0) {
-                    nightDeviceIndex = val_i;
-                    nightColor = '#cccccc50'; //default color
-
-                    if (vLog.chartHeader.chartFill[nightDeviceIndex] &&
-                        vLog.chartHeader.
-                        chartFill[nightDeviceIndex].indexOf(':') >= 0) {
-                        nightColor = vLog.chartHeader.
-                            chartFill[nightDeviceIndex].split(':')[1];
-                    } else
-                    if (vLog.chartHeader.chartColors[nightDeviceIndex]) {
-                        nightColor = 
-                            vLog.chartHeader.chartColors[nightDeviceIndex] + '50';
-                    }
-                    //console.log(devId, 'ix='+nightDeviceIndex+', nightColor='+
-                    //nightColor);
-
-                    //suppress displaying daylight sensor values
-                    vLog.chartHeader.chartLabels[nightDeviceIndex] = 'null';
-                    chartArithmetics[nightDeviceIndex] = 'null';
-
-                    break;
-                }
-            }
-        } //if (vLog.chartHeader.nightBackground)
-
         //set title of x axis
         var xLabel = vLog.chartHeader.chartLabels[0];
         if (xLabel && xLabel !== 'null') {
@@ -1142,7 +1103,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         var ip, ix, X, Xprev, TOOLTIPs;
         for (ip = 0; ip < lengthChartValues; ip++) {
             if (!Array.isArray(vLog.chartValues[ip])) {
-                console.log('error: at chartValues[' + ip + '}:');
+                console.log('error: at chartValues[' + ip + ']:');
                 console.log('X is not an array:');
                 console.log(vLog.chartValues[ip]);
                 continue;
@@ -1208,94 +1169,27 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //console.log('chartValues: '+(Date.now()-startRun)/1000+' sec');
 
         //------------------- set night background -------------------------------
+        var start = vLog.chartValues[0][0];
+        var stop = vLog.chartValues[lengthChartValues-1][0];
+        var nightArray = nightTimes.array(start, stop);
 
-        //get night array
-        config.options.plugins.annotation.annotations = {};
-        if (nightDeviceIndex) {
-            var lastLevel = null;
-            var nightArray = [];
-            var daytimeLevel, currTime, itemNight;
-
-            //for all datapoints
-            for (var i_dp = 0; i_dp < lengthChartValues; i_dp++) {
-
-                //get current daylight value
-                var X_dp = vLog.chartValues[i_dp];
-                currTime = X_dp[0];
-                if (!X_dp[nightDeviceIndex]) { //value not set
-                    daytimeLevel = lastLevel;
-                } else
-                if (typeof X_dp[nightDeviceIndex] === 'object') {
-                    daytimeLevel = X_dp[nightDeviceIndex].value || lastLevel;
-                } else {
-                    daytimeLevel = X_dp[nightDeviceIndex] || lastLevel;
-                }
-
-                //detect start and end of nighttimes
-                if (i_dp === 0 && !daytimeLevel) {         //shoulöd not occur
-                    daytimeLevel = 'off';                  //>>night
-                }
-                if (i_dp === 0 && daytimeLevel === 'on') {         //day
-                    itemNight = {};
-                    //console.log(i_dp+' 1111 '+ch_utils.userTime(currTime));
-                } else
-                if (i_dp === 0 && daytimeLevel === 'off') {        //night start
-                    itemNight = {};
-                    itemNight.start = currTime;
-                    //console.log(i_dp+' 2222 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
-                } else
-                if (i_dp === lengthChartValues - 1 && lastLevel === 'off') {    //last point = night
-                    itemNight.end = currTime;
-                    nightArray.push(itemNight);
-                    //console.log(i_dp+' 3333 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
-                } else
-                if (i_dp < lengthChartValues - 1 && lastLevel === 'off' &&      //off > on: night end
-                    daytimeLevel === 'on') {
-                    itemNight.end = currTime;
-                    nightArray.push(itemNight);
-                    //console.log(i_dp+' 4444 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
-                } else
-                if (i_dp < lengthChartValues - 1 && lastLevel === 'on' &&       //on > off night start
-                    daytimeLevel === 'off') {
-                    itemNight = {};
-                    itemNight.start = currTime;
-                    //console.log(i_dp+' 5555 '+ch_utils.userTime(currTime)+' '+JSON.stringify(itemNight));
-                //} else {
-                //    console.log(i_dp+' 6666 '+ch_utils.userTime(currTime));
-                }
-                if (daytimeLevel) {
-                    lastLevel = daytimeLevel;
-                }
-            } //for
-
-            //console.log('nightArray', nightArray);
-            //for (var i_na = 0; i_na < nightArray.length; i_na++) {
-            //    console.log(i_na+': '+
-            //        ch_utils.userTime(nightArray[i_na].start)+'-'+
-            //        ch_utils.userTime(nightArray[i_na].end));
-            //}
-
-            //build night annotations box
-            var len = nightArray.length;
-            if (len > 0) {
-                nightArray.forEach(function(itemNight2, ix) {
-                    config.options.plugins.annotation.annotations['box' + ix] = {
-                        type: 'box',
-                        drawTime: 'beforeDraw',
-                        xMin: itemNight2.start,
-                        xMax: itemNight2.end,
-                        backgroundColor: nightColor,
-                        borderWidth: 0
-                    };
-                });
-                //console.log('annotations' ,
-                //config.options.plugins.annotation.annotations);
-            }
-        } //nightDeviceIndex
+        //build night annotations box
+        if (nightArray.length > 0) {
+            nightArray.forEach(function(itemNight2, ix) {
+                config.options.plugins.annotation.annotations['box' + ix] = {
+                    type: 'box',
+                    drawTime: 'beforeDraw',
+                    xMin: itemNight2.start,
+                    xMax: itemNight2.end,
+                    backgroundColor: ch_utils.night.backColor || '#cccccc50',
+                    borderWidth: 0
+                };
+            });
+            //console.log('annotations' ,
+            //config.options.plugins.annotation.annotations);
+        }
 
         //------------------- set scales and ticks -------------------------------
-
-console.log('HHHHHHHHHHHHHHHHHHHHHHHHH');        
         var yAxis1 = false;
         var yAxis2 = false;
         resetScales();

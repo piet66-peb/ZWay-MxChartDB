@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V2.0.2 2024-12-23/peb
+//h Version:      V3.3.0 2025-02-07/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -32,8 +32,8 @@
 //b Constants
 //-----------
 //var MODULE='MxChartDB_init.js';
-//var VERSION='V2.0.2';
-//var WRITTEN='2024-12-23/peb';
+//var VERSION='V3.3.0';
+//var WRITTEN='2025-02-07/peb';
 
 //-----------
 //b Functions
@@ -445,7 +445,6 @@ var init = function (self) {
             y3leastTicks: self.config.nonnumericLabels.y3leastTicks,
             ZWayVersion: zway.controller.data.softwareRevisionVersion.value,
             nightBackground: self.config.specials.nightBackground,
-            nightBackDev: self.config.specials.nightBackDev,
             post_calc: self.config.post_calc,
             global_js: self.config.global_js,
         }; //globalData
@@ -1082,7 +1081,6 @@ var init = function (self) {
             entrytypes: entrytypes,
             usedYAxes: usedYAxes,
             nightBackground: globalData.nightBackground,
-            nightBackDev: globalData.nightBackDev,
             post_calc: self.realCopyObject(globalData.post_calc),
             //define_global_js: globalData.global_js.define_global_js,
             //code: global_js_code,

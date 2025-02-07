@@ -9,7 +9,7 @@
   "homepage": "https://github.com/piet66-peb?tab=repositories",
   "icon": "icon.png",
   "moduleName": "MxChartDB",
-  "version": "3.2.2",
+  "version": "3.3.0",
   "maturity": "stable",
   "repository": {
     "type": "git",
@@ -255,13 +255,6 @@
         "properties": {
           "nightBackground": {
             "type": "boolean"
-          },
-          "nightBackDev": {
-            "dependencies": "nightBackground",
-            "field": "enum",
-            "datasource": "namespaces",
-            "enum": "namespaces:devices_all:deviceId",
-            "required": true
           }
         }
       },
@@ -684,18 +677,6 @@
             "type": "checkbox",
             "rightLabel": "__nightBackground__",
             "helper": "__nightText__"
-          },
-          "nightBackDev": {
-            "dependencies": {
-              "nightBackground": true
-            },
-            "label": "__nightBackDev__",
-            "removeDefaultNone": false,
-            "noneLabel": "__choose__",
-            "type": "select",
-            "datasource": "namespaces",
-            "field": "optionLabels",
-            "optionLabels": "namespaces:devices_all:deviceName"
           }
         }
       },

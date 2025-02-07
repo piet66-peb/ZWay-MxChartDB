@@ -1,4 +1,4 @@
-    var ixButtonTextBase = 40;
+    var ixButtonTextBase = 41;
     var messageFormats = [
         //message texts (0+...):
         {//0
@@ -137,7 +137,7 @@
             de: 'Der Chart existiert nicht.',
             en: "The chartdoesn't exist.",
         },
-        {
+        {//32
             de: 'Die Chartdatei nicht gefunden\n\n'+
                   'Mögliche Ursachen:\n'+
                   '- die Chartdatei existiert nicht\n'+
@@ -151,11 +151,11 @@
                   '- for Linux server: entry in .syscommands is missing\n'+
                   '      alternatively you need administrator rights',
         },
-        {
+        {//33
             de: 'Der Dateiverweis ist nicht mehr gültig. Bitte neu selektieren!',
             en: 'File reference is no longer valid. Please reselect!'
         },
-        {
+        {//34
             de: '❗',
             en: '❗'
         },
@@ -176,11 +176,15 @@
             en: "error in global Javascript code:\n{0}"
         },
         {//39
-            de: "Division durch 0" ,
-            en: "the result is not an infinite number}"
+            de: "Division durch 0 {0}" ,
+            en: "the result is not an infinite number {0}"
+        },
+        {//40
+            de: "zur Einfärbung des nächtlichen Hintergrundes sind die Ortskoordinaten in constants.js einzutragen" ,
+            en: "location coordinates necessary in constants.js for coloring of the nightly background"
         },
 
-        //ixButtonTextBase button texts (409+...):
+        //ixButtonTextBase button texts (40+...):
         {//0
             de: 'Dateien durchsuchen...',
             en: 'Browse data...'

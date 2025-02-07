@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V1.1.0 2025-01-22/peb
+//h Version:      V3.3.0 2025-02-07/peb
 //v History:      V1.0.0 2022-01-02/peb first version
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
@@ -28,8 +28,8 @@
 //b Constants
 //-----------
 var MODULE='ch_utils.js';
-var VERSION='V1.1.0';
-var WRITTEN='2025-01-22/peb';
+var VERSION='V3.3.0';
+var WRITTEN='2025-02-07/peb';
 
 //-----------
 //b Functions
@@ -41,6 +41,7 @@ var ch_utils = {
     url: null,
     urlOld: null,
     userpass: null,
+    night: null,
 
     //workaround for server issue:
     //convert from charset ISO-8859-1 to utf-8
@@ -149,6 +150,7 @@ var ch_utils = {
             frame:{},
             modal:{},
             mobile:{},
+            night:{},
         };
         if (constants.hasOwnProperty('browser_client')) {
             var cbc = constants.browser_client;
@@ -182,6 +184,10 @@ var ch_utils = {
             if (cbc.hasOwnProperty('mobile')) {
                 consts.mobile = cbc.mobile;
             }
+            if (cbc.hasOwnProperty('night')) {
+                consts.night = cbc.night;
+                ch_utils.night = consts.night;
+            }
         }
         if (!consts.ip && !consts.hostname || ! consts.port) {
             consts = 'constants.js: no ip/hostname or port defined, break,';
@@ -197,7 +203,7 @@ var ch_utils = {
             ch_utils.userpass = consts.userpass;
         }
         return consts;
-    },
+    }, //evalConstants
 
     getLanguage: function () {
         //get html language
@@ -212,7 +218,7 @@ var ch_utils = {
         }
         this.lang = lang;
         return lang;
-    },
+    }, //getLanguage
 
     getCookie: function (cname) {
         var name = cname + "=";

@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.1.2 2025-02-03/peb
+//h Version:      V3.3.0 2025-02-07/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -22,14 +22,14 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 6 */
-/*globals ch_utils, g */
+/*globals ch_utils, suntimes */
 'use strict';
 
 //b version data
 //--------------
 var MODULE='chartjs_utils.js';
-var VERSION='V3.1.2';
-var WRITTEN='2025-02-03/peb';
+var VERSION='V3.3.0';
+var WRITTEN='2025-02-07/peb';
 
 //b common: common functions
 //--------------------------
@@ -516,7 +516,6 @@ var v11, v12, v13, v14, v15, v16, v17, v18, v19, v20;
 //-------------------------------
 var adHocCalc = {
     raiseModal: function() {
-
         var html = [
             '<style>',
             'textarea {',
@@ -602,7 +601,89 @@ document.getElementById('adHocCalcButton').onclick = function(event) {
 
 }; //onclick adHocCalc
 
+//b nightTimes: compute sunrise and sunset array depending date, longitude, latitude
+//----------------------------------------------------------------------------------
+var nightTimes = {
+    array: function (start, stop, lat, lng, tz) {
+        //console.log('nightTimes.array');
 
+        var loc = ch_utils.night;
+        //console.log(loc);
+        if (!loc || !loc.longitude || !loc.latitude) {
+            ch_utils.alertMessage(40);
+            return [];
+        }
+        lng = loc.longitude;
+        lat = loc.latitude;
+        tz = loc.tz;
 
+        var d1 = new Date(new Date(start).toISOString().split("T")[0]).getTime();
+        var d2 = new Date(new Date(stop).toISOString().split("T")[0]).getTime();
+        //console.log('from='+g.usertime(d1)+', '+'to='+g.usertime(d2));
+        var daylen = 1000 * 60 * 60 * 24;
+        var daystart = d1; // - daylen;
+
+        //get all [sunraise, sunset] for every day
+        var ret = [], i = -1;
+        while (true) {
+            i++;
+            var daycurr = daystart + daylen*i;
+            if (daycurr > d2) {break;}
+            ret[i] = suntimes(daycurr, lat, lng, tz);
+        }
+        //console.log(ret);
+        var len = ret.length;
+        if (!len) {return [];}
+        
+        //change [sunraise, sunset] to [sunset, sunraise]
+        var ret2 = [];
+        var sunraise = null, sunset = null;
+        for (i = 0; i < len; i++) {
+            sunraise = ret[i][0];
+            ret2.push([sunset, sunraise]);
+            sunset = ret[i][1];
+        }
+        ret2.push([sunset, null]);
+        //console.log(ret2);
+        //for (i = 0; i < ret2.length; i++) {
+        //    console.log(i+': '+
+        //        ch_utils.userTime(ret2[i][0])+'-'+
+        //        ch_utils.userTime(ret2[i][1]));
+        //}
+
+        //console.log('start='+g.usertime(start));
+        //console.log('stop='+g.usertime(stop));
+        //build nightArray
+        var nightArray = [], itemNight;
+        for (i = 0; i <= len; i++) {
+            itemNight = {};
+            if (ret2[i][1] && ret2[i][1] <= start) {
+                continue;
+            }
+            if (ret2[i][0] >= stop) {
+                continue;
+            }
+            if (!ret2[i][0] || ret2[i][0] <= start) {
+                itemNight.start = start;
+            } else
+            if (ret2[i][0] < stop) {
+                itemNight.start = ret2[i][0];
+            }
+            if (!ret2[i][1] || ret2[i][1] >= stop) {
+                itemNight.end = stop;
+            } else {
+                itemNight.end = ret2[i][1];
+            }
+            nightArray.push(itemNight);
+        }
+        //console.log('nightArray new', nightArray);
+        //for (var i_na = 0; i_na < nightArray.length; i_na++) {
+        //    console.log(i_na+': '+
+        //        ch_utils.userTime(nightArray[i_na].start)+'-'+
+        //        ch_utils.userTime(nightArray[i_na].end));
+        //}
+        return nightArray;
+    },
+}; //nightTimes
 
 

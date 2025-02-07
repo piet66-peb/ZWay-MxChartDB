@@ -39,6 +39,15 @@ var constants = {
             database_name: 'Snapshots',
             admin_required: true,
         },
+
+        //location coordinates necessary for coloring of the night background:
+        night: {
+            longitude: undefined,
+            latitude:  undefined,
+            tz:        undefined,       //default: system timezone
+            backColor: undefined,       //default: '#cccccc50'
+        },
+
 /*        
         //optional: 
         //The output consists of the graphic part plus the additional texts and 
