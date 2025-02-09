@@ -155,8 +155,8 @@ MxChartDB.prototype.start = function(config) {
     if (self.config.switch !== undefined) {
         self.config.switch = undefined;
     }
-    if (typeof self.config.specials.nightBackground !== 'undefined') {
-        self.config.specials.nightBackground = undefined;
+    if (typeof self.config.specials.nightBackDev !== 'undefined') {
+        self.config.specials.nightBackDev = undefined;
     }
 
     //b global variables

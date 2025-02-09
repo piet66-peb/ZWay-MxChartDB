@@ -1085,7 +1085,7 @@ var init = function (self) {
             //define_global_js: globalData.global_js.define_global_js,
             //code: global_js_code,
             global_js: self.realCopyObject(globalData.global_js),
-        };
+        };  //chartHeader
         return JSON.parse(JSON.stringify(chartHeader));
     } //build_chart_header
     

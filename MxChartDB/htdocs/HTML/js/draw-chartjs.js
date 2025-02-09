@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-02-07/peb
+//h Version:      V3.3.0 2025-02-09/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -38,7 +38,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.3.0';
-var WRITTEN = '2025-02-07/peb';
+var WRITTEN = '2025-02-09/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -1169,24 +1169,26 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //console.log('chartValues: '+(Date.now()-startRun)/1000+' sec');
 
         //------------------- set night background -------------------------------
-        var start = vLog.chartValues[0][0];
-        var stop = vLog.chartValues[lengthChartValues-1][0];
-        var nightArray = nightTimes.array(start, stop);
-
-        //build night annotations box
-        if (nightArray.length > 0) {
-            nightArray.forEach(function(itemNight2, ix) {
-                config.options.plugins.annotation.annotations['box' + ix] = {
-                    type: 'box',
-                    drawTime: 'beforeDraw',
-                    xMin: itemNight2.start,
-                    xMax: itemNight2.end,
-                    backgroundColor: ch_utils.night.backColor || '#cccccc50',
-                    borderWidth: 0
-                };
-            });
-            //console.log('annotations' ,
-            //config.options.plugins.annotation.annotations);
+        if (vLog.chartHeader.nightBackground) {
+            var start = vLog.chartValues[0][0];
+            var stop = vLog.chartValues[lengthChartValues-1][0];
+            var nightArray = nightTimes.array(start, stop);
+    
+            //build night annotations box
+            if (nightArray.length > 0) {
+                nightArray.forEach(function(itemNight2, ix) {
+                    config.options.plugins.annotation.annotations['box' + ix] = {
+                        type: 'box',
+                        drawTime: 'beforeDraw',
+                        xMin: itemNight2.start,
+                        xMax: itemNight2.end,
+                        backgroundColor: ch_utils.night.backColor || '#cccccc60',
+                        borderWidth: 0
+                    };
+                });
+                //console.log('annotations' ,
+                //config.options.plugins.annotation.annotations);
+            }
         }
 
         //------------------- set scales and ticks -------------------------------

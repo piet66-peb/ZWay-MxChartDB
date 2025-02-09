@@ -45,7 +45,7 @@ var constants = {
             longitude: undefined,
             latitude:  undefined,
             tz:        undefined,       //default: system timezone
-            backColor: undefined,       //default: '#cccccc50'
+            backColor: undefined,       //default: '#cccccc60'
         },
 
 /*        
