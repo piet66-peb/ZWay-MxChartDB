@@ -651,10 +651,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (sessionId && adminRights) {
                 ch_utils.buttonVisible('textShowIx', true);
                 ch_utils.buttonVisible('configuration', true);
+                ch_utils.buttonVisible('adHocCalcButton', true);
+                if (snapshots_possible && (snapshotAdmin === false || isAdmin)) {
+                    ch_utils.buttonVisible('snapshot', true);
+                }
             } else {
                 ch_utils.buttonVisible('textShowIx', false);
                 showShowIx = false;
                 ch_utils.buttonVisible('configuration', false);
+                ch_utils.buttonVisible('adHocCalcButton', false);
+                ch_utils.buttonVisible('snapshot', false);
             }
         }
     } //check_isAdmin
@@ -1977,11 +1983,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             if (isAdmin) {
                 ch_utils.buttonVisible('textShowIx', true);
-                ch_utils.buttonVisible('adHocCalcButton', true);
+                //ch_utils.buttonVisible('adHocCalcButton', true);
             } else {
                 ch_utils.buttonVisible('textShowIx', false);
                 showShowIx = false;
-                ch_utils.buttonVisible('adHocCalcButton', false);
+                //ch_utils.buttonVisible('adHocCalcButton', false);
             }
             if (isModal) {
                 ch_utils.buttonVisible('textShowIx', false);
@@ -1995,9 +2001,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (!isModal) {
                 ch_utils.buttonVisible('dtpickButton', true);
                 ch_utils.buttonVisible('dataJSON', true);
-                if (snapshots_possible && (snapshotAdmin === false || isAdmin)) {
-                    ch_utils.buttonVisible('snapshot', true);
-                }
+                //if (snapshots_possible && (snapshotAdmin === false || isAdmin)) {
+                //    ch_utils.buttonVisible('snapshot', true);
+                //}
             }
             ch_utils.buttonVisible('textTooltip', true);
             ch_utils.buttonVisible('textRefresh', true);
