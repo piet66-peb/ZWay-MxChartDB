@@ -26,7 +26,7 @@ Everything you need for installation is included in this package (Linux only).
 
 Download and install the module and the API from the Z-Way App Store.
 
-or download it with wget:
+or download it with wget and do a restart:
 ```sh
 url=https://github.com/piet66-peb/ZWay-MxChartDB/raw/refs/heads/main/download_MxChartDB.bash
 cd /tmp; wget -q -O - $url | sudo bash
