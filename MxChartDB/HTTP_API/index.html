@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8">
+  <title>HTTP API</title>
+  <style>
+                 {
+                 border-collapse: collapse;
+                 width: 100%;
+                 }
+                 td, th {
+                 border: 1px solid black;
+                 }
+                 tr:hover {background-color: #ddd;}
+                 th {
+                 padding-top: 12px;
+                 padding-bottom: 12px;
+                 text-align: left;
+                 background-color: #d3d3d3;
+                 color: black;
+                 }
+  </style>
+  <style>
+    a {
+      color: #0000FF;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <head>
+    <meta http-equiv="Content-Type" content=
+    "text/html; charset=utf-8">
+    <title>HTTP API</title>
+  </head>
+  <h2>HTTP API for SQLite and MxChartDB</h2>
+  <table>
+    <tr>
+      <th>Action</th>
+      <th>Method</th>
+      <th>URL-Path + Query-String</th>
+      <th>success</th>
+      <th>failed/not found</th>
+    </tr>
+    <tr>
+      <td colspan="6" style="background-color: #f2f2f2;"><br>
+      *** HTML ***<br>
+      <br></td>
+    </tr>
+    <tr>
+      <td>functional survey</td>
+      <td></td>
+      <td>/</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>database administration</td>
+      <td></td>
+      <td>
+        <a href='../ADMIN'><u>/ADMIN</u></a>
+      </td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>call chart index</td>
+      <td></td>
+      <td>/HTML/&lt;module&gt;/Index</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>call chart administration</td>
+      <td></td>
+      <td>/HTML/&lt;module&gt;/Admin</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>call chart html</td>
+      <td></td>
+      <td>/HTML/&lt;module&gt;/&lt;chartId&gt;</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>invoke chart html in a Smarthome modal window</td>
+      <td></td>
+      <td>/HTML_MODAL/&lt;module&gt;/&lt;chartId&gt;</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td colspan="6" style="background-color: #f2f2f2;"><br>
+      *** API *** (responds with JSON structure)<br>
+      <br></td>
+    </tr>
+    <tr>
+      <td>API version, set loglevel<br>
+      20=info<br>
+      30=error+warning</td>
+      <td>GET</td>
+      <td>
+        <a href='../version'><u>/version</u></a> <a href=
+        '../version?loglevel=30'><u>[?loglevel=&lt;20|30&gt;]</u></a>
+      </td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>list all databases</td>
+      <td>GET</td>
+      <td>
+        <a href='../list_databases'><u>/list_databases</u></a>
+      </td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>create a database</td>
+      <td>POST</td>
+      <td>/&lt;db&gt;/create_db</td>
+      <td>201</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>check the database for existence</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/check_db</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>get sizes of database (bytes)</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/size</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>rebuild the database (defragment, remove free space)<br>
+      take a backup before!!!!!</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/rebuild_db</td>
+      <td>200</td>
+      <td>200</td>
+    </tr>
+    <tr>
+      <td>drop the database (remove file)</td>
+      <td>POST</td>
+      <td>/&lt;db&gt;/drop_db</td>
+      <td>200</td>
+      <td>200</td>
+    </tr>
+    <tr>
+      <td>list all user tables in the database</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/list_tables</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>list all user views in the database</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/list_views</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>list all user indexes in the database</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/list_indexes</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>check an object (table, view, index) for existence</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/&lt;object&gt;/check</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>describe an object (table, view, index)</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/&lt;object&gt;/describe</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>drop an object (table, view, index)</td>
+      <td>POST</td>
+      <td>/&lt;db&gt;/&lt;object&gt;/drop</td>
+      <td>200</td>
+      <td>200</td>
+    </tr>
+    <tr>
+      <td>clone a table with all it's contents</td>
+      <td>POST</td>
+      <td>/&lt;db&gt;/&lt;table&gt;/clone?new=[&lt;new
+      db&gt;.]&lt;new table&gt; [&amp;where=&lt;where
+      statement&gt;]</td>
+      <td>200</td>
+      <td>900 (db error)</td>
+    </tr>
+    <tr>
+      <td>count entries in an object (table, view)</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/&lt;object&gt;/count[?&lt;condition&gt;]</td>
+      <td>200</td>
+      <td>900 (db error)</td>
+    </tr>
+    <tr>
+      <td colspan="6" style="background-color: #f2f2f2;"><br>
+      *** MxChartDB specific API functions ***<br>
+      <br></td>
+    </tr>
+    <tr>
+      <td>create a table<br>
+      (ts INTEGER PRIMARY KEY, val TEXT),<br>
+      ts: timestamp in ms<br>
+      val: stringified JSON array of values</td>
+      <td>POST</td>
+      <td>/&lt;db&gt;/&lt;table&gt;/create_table</td>
+      <td>201</td>
+      <td>900 (db error)</td>
+    </tr>
+    <tr>
+      <td>add a new row [, delete old rows with ts &lt;
+      timestamp]</td>
+      <td>POST</td>
+      <td>
+      /&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>
+
+      data:{"ts":&lt;timestamp&gt;,"val":[&lt;timestamp&gt;,&lt;value1&gt;,...]}</td>
+      <td>200</td>
+      <td>900 (db error)</td>
+    </tr>
+    <tr>
+      <td>bulk insert rows [, delete old rows with ts &lt;
+      timestamp]</td>
+      <td>POST</td>
+      <td>
+      /&lt;db&gt;/&lt;table&gt;/insert[?ts_del=&lt;timestamp&gt;],<br>
+
+      data:[{"ts":&lt;timestamp&gt;,"val":[&lt;timestamp&gt;,&lt;value1&gt;,...]},
+      ...]</td>
+      <td>200</td>
+      <td>900 (db error)</td>
+    </tr>
+    <tr>
+      <td>read all next rows with ts &gt; timestamp till end</td>
+      <td>GET</td>
+      <td>
+      /&lt;db&gt;/&lt;table&gt;/select_next[?ts=&lt;timestamp&gt;]</td>
+      <td>200</td>
+      <td>ts=0: 404<br>
+      ts&gt;0: 304 (not modified)</td>
+    </tr>
+    <tr>
+      <td>read all rows &gt;= from_timestamp and &lt;=
+      to_timestamp</td>
+      <td>GET</td>
+      <td>
+      /&lt;db&gt;/&lt;table&gt;/select_range[?from=&lt;timestamp&gt;]
+      [&amp;to=&lt;timestamp&gt;]</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>read first ts in table</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/&lt;table&gt;/select_first_ts[?raw=yes]</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>read last ts in table</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/&lt;table&gt;/select_last_ts[?raw=yes]</td>
+      <td>200</td>
+      <td>404</td>
+    </tr>
+    <tr>
+      <td>delete all previous rows with ts &lt; timestamp from
+      beginning</td>
+      <td>POST</td>
+      <td>
+      /&lt;db&gt;/&lt;table&gt;/delete_prev?ts=&lt;timestamp&gt;</td>
+      <td>200</td>
+      <td>200</td>
+    </tr>
+    <tr>
+      <td>delete a row</td>
+      <td>POST</td>
+      <td>
+      /&lt;db&gt;/&lt;table&gt;/delete?ts=&lt;timestamp&gt;</td>
+      <td>200</td>
+      <td>200</td>
+    </tr>
+    <tr>
+      <td colspan="6" style="background-color: #f2f2f2;"><br>
+      *** SQL: invoke any sql command ***<br>
+      <br></td>
+    </tr>
+    <tr>
+      <td>invoke a sql command<br>
+      in select use val(n) for nth value of MxChartDB's JSON array
+      val</td>
+      <td>POST</td>
+      <td>/&lt;db&gt;/sql,<br>
+      data:&lt;sql command&gt;</td>
+      <td>200</td>
+      <td>900 (db error)</td>
+    </tr>
+    <tr>
+      <td>invoke a sql select command<br>
+      in select use val(n) for nth value of MxChartDB's JSON array
+      val</td>
+      <td>GET</td>
+      <td>/&lt;db&gt;/sql?&lt;sql command&gt;</td>
+      <td>200</td>
+      <td>900 (db error)</td>
+    </tr>
+  </table>
+</body>
+</html>
