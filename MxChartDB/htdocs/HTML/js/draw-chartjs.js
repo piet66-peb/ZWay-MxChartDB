@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-02-22/peb
+//h Version:      V3.3.0 2025-04-08/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -38,7 +38,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.3.0';
-var WRITTEN = '2025-02-22/peb';
+var WRITTEN = '2025-04-08/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     var startTime;
     var endTime;
     var db_count = 0;
-    var initialIntervalMSEC;
+    var initialIntervalMSEC, displayStart, displayEnd;
     var currentIntervalMSEC;
     var chartLabelsLen;
     var chartLastValues;
@@ -826,13 +826,20 @@ document.addEventListener("DOMContentLoaded", function(event) {
         console.log('read_values(request_mode, initialIntervalMSEC, from, to) ' +
             request_mode + ', ' + initialIntervalMSEC + ', ' + from + ', ' + to);
         //console.log('read_values tsLastValues old', tsLastValues);
-        if (headerChanged) {
+        if (headerChanged || 
+            typeof vLog.chartValues === 'undefined' ||
+            Object.keys(vLog.chartValues).length === 0) {
             tsLastValues = 0; //reread complete value list, if header changed
             if (initialIntervalMSEC) {
                 //tsLastValues = Date.now() - initialIntervalMSEC;
-                tsLastValues = ts_last - initialIntervalMSEC;
+                tsLastValues = ts_last - initialIntervalMSEC; //TODO - 1000;
                 console.log('ts_last=' + ts_last + ', initialIntervalMSEC=' + 
                     initialIntervalMSEC);
+                if (displayStart) {
+                    displayStart = Math.min(displayStart, tsLastValues);
+                } else {
+                    displayStart = tsLastValues;
+                }
                 if (ts_first > 0) {
                     ts_first = ts_first - 1;
                 }
@@ -1177,24 +1184,36 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //------------------- set night background -------------------------------
         if (vLog.chartHeader.nightBackground) {
             var start = vLog.chartValues[0][0];
+            //console.log('displayStart='+displayStart+' '+ch_utils.userTime(displayStart));
+            if (displayStart) {
+                start = Math.min(displayStart,vLog.chartValues[0][0]);
+            }
             var stop = vLog.chartValues[lengthChartValues-1][0];
+            //console.log('displayEnd='+displayEnd+' '+ch_utils.userTime(displayEnd));
+            if (displayEnd) {
+                stop = Math.max(displayEnd,vLog.chartValues[lengthChartValues-1][0]);
+            }
             var nightArray = nightTimes.array(start, stop);
     
-            //build night annotations box
+            //build new night annotations boxes
+            config.options.plugins.annotation.annotations = {};
             if (nightArray.length > 0) {
                 nightArray.forEach(function(itemNight2, ix) {
-                    config.options.plugins.annotation.annotations['box' + ix] = {
-                        type: 'box',
-                        drawTime: 'beforeDraw',
-                        xMin: itemNight2.start,
-                        xMax: itemNight2.end,
-                        backgroundColor: ch_utils.night.backColor || '#cccccc60',
-                        borderWidth: 0
-                    };
+                    if (itemNight2.end > start && itemNight2.start < stop) {
+                        config.options.plugins.annotation.annotations['box' + ix] = {
+                            type: 'box',
+                            drawTime: 'beforeDraw',
+                            xMin: Math.max(itemNight2.start, start),
+                            xMax: Math.min(itemNight2.end, stop),
+                            backgroundColor: ch_utils.night.backColor || '#cccccc60',
+                            borderWidth: 0
+                        };
+                    }
                 });
-                //console.log('annotations' ,
-                //config.options.plugins.annotation.annotations);
+                //console.log('annotations', config.options.plugins.annotation.annotations);
             }
+            displayStart = undefined;
+            displayEnd = undefined;
         }
 
         //------------------- set scales and ticks -------------------------------
@@ -1903,6 +1922,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     function drawLogsChart(request_mode, from, to) {
         //console.log('drawLogsChart');
+       
+        //for night coloring
+        if (request_mode === 'REQUEST_INTERVAL') {
+            displayStart = from;
+            displayEnd = to;
+        }
+
         errorMessage = undefined;
         var varCanvasEl = document.getElementById("canvas");
         varCanvasEl.style.display = "inherit";
@@ -2050,7 +2076,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.buttonText('dataJSON', 2);
         ch_utils.buttonText('chartIndex', 13);
         ch_utils.buttonText('configuration', 1);
-        ch_utils.buttonText('snapshot', 31);
 
         var htmlText = '<center><b>';
         htmlText += '<em>' + vLog.chartHeader.chartTitle + '</em>';
@@ -2112,6 +2137,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.buttonVisible('textTooltip', false);
         ch_utils.buttonVisible('textShowIx', false);
         ch_utils.buttonVisible('postcalcButton', false);
+        ch_utils.buttonVisible('adHocCalcButton', false);
+        ch_utils.buttonVisible('snapshot', false);
+        ch_utils.buttonVisible('expand', false);
 
         document.getElementById('htmlText').innerHTML = htmlText;
     } //buildErrorHTML
@@ -2533,6 +2561,37 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //shiftLeft
 
     function do_zoom(from, to) {
+/*        
+        //------------------- set night background -------------------------------
+        if (vLog.chartHeader.nightBackground && to > endTime) {
+            var start = vLog.chartValues[0][0];
+            var stop = to;
+            if (displayStart) {
+                start = Math.min(displayStart,vLog.chartValues[0][0]);
+            }
+            var nightArray = nightTimes.array(start, stop);
+            //build new night annotations boxes
+            config.options.plugins.annotation.annotations = {};
+            if (nightArray.length > 0) {
+                nightArray.forEach(function(itemNight2, ix) {
+                    if (itemNight2.end > start && itemNight2.start < stop) {
+                        config.options.plugins.annotation.annotations['box' + ix] = {
+                            type: 'box',
+                            drawTime: 'beforeDraw',
+                            xMin: Math.max(itemNight2.start, start),
+                            xMax: Math.min(itemNight2.end, stop),
+                            backgroundColor: ch_utils.night.backColor || '#cccccc60',
+                            borderWidth: 0
+                        };
+                    }
+                });
+            }
+            //console.log('annotations', config.options.plugins.annotation.annotations);
+            displayStart = undefined;
+            displayEnd = undefined;
+            
+        }
+*/
         isZoomed = true;
         window.myLine.zoomScale('x', {
             min: from,
@@ -2569,6 +2628,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //console.log('requestInterval: from='+from+' to='+to);
         console.log('requestInterval: from=' + ch_utils.userTime(from) + 
             ' to=' + ch_utils.userTime(to));
+
+        //for night coloring
+        displayStart = from;
+        displayEnd = to;
+
         ch_utils.buttonVisible("refreshCheckbox", false);
         doRefresh = false;
         setRefreshInterval(doRefresh);
@@ -2665,6 +2729,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
         console.log(data.length + ' values received: ' +
             ch_utils.userTime(data[0][0]) + ' ' +
             ch_utils.userTime(data[data.length - 1][0]));
+
+        //for night coloring
+        if (from > 0) {
+            displayStart = from;
+        } else {
+            displayStart = undefined;
+        }
 
         vLog.chartValues = data.concat(vLog.chartValues);
         tsLastValues = vLog.chartValues[vLog.chartValues.length - 1][0];

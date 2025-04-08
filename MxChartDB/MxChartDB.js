@@ -14,7 +14,7 @@
 //h Resources:    MxBaseModule
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-02-11/peb
+//h Version:      V3.3.2 2025-04-01/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -37,6 +37,7 @@
 //v               V2.0.1 2024-05-01/peb [+]skip if device level already stored 
 //v               V2.3.0 2024-05-07/peb [+]after insert wait for response before
 //v                                        next insert
+//v               V3.3.3 2025-03-26/peb [x]fix bug at retry init
 //v               [x]fixed
 //v               [*]reworked, changed
 //v               [-]removed
@@ -61,8 +62,8 @@ MxChartDB.prototype.start = function(config) {
     var self = this;
 
     self.MODULE = 'MxChartDB.js';
-    self.VERSION = 'V3.3.0';
-    self.WRITTEN = '2025-02-11/peb';
+    self.VERSION = 'V3.3.2';
+    self.WRITTEN = '2025-04-01/peb';
 
     self.LEAST_API_VERSION = '1.1.0';
     self.POLL_INIT = 999;
@@ -200,6 +201,7 @@ MxChartDB.prototype.start = function(config) {
     self.POLL_TIMER_DELAY = self.POLL_TIMER;
     self.timerId_repeat_post = undefined;
     self.timerId_init = undefined;
+    self.logging_save = self.config.logging;
 
     self.last_ts_pending = undefined;
     self.flag_notifyConnectionFault = undefined;
@@ -249,14 +251,18 @@ MxChartDB.prototype.initExec = function() {
     var self = this;
     self.now = Date.now(); //milliseconds
 
-    //b initialisation
-    //----------------
-    var f = 'MxChartDB_init.js';
-    f = self.moduleBasePath() + '/' + f;
-    self.info('executing '+f+'...');
-	executeFile(f);
-    init(self);
-    init = undefined;
+    //b start initialization with id specific delay
+    //---------------------------------------------
+    self.timerId_delay = setTimeout(function() {
+        self.timerId_delay = undefined;
+        var f = 'MxChartDB_init.js';
+        f = self.moduleBasePath() + '/' + f;
+        self.info('executing '+f+'...');
+	    executeFile(f);
+
+        init(self);
+        init = undefined;
+    }, self.id*2);
 }; //initExec
 
 //h-------------------------------------------------------------------------------
@@ -315,6 +321,11 @@ MxChartDB.prototype.stop = function() {
 MxChartDB.prototype.onPoll = function(n, i, t, l, m) {
 'use strict';
     var self = this;
+
+    //reset temporary logging after successful init retry:
+    if (!self.POLL_INIT) {
+        self.config.logging = self.logging_save;
+    }
 
     //b onPoll
     //--------
@@ -875,15 +886,30 @@ MxChartDB.prototype.AssertionError = function(dataString) {
 MxChartDB.prototype.checkRetry = function() {
 'use strict';
     var self = this;
+    //self.logging_save = self.config.logging;
+    //self.config.logging = true;
 
     self.data_buffer = [];
 
     if (!self.timerId_init) {
+        self.last_ts_pending = undefined;
+        if (self.timerId_repeat_post) {
+            clearTimeout(self.timerId_repeat_post);
+            self.timerId_repeat_post = undefined;
+        }
+
         self.info('retry init after '+self.constants.retry_init_min+' minutes...');
         self.timerId_init = setTimeout(function() {
+            self.last_ts_pending = undefined;
+            if (self.timerId_repeat_post) {
+                clearTimeout(self.timerId_repeat_post);
+                self.timerId_repeat_post = undefined;
+            }
+
+            self.info('new attempt for init...');
             self.timerId_init = undefined;
             self.onPoll(self.POLL_INIT);
-        }, self.constants.retry_init_min * 60 * 1000);
+        }, self.constants.retry_init_min * 60 * 1000 + self.id*2);
     }
 }; //checkRetry
 

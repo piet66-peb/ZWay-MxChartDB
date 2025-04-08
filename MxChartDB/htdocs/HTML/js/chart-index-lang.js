@@ -201,4 +201,16 @@
             de: 'inaktive Charts ',
             en: 'inactive charts '
         },
+        {//50
+            de: 'alle Charts auswählen',
+            en: 'mark all charts'
+        },
+        {//51
+            de: 'Auswahl zurücksetzen',
+            en: 'unmark all charts'
+        },
+        {//52
+            de: ' ⌫ ',
+            en: ' ⌫ '
+        },
     ];

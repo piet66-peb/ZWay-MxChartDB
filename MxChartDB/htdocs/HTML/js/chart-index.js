@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2024-12-21/peb
+//h Version:      V2.1.0 2025-03-21/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -24,7 +24,7 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 5 */
-/*globals ch_utils, html_params, myFunction, sorttable */
+/*globals ch_utils, html_params, myFunction, sorttable, busy_indicator */
 'use strict';
 
 //-----------
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2024-12-21/peb';
+var WRITTEN='2025-03-21/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -51,11 +51,16 @@ var target_chart, target_data;
 var api;
 var IndexDBName;
 var tableNameIndex;
+var busyi;
 
 //------
 //b Main
 //------
 document.addEventListener("DOMContentLoaded", function(event) {
+     busyi = new busy_indicator(document.getElementById("busybox"),
+                                document.querySelector("#busybox div"));
+    busyi.hide();
+
     ch_utils.getLanguage();
     
     //------- program code -------------------------
@@ -96,6 +101,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     ch_utils.buttonText('inactivesT', 49);
     ch_utils.buttonText('orphanedT', 39);
     ch_utils.buttonText('snapshotsT', 40);
+    ch_utils.buttonText('delInput', 52);
 
     //get constants.js parameters
     var consts = ch_utils.evalConstants();
@@ -280,6 +286,8 @@ function buildIndexList(indexBuffer) {
     var framePage = ch_utils.buildMessage(45);
     var frameText = ch_utils.buildMessage(47);
     var correct_chartid = ch_utils.buildMessage(48);
+    var frameAll = ch_utils.buildMessage(50);
+    var frameClear = ch_utils.buildMessage(51);
 
     var htmlText = '<table id="myTable" class="sortable">';
     htmlText += '<colgroup>';
@@ -308,6 +316,10 @@ function buildIndexList(indexBuffer) {
     htmlText += '<th id="framing" class="sorttable_nosort" >'+
                     '<button type="button"  title="'+frameText+'"'+
                         ' onclick="framing()">'+framePage+'</button>'+
+                    '<button type="button"  title="'+frameAll+'"'+
+                        ' onclick="framing(1)">+</button>'+
+                    '<button type="button"  title="'+frameClear+'"'+
+                        ' onclick="framing(2)">-</button>'+
                 '</th>';
     htmlText += '</tr>';
     if (ADMIN === 'YES') {
@@ -554,28 +566,49 @@ function printHTML(indexList) {
     sorttable.makeSortable(el);
 } //printHTML
 
-function framing() {
-    var chartList = '';
+function framing(mark_unmark) {
     var checkboxList = document.querySelectorAll('[type="checkbox"]');
-    for (var i = 0; i < checkboxList.length; i++) {
-        var id = checkboxList[i].id.split('+');
-        if (id[0] === 'framing') {
-            if (checkboxList[i].checked) {
-                if (chartList) {
-                    chartList += ',';
+    var i, id;
+    if (mark_unmark) {
+        for (i = 0; i < checkboxList.length; i++) {
+            id = checkboxList[i].id.split('+');
+            if (id[0] === 'framing') {
+                //check if visible
+                if (checkboxList[i].offsetParent !== null) {
+                    if (mark_unmark === 2 && checkboxList[i].checked) {
+                        checkboxList[i].checked = false;
+                    } else
+                    if (mark_unmark === 1 && !checkboxList[i].checked) {
+                        checkboxList[i].checked = true;
+                    }
                 }
-                chartList += id[1];
             }
         }
-    }
-    if (chartList) {
-        var url = './frame.html'+'?charts='+chartList;
-        window.open(url, "_blank");
     } else {
-        ch_utils.alertMessage(46);
+        var chartList = '';
+        for (i = 0; i < checkboxList.length; i++) {
+            id = checkboxList[i].id.split('+');
+            if (id[0] === 'framing') {
+                //check if visible
+                if (checkboxList[i].offsetParent !== null) {
+                    if (checkboxList[i].checked) {
+                        if (chartList) {
+                            chartList += ',';
+                        }
+                        chartList += id[1];
+                    }
+                }
+            }
+        }
+        if (chartList) {
+            var url = './frame.html'+'?charts='+chartList;
+            window.open(url, "_blank");
+        } else {
+            ch_utils.alertMessage(46);
+        }
+        filterInput = document.getElementById("myInput");
+        filterInput.focus();
     }
-    filterInput = document.getElementById("myInput");
-    filterInput.focus();
 } //framing
 
 function changeActive(chartId, checked) {
@@ -593,8 +626,10 @@ function changeActive(chartId, checked) {
     //get instance data
     var url = '/ZAutomation/api/v1/instances/'+instNo;
     ch_utils.ajax_get(url, success_get);
+    busyi.show();
 
     function success_get (response) {
+        busyi.hide();
         var data = response.data;
         var instNo = data.id;
         var activeNew = instancesList[chartId].active;
@@ -604,6 +639,7 @@ function changeActive(chartId, checked) {
     }
 
     function success_put(response) {
+        busyi.hide();
         var instNo = response.data.id;
         ch_utils.alertMessage(37, instNo, response.data.active);
         window.location.reload();

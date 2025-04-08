@@ -13,13 +13,14 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-02-07/peb
+//h Version:      V3.3.3 2025-04-01/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
 //v                                     [x]correct some response status
 //v                                     [+]bulk inserts
 //v               V2.0.1 2024-05-12/peb [-]self.config.chartInterval is obsolete
+//v               V3.3.3 2025-03-26/peb [x]fix bug at retry init
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -32,8 +33,8 @@
 //b Constants
 //-----------
 //var MODULE='MxChartDB_init.js';
-//var VERSION='V3.3.0';
-//var WRITTEN='2025-02-07/peb';
+//var VERSION='V3.3.3';
+//var WRITTEN='2025-04-01/peb';
 
 //-----------
 //b Functions
@@ -695,7 +696,7 @@ var init = function (self) {
     //h Purpose:      
     //h
     //h-------------------------------------------------------------------------------
-    function checkDataControl (chartHeaderStored) {
+    function checkDataControl(chartHeaderStored) {
         self.log('*** checkDataControl');
     
         //b data control
@@ -705,12 +706,12 @@ var init = function (self) {
         if (self.config.dataControl.dc_method === 'dc_clear') {
             self.info('building up new chart');
             doWhenChanged = 'remove';
-            self.config.dataControl.dc_method = 'dc_normal';
+            //self.config.dataControl.dc_method = 'dc_normal';    //skip till precessing successful
         } else
         if (self.config.dataControl.dc_method === 'dc_continue') {
             self.info('continuing current chart with new devices');
             doWhenChanged = 'continue';
-            self.config.dataControl.dc_method = 'dc_normal';
+            //self.config.dataControl.dc_method = 'dc_normal';    //skip till precessing successful
         }
         self.log('doWhenChanged', doWhenChanged);
 
@@ -724,11 +725,31 @@ var init = function (self) {
     
     //h-------------------------------------------------------------------------------
     //h
+    //h Name:         resetDataControl
+    //h Purpose:      
+    //h
+    //h-------------------------------------------------------------------------------
+    function resetDataControl() {
+        self.log('*** resetDataControl');
+    
+        //b data control
+        //--------------
+        self.log('------ dataControl', self.config.dataControl.dc_method);
+        if (self.config.dataControl.dc_method === 'dc_clear') {
+            self.config.dataControl.dc_method = 'dc_normal';
+        } else
+        if (self.config.dataControl.dc_method === 'dc_continue') {
+            self.config.dataControl.dc_method = 'dc_normal';
+        }
+    } //resetDataControl
+    
+    //h-------------------------------------------------------------------------------
+    //h
     //h Name:         removeOldDataset
     //h Purpose:      
     //h
     //h-------------------------------------------------------------------------------
-    function removeOldDataset (chartHeaderStored, doWhenChanged) {
+    function removeOldDataset(chartHeaderStored, doWhenChanged) {
         self.log('*** removeOldDataset');
 
         //b delete all sensor data and exchange header
@@ -787,7 +808,7 @@ var init = function (self) {
         //----------------------------
         if (chartHeaderStoredStringified === chartHeaderStringified)  {
             self.log('headerdata not changed');
-            storeNewHeaderData = true;
+            storeNewHeaderData = false;
             storeNewValueData  = true;
         } else
         //b else if header data changed
@@ -938,6 +959,11 @@ var init = function (self) {
     function initExec1 () {
         self.log('*** initExec1');
     
+        self.error = undefined;
+        self.POLL_INIT = undefined;     //meaning: init completed, no repetition any more
+        self.log('self.POLL_INIT', self.POLL_INIT);
+        resetDataControl();
+
         self.log('initExec1', 'storeNewValueData='+storeNewValueData);
         if (!storeNewValueData) {return;}
     
@@ -972,10 +998,6 @@ var init = function (self) {
                 month: null
             });
         }
-
-        self.error = undefined;
-        self.POLL_INIT = undefined;     //meaning: init completed, no repetition any more
-        self.log('self.POLL_INIT', self.POLL_INIT);
 
         //b run first poll (=>onPoll)
         //---------------------------

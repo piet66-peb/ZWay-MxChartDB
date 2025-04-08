@@ -9,11 +9,27 @@
       <!--<base href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/">-->
       <title>Chart Administration</title>
       <link rel="shortcut icon" href="../icon.png">
-      <script src="libs/sorttable.min.js"></script> 
-      <script src='js/chart-index-lang.js'></script>
-      <script src='js/ch_utils.js'></script>
-      <script src='../constants.js'></script>
-      <script src='js/chart-index.js'></script>
+      <link rel='stylesheet' href='css/busy_indicator.css'>
+
+      <script defer="" src="libs/sorttable.min.js"></script> 
+      <script defer="" src='js/chart-index-lang.js'></script>
+      <script defer="" src='js/ch_utils.js'></script>
+      <script defer="" src='../constants.js'></script>
+      <script defer="" src='js/chart-index.js'></script>
+      <script defer="" src='libs/busy_indicator.min.js'></script>
+
+      <style>
+         .fog_div{
+         display:none;
+         position:fixed;
+         top:0;
+         left:0;
+         height:100%;
+         width:100%;
+         z-index:100;
+         background-color:rgba(30,30,30,.5)}
+         #busybox.show{display:block}
+      </style>
 
       <style type="text/css">
          table {
@@ -51,6 +67,8 @@
       <div>
           <input type="text" id="myInput" onkeyup="myFunction()" 
                 placeholder="Search for names..">      
+          <button type="button" id="delInput" onclick="del()"> - </button>
+
           <input type="checkbox" id="actives" checked onchange="display(this)">
           <label id="activesT">actives charts</label>
           <input type="checkbox" id="inactives" checked onchange="display(this)">
@@ -64,6 +82,18 @@
       <input type="file" accept=".json" id="selectFile">
       </div>
 
+      <!-- busy indicator -->
+      <div id='busybox' class='fog_div'>
+         <div>&nbsp;</div>
+      </div>
+
+      <script>
+        function del() {
+            document.getElementById("myInput").value = '';
+            myFunction();
+            framing(2);
+        }
+      </script>
       <script>
         function myFunction() {
           var input, filter, table, tr, td, i, txtValue, doDisp;
@@ -88,6 +118,7 @@
                     tr[i].style.display = "none";
                   }
           }
+          input.focus();
         }
       </script>
 

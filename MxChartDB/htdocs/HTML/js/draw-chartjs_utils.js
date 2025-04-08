@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-02-07/peb
+//h Version:      V3.3.0 2025-04-05/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.3.0';
-var WRITTEN='2025-02-07/peb';
+var WRITTEN='2025-04-05/peb';
 
 //b common: common functions
 //--------------------------
@@ -604,83 +604,52 @@ document.getElementById('adHocCalcButton').onclick = function(event) {
 //b nightTimes: compute sunrise and sunset array depending date, longitude, latitude
 //----------------------------------------------------------------------------------
 var nightTimes = {
-    array: function (start, stop, lat, lng, tz) {
+    array: function (start, stop) {
         //console.log('nightTimes.array');
 
+        //get geo position
         var loc = ch_utils.night;
         //console.log(loc);
         if (!loc || !loc.longitude || !loc.latitude) {
             ch_utils.alertMessage(40);
             return [];
         }
-        lng = loc.longitude;
-        lat = loc.latitude;
-        tz = loc.tz;
+        var lng = loc.longitude;
+        var lat = loc.latitude;
+        var tz = loc.tz;
 
-        var d1 = new Date(new Date(start).toISOString().split("T")[0]).getTime();
-        var d2 = new Date(new Date(stop).toISOString().split("T")[0]).getTime();
-        //console.log('from='+g.usertime(d1)+', '+'to='+g.usertime(d2));
+        //add 1 day at both ends
         var daylen = 1000 * 60 * 60 * 24;
-        var daystart = d1; // - daylen;
+        var daystart = start - daylen;
+        var daystop = stop + daylen;
+        //console.log('interval start='+g.usertime(start)+' > '+g.usertime(daystart));
+        //console.log('interval stop='+g.usertime(stop)+' > '+g.usertime(daystop));
 
-        //get all [sunraise, sunset] for every day
-        var ret = [], i = -1;
+        //local timestamps (utc 00:00) of first and last day
+        var d1 = new Date(new Date(daystart).toISOString().split("T")[0]).getTime();
+        var d2 = new Date(new Date(daystop).toISOString().split("T")[0]).getTime();
+        //console.log('d1='+g.usertime(d1)+', '+'d2='+g.usertime(d2));
+
+        //build night array: one line [start, end] for every night
+        var ret, i = -1;
+        var nightArray = [], sunset;
         while (true) {
             i++;
-            var daycurr = daystart + daylen*i;
+            var daycurr = d1 + daylen*i;
             if (daycurr > d2) {break;}
-            ret[i] = suntimes(daycurr, lat, lng, tz);
+            ret = suntimes(daycurr, lat, lng, tz);
+            //console.log('sunraise='+g.usertime(ret[0])+', '+'sunset='+g.usertime(ret[1]));
+            if (i > 0) {
+                nightArray.push({start: sunset, end: ret[0]});
+            }
+            sunset = ret[1];
         }
-        //console.log(ret);
-        var len = ret.length;
-        if (!len) {return [];}
-        
-        //change [sunraise, sunset] to [sunset, sunraise]
-        var ret2 = [];
-        var sunraise = null, sunset = null;
-        for (i = 0; i < len; i++) {
-            sunraise = ret[i][0];
-            ret2.push([sunset, sunraise]);
-            sunset = ret[i][1];
-        }
-        ret2.push([sunset, null]);
-        //console.log(ret2);
-        //for (i = 0; i < ret2.length; i++) {
-        //    console.log(i+': '+
-        //        ch_utils.userTime(ret2[i][0])+'-'+
-        //        ch_utils.userTime(ret2[i][1]));
-        //}
 
-        //console.log('start='+g.usertime(start));
-        //console.log('stop='+g.usertime(stop));
-        //build nightArray
-        var nightArray = [], itemNight;
-        for (i = 0; i <= len; i++) {
-            itemNight = {};
-            if (ret2[i][1] && ret2[i][1] <= start) {
-                continue;
-            }
-            if (ret2[i][0] >= stop) {
-                continue;
-            }
-            if (!ret2[i][0] || ret2[i][0] <= start) {
-                itemNight.start = start;
-            } else
-            if (ret2[i][0] < stop) {
-                itemNight.start = ret2[i][0];
-            }
-            if (!ret2[i][1] || ret2[i][1] >= stop) {
-                itemNight.end = stop;
-            } else {
-                itemNight.end = ret2[i][1];
-            }
-            nightArray.push(itemNight);
-        }
         //console.log('nightArray new', nightArray);
-        //for (var i_na = 0; i_na < nightArray.length; i_na++) {
-        //    console.log(i_na+': '+
-        //        ch_utils.userTime(nightArray[i_na].start)+'-'+
-        //        ch_utils.userTime(nightArray[i_na].end));
+        //for (i = 0; i < nightArray.length; i++) {
+        //    console.log(i+': '+
+        //        ch_utils.userTime(nightArray[i].start)+'-'+
+        //        ch_utils.userTime(nightArray[i].end));
         //}
         return nightArray;
     },
