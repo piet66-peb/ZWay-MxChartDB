@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-04-05/peb
+//h Version:      V3.3.0 2025-04-13/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.3.0';
-var WRITTEN='2025-04-05/peb';
+var WRITTEN='2025-04-13/peb';
 
 //b common: common functions
 //--------------------------
@@ -604,6 +604,35 @@ document.getElementById('adHocCalcButton').onclick = function(event) {
 //b nightTimes: compute sunrise and sunset array depending date, longitude, latitude
 //----------------------------------------------------------------------------------
 var nightTimes = {
+    annotations: function (start, stop) {
+    //usage:
+    //config.options.plugins.annotation.annotations = 
+    //                  nightTimes.annotations(start, stop);
+        //console.log('nightTimes.annotations');
+
+        //get night times
+        var nightArray = nightTimes.array(start, stop);
+
+        //build new night annotation boxes
+        var annotations = {};
+        if (nightArray.length > 0) {
+            nightArray.forEach(function(itemNight2, ix) {
+                if (itemNight2.end > start && itemNight2.start < stop) {
+                    annotations['box' + ix] = {
+                        type: 'box',
+                        drawTime: 'beforeDraw',
+                        xMin: Math.max(itemNight2.start, start),
+                        xMax: Math.min(itemNight2.end, stop),
+                        backgroundColor: ch_utils.night.backColor || '#cccccc60',
+                        borderWidth: 0
+                    };
+                }
+            });
+        }
+        //console.log('annotations', annotations);
+        return annotations;
+    },
+
     array: function (start, stop) {
         //console.log('nightTimes.array');
 

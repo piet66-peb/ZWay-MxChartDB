@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-04-08/peb
+//h Version:      V3.3.0 2025-04-13/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -38,7 +38,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.3.0';
-var WRITTEN = '2025-04-08/peb';
+var WRITTEN = '2025-04-13/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -1193,25 +1193,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (displayEnd) {
                 stop = Math.max(displayEnd,vLog.chartValues[lengthChartValues-1][0]);
             }
-            var nightArray = nightTimes.array(start, stop);
-    
-            //build new night annotations boxes
-            config.options.plugins.annotation.annotations = {};
-            if (nightArray.length > 0) {
-                nightArray.forEach(function(itemNight2, ix) {
-                    if (itemNight2.end > start && itemNight2.start < stop) {
-                        config.options.plugins.annotation.annotations['box' + ix] = {
-                            type: 'box',
-                            drawTime: 'beforeDraw',
-                            xMin: Math.max(itemNight2.start, start),
-                            xMax: Math.min(itemNight2.end, stop),
-                            backgroundColor: ch_utils.night.backColor || '#cccccc60',
-                            borderWidth: 0
-                        };
-                    }
-                });
-                //console.log('annotations', config.options.plugins.annotation.annotations);
-            }
+            config.options.plugins.annotation.annotations = 
+                                nightTimes.annotations(start, stop);
             displayStart = undefined;
             displayEnd = undefined;
         }
@@ -2496,6 +2479,18 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     document.getElementById('recoverData').onclick = function(event) {
         if (isZoomed) {
+            //------------------- set night background -------------------------------
+            //workaround for incompatibility of annotation plugin with
+            //chart.js/ zoom plugin
+            if (vLog.chartHeader.nightBackground) {
+                var start = vLog.chartValues[0][0];
+                var stop = ts_last; //reset max limit of night array
+                config.options.plugins.annotation.annotations = 
+                                    nightTimes.annotations(start, stop);
+                displayStart = undefined;
+                displayEnd = undefined;
+            }
+
             startRun = Date.now();
             isZoomed = false;
             window.myLine.resetZoom();
@@ -2561,37 +2556,17 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //shiftLeft
 
     function do_zoom(from, to) {
-/*        
         //------------------- set night background -------------------------------
-        if (vLog.chartHeader.nightBackground && to > endTime) {
-            var start = vLog.chartValues[0][0];
+        if (vLog.chartHeader.nightBackground) {
+            var start = from;
             var stop = to;
-            if (displayStart) {
-                start = Math.min(displayStart,vLog.chartValues[0][0]);
-            }
-            var nightArray = nightTimes.array(start, stop);
-            //build new night annotations boxes
-            config.options.plugins.annotation.annotations = {};
-            if (nightArray.length > 0) {
-                nightArray.forEach(function(itemNight2, ix) {
-                    if (itemNight2.end > start && itemNight2.start < stop) {
-                        config.options.plugins.annotation.annotations['box' + ix] = {
-                            type: 'box',
-                            drawTime: 'beforeDraw',
-                            xMin: Math.max(itemNight2.start, start),
-                            xMax: Math.min(itemNight2.end, stop),
-                            backgroundColor: ch_utils.night.backColor || '#cccccc60',
-                            borderWidth: 0
-                        };
-                    }
-                });
-            }
-            //console.log('annotations', config.options.plugins.annotation.annotations);
+            start = Math.min(start, vLog.chartValues[0][0]);
+            config.options.plugins.annotation.annotations = 
+                                nightTimes.annotations(start, stop);
             displayStart = undefined;
             displayEnd = undefined;
-            
         }
-*/
+
         isZoomed = true;
         window.myLine.zoomScale('x', {
             min: from,
