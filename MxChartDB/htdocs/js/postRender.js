@@ -907,6 +907,9 @@ function modulePostRender(control) {
 
     /* check arithmetic for correct syntax */
     /* to test the formula with eval we must enter some values: */
+    var MxC = function() {
+        return null;
+    };
     var colorInvalid ="rgba(255,0,0,0.2)";
     function checkFormula(alpacaId) {
         var val = $("#"+alpacaId).val();

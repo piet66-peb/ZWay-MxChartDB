@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.3.3 2025-04-01/peb
+//h Version:      V3.3.3 2025-06-04/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -34,7 +34,7 @@
 //-----------
 //var MODULE='MxChartDB_init.js';
 //var VERSION='V3.3.3';
-//var WRITTEN='2025-04-01/peb';
+//var WRITTEN='2025-06-04/peb';
 
 //-----------
 //b Functions
@@ -267,17 +267,36 @@ var init = function (self) {
         );
     } //check_create_user_db
     
+    function is_chartid_used (chartIdTest) {
+        self.log('*** is_chartid_used');
+
+        //b check if chart id is already used by other instance
+        //-----------------------------------------------------
+        var err = 'Chart id '+chartIdTest+' is already used by the active instance ';
+        Object.keys(self.controller.instances).forEach(function(ix) {
+            var i = self.controller.instances[ix];
+            if (i.moduleId === self.moduleName && 
+                i.id !== self.id &&
+                i.active === true &&
+                i.params.chartId === chartIdTest) {
+                self.notifyError(err+i.id+'/'+i.title);
+                return true;
+            }
+        });
+        return false;
+    } // is_chartid_used
+
     function init1 () {
         self.log('*** init1');
-        //b set chart index
-        //-----------------
+
+        //b set chart index for new chart definition
+        //------------------------------------------
         var chartIdTest = self.moduleName + self.id;
-        if (!self.config.chartId ||
-            self.config.dataControl.dc_method === 'dc_clear') {
+        if (!self.config.chartId) {
             self.config.chartId = chartIdTest;
             self.config.dataControl.dc_method = 'dc_clear';
         }
-    
+
         //b check if wrong chart id in configuration
         //------------------------------------------
         var err;
@@ -287,26 +306,18 @@ var init = function (self) {
                    ' for repair';
         if (chartIdTest !== self.config.chartId) {
             err = 'wrong Chart id in configuration';
-            self.notifyError(err+'<br>'+
+            self.notifyError(err+',<br>'+
                              'should be '+chartIdTest+' instead of '+self.config.chartId+
-                             help
-            );
-            throw err;
+                             help);
+            if (is_chartid_used(chartIdTest)) {
+                throw err;
+            } else {
+                self.notifyError('starting new chart '+chartIdTest+',<br'>+
+                                 'chart '+self.config.chartId+' may be orphaned now');
+                self.config.chartId = chartIdTest;
+            }
         }
     
-        //b check if chart id is already used by other instance
-        //-----------------------------------------------------
-        Object.keys(self.controller.instances).forEach(function(ix) {
-            var i = self.controller.instances[ix];
-           if (i.moduleId === self.moduleName && 
-                i.id !== self.id &&
-                (i.active === true || i.active === 'true') &&
-                i.params.chartId === chartIdTest) {
-                err = 'ChartId '+chartIdTest+' is already used by other MxChartDB instance '+i.id;
-                self.notifyError(err+help);
-                throw err;
-                }
-        });
         self.log('self.config.chartId', self.config.chartId);
         self.tableNameValues = self.config.chartId;
         self.tableNameHeader = self.config.chartId+'_Header';

@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-04-13/peb
+//h Version:      V3.3.0 2025-06-04/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.3.0';
-var WRITTEN='2025-04-13/peb';
+var WRITTEN='2025-06-04/peb';
 
 //b common: common functions
 //--------------------------
@@ -45,6 +45,80 @@ var common = {
         }
     } //concatObjects
 }; //common,
+
+//b MxC_utils: MxC functions
+//--------------------------------
+var MxC_utils = {
+    //h
+    //h test_MxC_used
+    //h test whether MxC(param1 [, param2]) function is used anywhere:
+    //h true|false = test_MxC_used(header);
+    //-------------------------------------------------------------------------
+    test_MxC_used: function (header, api) {
+        var match = JSON.stringify(header).match(/MxC\s*\([^\),]*,?[^\),]*\)/);
+        if (match) {
+            return true;
+        } else {
+            return false;
+        }
+    }, // test_MxC_used
+
+    //h
+    //h MxC
+    //h returns the constant value:
+    //h result = MxC_utils.MxC_used(MxC_data, MxC_name, ts);
+    //-------------------------------------------------------------------------
+    MxC: function(MxC_data, MxC_name, ts) {
+        if (!MxC_name) {return null;}
+        if (!MxC_data[MxC_name]) {
+            alert('MxC: unknown constant ' + MxC_name);
+            return null;
+        }
+
+        var name_obj = MxC_data[MxC_name];
+        var ix_found;
+        var ret;
+
+        if (ts === undefined) {
+            ix_found = 0;
+        } else {
+            name_obj.reverse(function(a,b) {    //sort:    -fist nulls
+                return a[0]-b[0];               //         - then others up
+                                                //reverse: -first others down
+                                                //         - then nulls
+            });
+            for (var i = 0; i++; i < name_obj.length) {
+                if (name_obj[i][0] > 0 &&
+                    ts >= name_obj[i][0]) {
+                    ix_found = i;
+                    break;
+                }
+                if (name_obj[i][0] === null) {
+                    ix_found = i;
+                    break;
+                }
+            }
+        }
+        //alert('ix_found='+ix_found);
+        if (ix_found === undefined) {return null;}
+        var value = name_obj[ix_found][2];
+        //alert('value='+value);
+        if (value === null) {return null;}
+        var type = name_obj[ix_found][3];
+        //alert('type='+type);
+        if (type === 'string') {return value;}
+        if (type === 'number') {
+            ret = value-0;
+            if (Number.isNaN(ret)) {
+                alert('MxC: wrong value/type '+ value + '/'+type+
+                    ' for ' + MxC_name +'(NaN)');
+            }
+            return null;
+        }
+        alert('MxC: unknown value type '+type+ ' for ' + MxC_name);
+        return null;
+    }
+}; //MxC_utils,
 
 //b header_utils: header functions
 //--------------------------------

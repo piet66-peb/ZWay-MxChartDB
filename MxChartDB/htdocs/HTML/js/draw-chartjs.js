@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-04-13/peb
+//h Version:      V3.4.0 2025-06-07/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -23,6 +23,7 @@
 //v                                     [*]post calc
 //v               V3.1.3 2025-02-02/peb [+]date picker: end time
 //v               V3.2.0 2025-02-03/peb [+]ad hoc analysis
+//v               V3.4.0 2025-06-01/peb [+]MxC
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -30,15 +31,15 @@
 
 /*jshint esversion: 6 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils, header_utils, postcalc, g: true, nightTimes */
+/*globals ch_utils, header_utils, MxC_utils, postcalc, g: true, nightTimes */
 'use strict';
 
 //-----------
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.3.0';
-var WRITTEN = '2025-04-13/peb';
+var VERSION = 'V3.4.0';
+var WRITTEN = '2025-06-07/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -97,6 +98,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     var config_data_datasets_save = [];
     var chartArithmetics;
+    var MxC = function(MxC_name, ts) {
+        return MxC_utils.MxC(MxC_data, MxC_name, ts);    
+    };
+    var MxC_data = {};
 
     //----------- text labels and icons ------------
     var y3Labels = []; //text labels list
@@ -603,6 +608,17 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 read_header(request_mode, from, to);
                 break;
             case 5:
+                //*** test for used MxC constants
+                var MxC_used = MxC_utils.test_MxC_used(vLog.chartHeader, api); 
+
+                if (MxC_used) {
+                    obtain_MxC(request_mode, from, to);
+                } else {
+                    //*** call read_values
+                    program_control(request_mode, from, to);
+                }
+                break;
+            case 6:
                 //console.log('read_values start: '+(Date.now()-startRun)/1000+' sec');
                 if (!vLog.chartHeader.initialInterval ||
                     vLog.chartHeader.initialInterval === 'complete') {
@@ -616,7 +632,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 }
                 read_values(request_mode, initialIntervalMSEC, from, to);
                 break;
-            case 6:
+            case 7:
                 //console.log('prepareData start: '+(Date.now()-startRun)/1000+' sec');
                 try {
                     config.data = prepareData();
@@ -749,6 +765,23 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     } //read_last_ts
 
+    //obtain MxC constants
+    function obtain_MxC (request_mode, from, to) {
+        url = 'http://' + api + '/MxChartDB/MxC/select_next';
+        ch_utils.ajax_get(url, success, fail);
+
+        function success(data) {
+            MxC_data = data[0];
+            //console.log(JSON.stringify(MxC_data));
+            program_control(request_mode, from, to);
+        } //success
+
+        function fail(status, responseText) {
+            console.log('obtain MxC: '+ status + ' ' + responseText);
+            alert('obtain MxC: '+ status + ' ' + responseText);
+        } //fail
+    } //obtain_MxC
+
     //read chart header
     function read_header(request_mode, from, to) {
         //console.log('read_header tsLastHeader old', tsLastHeader);
@@ -794,10 +827,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
 
             if (errText <= 0) {
-                //*** call read_values
+                //*** prepare and enable arithmetics
                 chartArithmetics = 
                     header_utils.prepare_formulas(vLog.chartHeader);
                 postcalc.enable_post_calc('postcalcButton', vLog.chartHeader);
+
+                //*** test for used  = data;MxC constants
                 program_control(request_mode, from, to);
             } else {
                 doRefresh = false;
@@ -1109,7 +1144,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //console.log('chartHeader: '+(Date.now()-startRun)/1000+' sec');
 
         //------------------- set line values data -------------------------------
-
         //b for all data points ip
         //------------------------
         var lengthChartValues = vLog.chartValues.length;
@@ -1182,19 +1216,27 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //console.log('chartValues: '+(Date.now()-startRun)/1000+' sec');
 
         //------------------- set night background -------------------------------
+
         if (vLog.chartHeader.nightBackground) {
-            var start = vLog.chartValues[0][0];
-            //console.log('displayStart='+displayStart+' '+ch_utils.userTime(displayStart));
-            if (displayStart) {
-                start = Math.min(displayStart,vLog.chartValues[0][0]);
+            var start, stop;
+            if (lengthChartValues > 0) {
+                start = vLog.chartValues[0][0];
+                //console.log('displayStart='+displayStart+' '+ch_utils.userTime(displayStart));
+                if (displayStart) {
+                    start = Math.min(displayStart, start); //vLog.chartValues[0][0]);
+                }
+                stop = vLog.chartValues[lengthChartValues-1][0];
+                //console.log('displayEnd='+displayEnd+' '+ch_utils.userTime(displayEnd));
+                if (displayEnd) {
+                    stop = Math.max(displayEnd, stop); //vLog.chartValues[lengthChartValues-1][0]);
+                }
+            } else
+            if (displayStart) {start = displayStart;}
+            if (displayEnd) {stop = displayEnd;}
+            if (start && stop) {
+                config.options.plugins.annotation.annotations = 
+                                    nightTimes.annotations(start, stop);
             }
-            var stop = vLog.chartValues[lengthChartValues-1][0];
-            //console.log('displayEnd='+displayEnd+' '+ch_utils.userTime(displayEnd));
-            if (displayEnd) {
-                stop = Math.max(displayEnd,vLog.chartValues[lengthChartValues-1][0]);
-            }
-            config.options.plugins.annotation.annotations = 
-                                nightTimes.annotations(start, stop);
             displayStart = undefined;
             displayEnd = undefined;
         }
@@ -2714,7 +2756,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         vLog.chartValues = data.concat(vLog.chartValues);
         tsLastValues = vLog.chartValues[vLog.chartValues.length - 1][0];
-        step = 5;
+        step = 6;
         program_control('REQUEST_UPDATE');
         do_zoom((from || startTime), (to || endTime));
     } //process_previous
