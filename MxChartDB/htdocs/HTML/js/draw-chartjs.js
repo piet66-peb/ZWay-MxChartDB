@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.0 2025-06-07/peb
+//h Version:      V3.4.0 2025-06-08/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -39,7 +39,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.4.0';
-var WRITTEN = '2025-06-07/peb';
+var WRITTEN = '2025-06-08/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -1216,23 +1216,19 @@ document.addEventListener("DOMContentLoaded", function(event) {
         //console.log('chartValues: '+(Date.now()-startRun)/1000+' sec');
 
         //------------------- set night background -------------------------------
-
         if (vLog.chartHeader.nightBackground) {
-            var start, stop;
+            var start = displayStart;
+            var stop = displayEnd;
             if (lengthChartValues > 0) {
-                start = vLog.chartValues[0][0];
-                //console.log('displayStart='+displayStart+' '+ch_utils.userTime(displayStart));
-                if (displayStart) {
-                    start = Math.min(displayStart, start); //vLog.chartValues[0][0]);
-                }
-                stop = vLog.chartValues[lengthChartValues-1][0];
-                //console.log('displayEnd='+displayEnd+' '+ch_utils.userTime(displayEnd));
-                if (displayEnd) {
-                    stop = Math.max(displayEnd, stop); //vLog.chartValues[lengthChartValues-1][0]);
-                }
-            } else
-            if (displayStart) {start = displayStart;}
-            if (displayEnd) {stop = displayEnd;}
+                var first = vLog.chartValues[0][0];
+                var last = vLog.chartValues[lengthChartValues-1][0];
+                start = Math.min(first, start || first);
+                stop = Math.max(last, stop || last);
+                //console.log('displayStart='+ch_utils.userTime(displayStart)+
+                //    ', first='+ch_utils.userTime(first)+', start='+ch_utils.userTime(start));
+                //console.log('displayEnd='+ch_utils.userTime(displayEnd)+
+                //    ', last='+ch_utils.userTime(last)+', stop='+ch_utils.userTime(stop));
+            }
             if (start && stop) {
                 config.options.plugins.annotation.annotations = 
                                     nightTimes.annotations(start, stop);
