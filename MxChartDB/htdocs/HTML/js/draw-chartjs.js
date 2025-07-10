@@ -2065,6 +2065,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         } //REQUEST_FIRST
         else {
             //update chart
+console.log('window.myLine.update()');                    
+console.log(config.data);
             window.myLine.update();
             busyi.hide();
             console.log('chart updated: ' + (Date.now() - startRun) / 1000 + 

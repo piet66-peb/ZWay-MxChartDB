@@ -22,7 +22,7 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 6 */
-/*globals ch_utils, suntimes */
+/*globals ch_utils, suntimes, SunCalc */
 'use strict';
 
 //b version data
@@ -151,6 +151,8 @@ var header_utils = {
                 }
             },
             isNight: nightTimes.isNight,
+            azimuth: suncalc.azimuth,
+            altitude: suncalc.altitude,
         };
 
         if (!header.hasOwnProperty('global_js')) {
@@ -773,6 +775,7 @@ var nightTimes = {
         var lat = loc.latitude;
         var tz = loc.tz;
 
+        //get dawn times
         var ret = suntimes(x0, lat, lng, tz);
         if (x0 >= ret[0] && x0 < ret[1]) {
             night = false;
@@ -783,4 +786,47 @@ var nightTimes = {
     },
 }; //nightTimes
 
+//b suncalc: sun azimuth and altitude
+//-----------------------------------
+var suncalc = {
+    azimuth: function (x0) {
+        var azimuth;
+        if (!x0) {return azimuth;}
+
+        //get geo position
+        var loc = ch_utils.night;
+        if (!loc || !loc.longitude || !loc.latitude) {
+            ch_utils.alertMessage(40);
+            return azimuth;
+        }
+
+        function round(number) {
+            var factor = Math.pow(10, 2);
+            return Math.round(number * factor) / factor;
+        }
+        var position = SunCalc.getPosition(x0, loc.latitude, loc.longitude);
+        azimuth = round(position.azimuth * 180 / Math.PI + 180);
+        return azimuth;
+    },
+
+    altitude: function (x0) {
+        var altitude;
+        if (!x0) {return altitude;}
+
+        //get geo position
+        var loc = ch_utils.night;
+        if (!loc || !loc.longitude || !loc.latitude) {
+            ch_utils.alertMessage(40);
+            return altitude;
+        }
+
+        function round(number) {
+            var factor = Math.pow(10, 2);
+            return Math.round(number * factor) / factor;
+        }
+        var position = SunCalc.getPosition(x0, loc.latitude, loc.longitude);
+        altitude = round(position.altitude * 180 / Math.PI);
+        return altitude;
+    },
+}; //suncalc
 

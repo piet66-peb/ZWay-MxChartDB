@@ -180,8 +180,8 @@
             en: "the result is not an infinite number {0}"
         },
         {//40
-            de: "zur Einfärbung des nächtlichen Hintergrundes sind die Ortskoordinaten in constants.js einzutragen" ,
-            en: "location coordinates necessary in constants.js for coloring of the nightly background"
+            de: "die Ortskoordinaten sind in constants.js einzutragen!" ,
+            en: "enter location coordinates in constants.js!"
         },
 
         //ixButtonTextBase button texts (40+...):
