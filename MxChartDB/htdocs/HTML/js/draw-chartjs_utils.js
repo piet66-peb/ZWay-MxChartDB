@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-06-04/peb
+//h Version:      V3.3.0 2025-07-10/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //h Copyright:    (C) piet66 2024
@@ -29,7 +29,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.3.0';
-var WRITTEN='2025-06-04/peb';
+var WRITTEN='2025-07-10/peb';
 
 //b common: common functions
 //--------------------------
@@ -150,6 +150,7 @@ var header_utils = {
                     return false;
                 }
             },
+            isNight: nightTimes.isNight,
         };
 
         if (!header.hasOwnProperty('global_js')) {
@@ -755,6 +756,30 @@ var nightTimes = {
         //        ch_utils.userTime(nightArray[i].end));
         //}
         return nightArray;
+    },
+
+    isNight: function (x0) {
+        //console.log('nightTimes.isNight');
+        var night;
+        if (!x0) {return night;}
+
+        //get geo position
+        var loc = ch_utils.night;
+        if (!loc || !loc.longitude || !loc.latitude) {
+            ch_utils.alertMessage(40);
+            return night;
+        }
+        var lng = loc.longitude;
+        var lat = loc.latitude;
+        var tz = loc.tz;
+
+        var ret = suntimes(x0, lat, lng, tz);
+        if (x0 >= ret[0] && x0 < ret[1]) {
+            night = false;
+        } else {
+            night = true;
+        }
+        return night;
     },
 }; //nightTimes
 

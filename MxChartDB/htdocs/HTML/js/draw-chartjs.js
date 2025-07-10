@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.0 2025-06-08/peb
+//h Version:      V3.4.0 2025-07-10/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -39,7 +39,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.4.0';
-var WRITTEN = '2025-06-08/peb';
+var WRITTEN = '2025-07-10/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
