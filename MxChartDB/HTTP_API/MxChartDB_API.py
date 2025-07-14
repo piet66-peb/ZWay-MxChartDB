@@ -24,10 +24,11 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.3.0 2024-12-22/peb
+#h Version:      V2.3.1 2025-07-14/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #v               V2.2.0 2024-12-13/peb [+]enable WAL mode at connect
 #v               V2.3.0 2024-12-21/peb [+]treat_lock
+#v               V2.3.1 2025-07-14/peb [x]threadsave = 'unknown'
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
 #h
@@ -65,8 +66,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V2.3.0'
-WRITTEN = '2024-12-22/peb'
+VERSION = 'V2.3.1'
+WRITTEN = '2025-07-14/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -78,6 +79,9 @@ if SQLITE_THREADSAVE:
         threadsave = 'multi-thread'
     elif  SQLITE_THREADSAVE == 2:
         threadsave = 'serialized'
+    else:
+        threadsave = 'unknown'
+    threadsave = threadsave + ' ('+str(SQLITE_THREADSAVE)+')'
 else:
     threadsave = 'unknown'
 

@@ -24,14 +24,40 @@ Everything you need for installation is included in this package (Linux only).
 
 ## Installation
 
-Download and install the module and the API from the Z-Way App Store.
+<del>Download and install the module and the API from the Z-Way App Store.
+</del>
 
-or download it with wget and do a restart:
+As the Z-Way management has been unresponsive, I have made my software 
+available on GitHub. The version in the Z-Way App Store is now out of date.
+
+- Download the package with wget from this site:
 ```sh
 url=https://github.com/piet66-peb/ZWay-MxChartDB/raw/refs/heads/main/download_MxChartDB.bash
-cd /tmp; wget -q -O - $url | bash
+cd /tmp; wget -q -O - $url | sudo bash
 
 ```
+- Restart Z-Way after the download to activate the package. 
+- Then follow the installation procedure outlined in the HowTos.
+
+## Upgrade
+
+- Download the package with wget from this site:
+```sh
+url=https://github.com/piet66-peb/ZWay-MxChartDB/raw/refs/heads/main/download_MxChartDB.bash
+cd /tmp; wget -q -O - $url | sudo bash
+
+```
+- If you have placed the HTTP_API in a different location, copy its contents there. 
+- check the template files **constants_template.js** and **constants_template\.p**y
+to see if you need to make any changes.
+- Then restart MxChartDB_API.py and Z-Way.
+
+### Remark
+
+I always try to maintain backward compatibility. However, this is not 
+always completely possible. You will recognise this in the graphics output 
+or the chart configuration.  Simply correct it in the configuration.
+
 ## License: MIT
 
 Copyright © 2022 piet66
