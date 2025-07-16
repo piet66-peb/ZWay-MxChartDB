@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.0 2025-07-10/peb
+//h Version:      V3.4.1 2025-07-15/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -24,6 +24,7 @@
 //v               V3.1.3 2025-02-02/peb [+]date picker: end time
 //v               V3.2.0 2025-02-03/peb [+]ad hoc analysis
 //v               V3.4.0 2025-06-01/peb [+]MxC
+//v               V3.4.1 2025-07-15/peb [+]enhance error message 27 with typeof
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -38,8 +39,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.4.0';
-var WRITTEN = '2025-07-10/peb';
+var VERSION = 'V3.4.1';
+var WRITTEN = '2025-07-15/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -1663,6 +1664,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
     }
 
+    function add_type(v) {
+        return v + ',type '+typeof v;
+    } //add_type
+
     function store_maxValues(x, ix_store, ix, data, ip, timestamp, X) {
         var mess, x_pre = null;
         if (x === null) {
@@ -1695,7 +1700,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 //if (x !== x_pre.toString()) {
                 if (x_pre === null || x_pre === undefined || x !== x_pre.toString()) {
                     mess = ch_utils.buildMessage(27, ix, ip, 
-                        ch_utils.userTime(timestamp), x_pre, x);
+                        ch_utils.userTime(timestamp), add_type(x_pre), add_type(x));
                     setErrormessage(ix, mess, data.datasets[ix - 1]);
                     console.log(X);
                 }
@@ -1716,7 +1721,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 //if (x.toString() !== x_pre) {
                 if (x_pre === null || x_pre === undefined || x.toString() !== x_pre) {
                     mess = ch_utils.buildMessage(27, ix, ip, 
-                        ch_utils.userTime(timestamp), x_pre, x);
+                        ch_utils.userTime(timestamp), add_type(x_pre), add_type(x));
                     setErrormessage(ix, mess, data.datasets[ix - 1]);
                     console.log(X);
                 }
