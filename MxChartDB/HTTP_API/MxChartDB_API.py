@@ -24,13 +24,20 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.3.1 2025-07-14/peb
+#h Version:      V2.4.0 2025-07-18/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #v               V2.2.0 2024-12-13/peb [+]enable WAL mode at connect
 #v               V2.3.0 2024-12-21/peb [+]treat_lock
 #v               V2.3.1 2025-07-14/peb [x]threadsave = 'unknown'
+#v               V2.4.0 2025-07-17/peb [+]select_last?count=
+#v                                        select only last row in ADMIN page
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
+#h
+#h Attention:    This program only supports http!
+#h               Sending requests with https results in the error message
+#h               'code 400, message Bad request version'.
+#h               Some browsers may be parametrized to use always https!
 #h
 #h-------------------------------------------------------------------------------
 #h
@@ -66,8 +73,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V2.3.1'
-WRITTEN = '2025-07-14/peb'
+VERSION = 'V2.4.0'
+WRITTEN = '2025-07-18/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -752,8 +759,8 @@ def route_api_admin():
                   <th><font color=#d3d3d3>Describe&nbsp;</font></th>
                   <th><font color=#d3d3d3>Drop&nbsp;</font></th>
                   <th><font color=#d3d3d3>Select Values</font></th>
-                  <th><center> Entry<br>Count </center></th>
-                  <th><center> Entry Count<br>Latest Hour </center></th>
+                  <th><center> Row<br>Count </center></th>
+                  <th><center> Row Count<br>Latest Hour </center></th>
                   <th><center> First<br>Timestamp </center></th>
                   <th><center> Last<br>Timestamp </center></th>
               </tr>\n"""
@@ -779,7 +786,9 @@ def route_api_admin():
                     obj_type = ''
 
                 select = "<a href='../"+dbs_i+"/"+table_i+ \
-                "/select_next'><u><font color=blue>select values</font></u></a>"
+                "/select_last?count=1'><u><font color=blue>select last row</font></u></a>"
+                #select = "<a href='../"+dbs_i+"/"+table_i+ \
+                #"/select_next'><u><font color=blue>select values</font></u></a>"
                 count = count_entries_local(dbs_i, table_i)
                 first = select_first_ts(dbs_i, table_i)[0]
                 last = select_last_ts(dbs_i, table_i)[0]
@@ -1446,6 +1455,47 @@ def route_api_insert(dbase, table):
             manage_thread_list(func='remove')
             return response_text(str(ji_stored)+' of '+str(i)+' rows stored')
 
+@app.route('/<dbase>/<table>/select_last', methods=["GET"])
+def route_api_select_last(dbase, table):
+    '''route: response last rows from table'''
+    app.logger.info(request)
+    #app.logger.info(request.headers)
+    if not os.path.isfile(dbase+'.db'):
+        return response_text_err('database '+dbase+' not found'), NOT_FOUND
+
+    count = request.args.get('count', '1')
+    if not count.isnumeric():
+        return response_text_err('count = '+count+' is invalid'), BAD_REQUEST
+    if int(count) < 1:
+        return response_text_err('ts = '+count+' is invalid'), BAD_REQUEST
+    app.logger.debug('read last '+count+' entries from '+table)
+
+    sql = "SELECT * FROM "+table+" ORDER BY ts DESC LIMIT "+count+";"
+    app.logger.debug(sql)
+    try:
+        command = 'connect'
+        conn = get_db_connection(dbase)
+        command = 'fetchall'
+        rows = conn.execute(sql).fetchall()
+    except sqlite3.Error as error:
+        errtext = 'sqlite3.Error on '+command+': '+(' '.join(error.args))
+        conn.close()
+        return response_text_err(errtext), DB_ERROR
+
+    result = []
+    rowcount = 0
+    for row in rows:
+        rowcount = rowcount + 1
+        try:
+            result.append(json.loads(row[1]))
+        except ValueError:
+            result.append(row[1])
+    conn.close()
+    if result == []:
+        return response_text_err('no data found'), NOT_FOUND
+    return jsonify(result), OK
+# select_last
+
 @app.route('/<dbase>/<table>/select_next', methods=["GET"])
 def route_api_select_next(dbase, table):
     '''route: response (next) rows from table'''
@@ -1539,7 +1589,7 @@ def route_api_select_range(dbase, table):
 # select_range
 
 @app.route('/<dbase>/<table>/select_first_ts', methods=["GET"])
-def route_api_select_first(dbase, table):
+def route_api_select_first_ts(dbase, table):
     '''route: select first row from table'''
     app.logger.info(request)
     if not os.path.isfile(dbase+'.db'):
@@ -1555,7 +1605,7 @@ def route_api_select_first(dbase, table):
     return response_text_err(ret[0]), ret[1]
 
 @app.route('/<dbase>/<table>/select_last_ts', methods=["GET"])
-def route_api_select_last(dbase, table):
+def route_api_select_last_ts(dbase, table):
     '''route: select last row from table'''
     app.logger.info(request)
     if not os.path.isfile(dbase+'.db'):

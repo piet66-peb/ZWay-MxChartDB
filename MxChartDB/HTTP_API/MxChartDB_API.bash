@@ -12,7 +12,7 @@
 #h Resources:    
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.0.0 2023-11-11/peb
+#h Version:      V2.0.0 2025-07-17/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #h Copyright:    (C) piet66 2022
 #h License:      http://opensource.org/licenses/MIT
@@ -21,7 +21,7 @@
 
 MODULE='MxChartDB_API.bash';
 VERSION='V2.0.0'
-WRITTEN='2023-11-11/peb'
+WRITTEN='2025-07-17/peb'
 
 set -e  # exit when any command fails
 
