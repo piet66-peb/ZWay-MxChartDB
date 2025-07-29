@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.1 2025-07-15/peb
+//h Version:      V3.4.2 2025-07-29/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -25,6 +25,7 @@
 //v               V3.2.0 2025-02-03/peb [+]ad hoc analysis
 //v               V3.4.0 2025-06-01/peb [+]MxC
 //v               V3.4.1 2025-07-15/peb [+]enhance error message 27 with typeof
+//v               V3.4.2 2025-07-29/peb [+]convert tooltips to utf8
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -39,8 +40,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.4.1';
-var WRITTEN = '2025-07-15/peb';
+var VERSION = 'V3.4.2';
+var WRITTEN = '2025-07-29/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -253,6 +254,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             if (label.trim() === '') {
                                 return false;
                             }
+                            label = ch_utils.convertToUTF8(label);
                             if (label.indexOf('>') < 0) {
                                 return label;
                             }
