@@ -1,4 +1,4 @@
-    var ixButtonTextBase = 41;
+    var ixButtonTextBase = 43;
     var messageFormats = [
         //message texts (0+...):
         {//0
@@ -183,8 +183,16 @@
             de: "die Ortskoordinaten sind in constants.js einzutragen!" ,
             en: "enter location coordinates in constants.js!"
         },
+        {//41
+            de: 'jetzt',
+            en: 'now'
+        },
+        {//42
+            de: "Fehler im Postpross Code:\n{0}" ,
+            en: "error in postprocess code:\n{0}"
+        },
 
-        //ixButtonTextBase button texts (40+...):
+        //ixButtonTextBase button texts (43+...):
         {//0
             de: 'Dateien durchsuchen...',
             en: 'Browse data...'
@@ -334,7 +342,7 @@
             en: ' < \u25A3 > '
         },
         {//37
-            de: 'Ad-hoc Analyse',
-            en: 'Ad hoc Analysis'
+            de: 'Ad-hoc Kalkulation',
+            en: 'Ad hoc Calculation'
         },
     ];

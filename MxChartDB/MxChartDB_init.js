@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.3.3 2025-06-04/peb
+//h Version:      V3.3.4 2025-09-06/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -21,6 +21,8 @@
 //v                                     [+]bulk inserts
 //v               V2.0.1 2024-05-12/peb [-]self.config.chartInterval is obsolete
 //v               V3.3.3 2025-03-26/peb [x]fix bug at retry init
+//v               V3.3.4 2025-08-03/peb [+]y3IconsPath_Default
+//v                                     [+]spanGaps
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -33,8 +35,8 @@
 //b Constants
 //-----------
 //var MODULE='MxChartDB_init.js';
-//var VERSION='V3.3.3';
-//var WRITTEN='2025-06-04/peb';
+//var VERSION='V3.3.4';
+//var WRITTEN='2025-09-06/peb';
 
 //-----------
 //b Functions
@@ -191,6 +193,11 @@ var init = function (self) {
             self.config.global_js = {define_global_js: false,
                                      lines: 5,
                                      code: ''};
+        }
+        if (!self.config.hasOwnProperty('post_processing')) {
+            self.config.post_processing = {define_post_processing: false,
+                                           lines: 5,
+                                           code: ''};
         }
     
         //b get API version (=>ajax_get)
@@ -451,6 +458,7 @@ var init = function (self) {
             use_nonnumeric: self.config.nonnumericLabels.use_nonnumeric,
             convertOnOff: self.config.nonnumericLabels.convertOnOff,
             y3Labeling: self.config.nonnumericLabels.y3Labeling,
+            y3IconsPath_Default: self.config.nonnumericLabels.y3IconsPath_Default,
             y3Icons: self.config.nonnumericLabels.y3Icons,
             y3IconsWidth: self.config.nonnumericLabels.y3IconsWidth,
             y3reduceUnusedTicks: self.config.nonnumericLabels.y3reduceUnusedTicks,
@@ -459,6 +467,7 @@ var init = function (self) {
             nightBackground: self.config.specials.nightBackground,
             post_calc: self.config.post_calc,
             global_js: self.config.global_js,
+            post_processing: self.config.post_processing,
         }; //globalData
     
         //b compute chart length (seconds)
@@ -565,6 +574,7 @@ var init = function (self) {
                 color: sensor.color,
                 graphType: sensor.graphType,
                 lineType: sensor.lineType,
+                spanGaps: sensor.spanGaps,
                 fill: sensor.fill,
                 binary: false,
                 chartHidden: sensor.chartHidden || false,
@@ -1038,6 +1048,7 @@ var init = function (self) {
         var chartColors = [undefined];
         var chartgraphTypes = [undefined];
         var chartlineTypes = [undefined];
+        var spanGaps = [undefined];
         var chartFill = [undefined];
         var chartHidden = [undefined];
         var entrytypes = [undefined];
@@ -1059,6 +1070,7 @@ var init = function (self) {
             chartColors.push(sensor.color);
             chartgraphTypes.push(sensor.graphType);
             chartlineTypes.push(sensor.lineType);
+            spanGaps.push(sensor.spanGaps);
             chartFill.push(sensor.fill);
             chartHidden.push(sensor.chartHidden);
             entrytypes.push(sensor.entrytype);
@@ -1096,6 +1108,7 @@ var init = function (self) {
             use_nonnumeric: globalData.use_nonnumeric,
             convertOnOff: globalData.convertOnOff,
             y3Labeling: globalData.y3Labeling,
+            y3IconsPath_Default: globalData.y3IconsPath_Default,
             y3Icons: globalData.y3Icons,
             y3IconsWidth: globalData.y3IconsWidth,
             y3reduceUnusedTicks: globalData.y3reduceUnusedTicks,
@@ -1109,6 +1122,7 @@ var init = function (self) {
             chartColors: chartColors,
             chartgraphTypes: chartgraphTypes,
             chartlineTypes: chartlineTypes,
+            spanGaps: spanGaps,
             chartFill: chartFill,
             chartHidden: chartHidden,
             entrytypes: entrytypes,
@@ -1118,6 +1132,7 @@ var init = function (self) {
             //define_global_js: globalData.global_js.define_global_js,
             //code: global_js_code,
             global_js: self.realCopyObject(globalData.global_js),
+            post_processing: self.realCopyObject(globalData.post_processing),
         };  //chartHeader
         return JSON.parse(JSON.stringify(chartHeader));
     } //build_chart_header

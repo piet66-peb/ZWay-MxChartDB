@@ -1,9 +1,9 @@
 #h
-#h Module:              moment-with-locales.min.js
+#h Module:              chartjs-adapter-moment@1.js
 #h Name:                
 #h Type:                
-#h Version:             2.29.1
-#h Size:                360.5KiB
+#h Version:             1.0.1
+#h Size:                1.3KiB
 #h Checksum:            
 #h Language:            
 #h License:             
@@ -12,8 +12,8 @@
 #h Homepage:            
 #h Forum:               
 #h Support:             
-#h Download URL:        https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment-with-locales.min.js
-#h Download Time:       2021-04-17 19:08:51
+#h Download URL:        https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1
+#h Download Time:       2025-08-05 10:38:41
 #h Operation Systems:   
 #h Tags:                
 #h Requirements:        

@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <title>Chart Arithmetics</title>
+      <link rel="shortcut icon" 
+      href="./icon.png">
+
+      <link rel="stylesheet" 
+            href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+      <script 
+          src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
+      </script>    
+
+    <style>
+        {
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        tr:nth-child(even){background-color: #f2f2f2;}
+        tr:hover {background-color: #ddd;}
+        th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #04AA6D;
+            color: white;
+        }
+         .center {text-align:center;}
+    </style>
+
+   </head>
+   <body>
+      <script>hljs.highlightAll();</script>
+
+      <script>
+          //convert to utf-8 as workaround for Zway/htdocs:
+          try {
+            var el = document.getElementById('structure');
+            var s = el.firstChild.data;
+            var fixedstring = 
+                  JSON.parse(decodeURIComponent(escape(JSON.stringify(s))));
+            el.firstChild.data = fixedstring;
+          } catch(e) {
+              console.log(e.message+ ': probably no conversation necessary');
+          }
+      </script>
+
+      <h1 id="C0">Chart Arithmetics</h1>
+      Chart Arithmetics offers various options for influencing the display of 
+      data.
+      <br>Javascript is used for these purposes.
+
+<ul>
+<li><a href="#C1">1. Sensor Arithmetic</a></li>
+<li><a href="#C2">2. Global User Definitions</a></li>
+<li><a href="#C3">3. Standard Functions and Variables</a></li>
+<li><a href="#C4">4. Post Processing</a></li>
+<li><a href="#C5">5. In-Display Calculation</a></li>
+<li><a href="#C6">6. Ad-Hoc Calculation</a></li>
+</ul>
+
+      <h1 id="C1">1. Sensor Arithmetic</h1>
+
+      The sensor arithmetic allows to modify every single sensor value taken from 
+      the database before displaying.
+      <br>It is also possible to generate formula-based outputs without the 
+      existence of values in the database.
+
+      <br><br>
+      The calculations are performed with ascending datapoints and, within the 
+      datapoint, with ascending sensor numbers. This means that all values 
+      from the current and one previous datapoint in the database (xi and 
+      xi[-1]) are always available. The calculated values (g.vi) are only 
+      available after the corresponding sensor value has been processed.  
+
+      <h2 id="C11">1.1 Examples</h2>
+
+      <pre><code class="language-javascript">x/1000</code></pre>
+      <pre><code class="language-javascript">x != x[-1] ? x : null</code></pre>
+      <pre><code class="language-javascript">Math.round(x)</code></pre>
+      <pre><code class="language-javascript">Math.max(x1, x2)</code></pre>
+      <pre><code class="language-javascript">x8 &lt; x9 ? 'on' : null</code></pre>
+
+      <h2 id="C12">1.2 Variables</h2>
+
+      <table>
+         <tr>
+            <th class="center">Name</th>
+            <th>Meaning</th>
+            <th class="center">Example</th>
+            <th class="center">Comment</th>
+         </tr>
+         <tr>
+            <td class="center">x0</td>
+            <td>timestamp of the current datapoint</td>
+            <td class="center"></td>
+            <td>local unix time in milliseconds</td>
+         </tr>
+         <tr>
+            <td class="center">xi</td>
+            <td>value of sensor i of the current datapoint, 
+                taken from the database</td>
+            <td class="center">x1</td>
+            <td class="center"></td>
+         </tr>
+         <tr>
+            <td class="center">xi[-1]</td>
+            <td>value of sensor i of the previous datapoint, 
+                taken from the database</td>
+            <td class="center">x1[-1]</td>
+            <td class="center"></td>
+         </tr>
+         <tr>
+            <td class="center">x</td>
+            <td>xi of the current sensor, taken from the database</td>
+            <td class="center"></td>
+            <td>== null: value is not set</td>
+         </tr>
+         <tr>
+            <td class="center">x[-1]</td>
+            <td>xi[-1] of the current sensor, taken from the database</td>
+            <td class="center"></td>
+            <td>== null: value is not set<br>
+                               == undefined: datapoint is not read/ not existing
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.vi</td>
+            <td>last computed value of sensor i, after applying the formula</td>
+            <td class="center">g.v1</td>
+            <td><a href="#C2_5">2.5 Shortening</a> </td>
+         </tr>
+         <tr>
+            <td class="center">g.v</td>
+            <td>last computed value of the current sensor</td>
+            <td class="center"></td>
+            <td><a href="#C2_5">2.5 Shortening</a> </td>
+         </tr>
+      </table>
+
+      <h1 id="C2">2. Global User Definitions</h1>
+
+      Several globally valid variables and functions are defined 
+      (<a href="#C3">3. Standard Functions and Variables</a>), 
+      which can be called in the Chart Arithmetics.
+      <br><br>
+      Additionally it is possible to set own variables and functions 
+      to transfer values between different sensor arithmetics.
+
+      <h2 id="C21">2.1 The Definition</h2>
+      <h3>Example</h3>
+      Javascript code:
+
+      <pre><code class="language-javascript">
+{
+      ts1: 1728968400000,
+      ts2: 1730264400000,
+      customer_price: function (timestamp, market_price) {
+          if (market_price === null) {return null;}
+          if (timestamp &lt; g.ts1) {return (-0.000107217*market_price*market_price + 1.19103*market_price + 18.2442);}
+          if (timestamp &lt; g.ts2) {return (-0.0000248097*market_price*market_price + 1.19033*market_price + 16.7827);}
+          return (-0.000160312*market_price*market_price + 1.19448*market_price + 18.2124);
+      },
+};
+      </code></pre>
+      <br>
+      Invocation of this function in the sensor arithmetic with:
+      <pre><code class="language-javascript">g.customer_price(x0, x2)</code></pre>
+
+
+      <h3>Rules</h3>
+      <ul>
+          <li>Create exactly one Javascript object with curly brackets</li>
+          <li>Define every variable, constant and function as an object 
+              property</li>
+          <li>Call this elements with preceeding 'g.'</li>
+      </ul>
+
+      <h2 id="C22">2.2 The Invocation</h2>
+      <h3>Example</h3>
+
+      In Sensor Arithmetics:
+      <br>
+      in entry 1 (sensor 1), display market price[ct/kWh]: 
+      <pre><code class="language-javascript">
+      g.market_price = x*100/1000
+      </code></pre>
+
+      in entry 2 (formula), display final price[ct/kWh]: 
+      <pre><code class="language-javascript">
+      g.final_price = g.customer_price(x0, g.market_price)
+      </code></pre>
+
+      in entry 3 (formula), display taxes and levies[ct/kWh]: 
+      <pre><code class="language-javascript">
+      g.taxes_levies = g.final_price - g.market_price
+      </code></pre>
+
+      in entry 4 (formula), display taxes and levies[%]: 
+      <pre><code class="language-javascript">
+      Math.round(g.taxes_levies/g.market_price*100*10)/10
+      </code></pre>
+
+      <h3>Rules</h3>
+      <ul>
+          <li>Set a new variable for the global object with: 
+              g.&lt;name&gt; = &lt;value&gt;;</li>
+          <li>Read the variable with: g.&lt;name&gt;</li>
+      </ul>
+      Note: Please observe the right order: the variables are set and changed 
+      by increasing entry/sensor number.
+      <br>
+      Note: In case of redrawings the g object is reset to initial state. 
+
+      <h2 id=C23">2.3 Shortening</h2>
+
+      For convenience the latest computed values are stored automatically into 
+      global variables <b>after</b> computation:
+      <pre><code class="language-javascript">
+      g.vi = arithmetic(sensor[i]);   //with i=1,...
+      </code></pre>
+      <pre><code class="language-javascript">
+      g.v = arithmetic(sensor[i]);    //with i=current sensor index</code>
+      </pre>
+      <br>
+
+      The above example can therefore be shortened as follows:
+      <br>
+      in entry 1 (sensor 1), display market price[ct/kWh]: 
+      <pre><code class="language-javascript">x*100/1000</code></pre>
+
+      in entry 2 (formula), display customer price[ct/kWh]: 
+      <pre><code class="language-javascript">g.customer_price(x0, g.v1)
+      </code></pre>
+
+      in entry 3 (formula), display taxes and levies: 
+      <pre><code class="language-javascript"> g.v2 - g.v1</code></pre>
+
+      in entry 4 (formula), display taxes and levies[%]: 
+      <pre><code class="language-javascript">g.round(g.v3/g.v1*100, 1)
+      </code></pre>
+
+      <br>
+      Much shorter, but also less comprehensible.
+
+      <h1 id="C3">3. Standard Functions and Variables</h1>
+
+      Several globally valid variables and functions are defined, 
+      which can be called in the Chart Arithmetics.
+
+      <h2 id="C31">3.1. Basic Functions and Variables</h2>
+
+      <table>
+         <tr>
+            <th class="center">Variable/<br>Function</th>
+            <th>Invocation</th>
+            <th style="width:50%;">Purpose</th>
+         </tr>
+         <tr>
+            <td class="center">g.x0</td>
+            <td> = g.x0</td>
+            <td>returns the current timestamp x0 for using in functions</td>
+         </tr>
+         <tr>
+            <td class="center">g.ix</td>
+            <td> = g.ix</td>
+            <td>returns the the index 1,2,3,.. of the current sensor</td>
+         </tr>
+         <tr>
+            <td class="center">g.x</td>
+            <td> = g.x</td>
+            <td>returns the current value x of the current sensor</td>
+         </tr>
+         <tr>
+            <td class="center">g.x0_prev</td>
+            <td> = g.x0_prev</td>
+            <td>returns the previous value x0[-1] of the current timestamp g.x0
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.x_prev</td>
+            <td> = g.x_prev</td>
+            <td>returns the previous value x[-1] of the current sensor g.x</td>
+         </tr>
+         <tr>
+            <td class="center">g.ts_last_db</td>
+            <td>= g.ts_last_db()</td>
+            <td>returns the last timestamp stored in the database</td>
+         </tr>
+         <tr>
+            <td class="center">g.notSet</td>
+            <td>true|false = g.notSet(&lt;list of arguments&gt;)</td>
+            <td>checks if one of the arguments is undefined or null</td>
+         </tr>
+         <tr>
+            <td class="center">g.noNumber</td>
+            <td>true|false = g.noNumber(&lt;list of arguments&gt;)</td>
+            <td>checks if one of the arguments is undefined, null or no number
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.notChanged</td>
+            <td>true|false = g.notChanged(&lt;value1, value2&gt;)</td>
+            <td>checks if both values are equal</td>
+         </tr>
+         <tr>
+            <td class="center">g.round</td>
+            <td>= g.round(&lt;value&gt;, &lt;decimals&gt;)</td>
+            <td>rounds a floating point number to the given number of decimals
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.nvl</td>
+            <td>= g.nvl(&lt;value&gt;, &lt;default value&gt;)</td>
+            <td>returns a default value if not set</td>
+         </tr>
+         <tr>
+            <td class="center">g.isNight</td>
+            <td>true|false = g.isNight(&lt;timestamp&gt;)</td>
+            <td>night indication</td>
+         </tr>
+         <tr>
+            <td class="center">g.sunrise</td>
+            <td>timestamp = g.sunrise(&lt;timestamp&gt;)</td>
+            <td></td>
+         </tr>
+         <tr>
+            <td class="center">g.sunset</td>
+            <td>timestamp = g.sunset(&lt;timestamp&gt;)</td>
+            <td></td>
+         </tr>
+         <tr>
+            <td class="center">g.azimuth</td>
+            <td>= g.azimuth(&lt;timestamp&gt;)</td>
+            <td>returns the sun azimuth in degrees</td>
+         </tr>
+         <tr>
+            <td class="center">g.altitude</td>
+            <td>= g.altitude(&lt;timestamp&gt;)</td>
+            <td>returns the sun altitude above horizont in degrees</td>
+         </tr>
+      </table>
+
+      <h3>Examples</h3>
+      <pre><code class="language-javascript">
+      g.notSet(x1, x2) ? null : x1 + x2
+      </code></pre>
+      <pre><code class="language-javascript">
+      g.nvl(x, g.v)   //take the latest value, if x is not set
+      </code></pre>
+      <pre><code class="language-javascript">
+      g.noNumber(x, x[-1], x2) ? null : (x - x[-1])/ x2
+      </code></pre>
+      <pre><code class="language-javascript">
+{
+    consumption: function(x_curr, x_prev) {
+        if (g.noNumber(x_curr, x_prev)) {return null;}
+        return g.round(x_curr - x_prev, 1);
+    },
+};
+      </code></pre>
+
+      <h2 id="C32">3.2 Annotations</h2>
+      Annotations can be used to add lines, arrows, boxes, points, labels 
+      to the chart.
+
+      <br><br><table>
+         <tr>
+            <th class="center">Function</th>
+            <th>Invocation</th>
+            <th style="width:50%;">Purpose</th>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.point</td>
+            <td>g.annotation.point(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xValue: &lt;x value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
+                right|left&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
+                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pointStyle: &lt;
+                point style&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;radius: &lt;
+                point radius&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color: &lt;color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;
+                draw time&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+            </td>
+            <td>adds a point object to the chart<br><br>
+                annotation id: mandatory, unique<br>
+                point radius: point radius in pixels<br>
+                hide: hide object at click<br><br>
+                valid point styles:<br>
+                cross, crossRot, dash, line, rect, rectRounded, retRot, 
+                star, triangle, false<br>
+                valid draw times:<br>
+                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
+                y values on axes of type 'text' :<br>
+                the tics are numbered top down: 0, 1, 2, ...
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.label</td>
+            <td>g.annotation.label(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xValue: &lt;x value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;content: &lt;content&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
+                right|left&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
+                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color: &lt;color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
+                color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;draw time&gt;,
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+            </td>
+            <td>adds a text or other content to the chart<br><br>
+                annotation id: mandatory, unique<br>
+                hide: hide object at click<br><br>
+                valid content types:<br>
+                string, string[], HTML canvas element<br>
+                valid draw times:<br>
+                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
+                y values on axes of type 'text' :<br>
+                the tics are numbered top down: 0, 1, 2, ...
+                <br>backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.image</td>
+            <td>g.annotation.image(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xValue: &lt;x value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width: &lt;width in pixels&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height: &lt;height in pixels&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;image: &lt;image&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
+                right|left&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
+                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderColor: &lt;borderColor&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
+                color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;draw time&gt;,
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+            </td>
+            <td>adds an image to the chart<br><br>
+                annotation id: mandatory, unique<br>
+                hide: hide object at click<br><br>
+                valid image types:<br>
+                - file name without extension: Z-Way icon<br>
+                - file with extension .png and without path: image in htdocs folder<br>
+                - file with extension .png and relative path: relative to htdocs<br>
+                - file with complete path<br>
+                - image url<br>
+                valid draw times:<br>
+                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
+                y values on axes of type 'text' :<br>
+                the tics are numbered top down: 0, 1, 2, ...
+                <br>backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.line</td>
+            <td>g.annotation.line(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMin: &lt;x min value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMax: &lt;x max value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMin: &lt;y min value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMax: &lt;y max value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderWidth: &lt;
+                line width in pics&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
+                right|left&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
+                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text: &lt;text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text_color: &lt;
+                text color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text_background: &lt;
+                text background color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arrow_start: &lt;
+                true|false&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arrow_end: &lt;
+                true|false&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;
+                draw time&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+            </td>
+            <td>adds a line object to the chart, maybe with arrows and text
+                <br><br>
+                annotation id: mandatory, unique<br>
+                arrow_start: display arrow at line start<br>
+                arrow_end:display arrow at line end<br>
+                hide: hide object at click<br><br>
+                valid draw times:<br>
+                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
+                y values on axes of type 'text' :<br>
+                the tics are numbered top down: 0, 1, 2, ...
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.box</td>
+            <td>g.annotation.box(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMin: &lt;x min value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMax: &lt;x max value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMin: &lt;y min value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMax: &lt;y max value&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
+                right|left&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
+                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
+                color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderWidth: &lt;
+                true|false&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;
+                draw time&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+            </td>
+            <td>adds a box object to the chart<br><br>
+                annotation id: mandatory, unique<br>
+                hide: hide object at click<br><br>
+                valid draw times:<br>
+                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
+                y values on axes of type 'text' :<br>
+                the tics are numbered top down: 0, 1, 2, ...
+                <br>backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.del</td>
+            <td>g.annotation.del({id: &lt;annotation id&gt;})
+            </td>
+            <td>deletes an annotation object from the chart</td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.horizontal</td>
+            <td>g.annotation.horizontal(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;y position&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;
+                text background color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType&gt;<br>
+                )
+            </td>
+            <td>adds a horizontal line to the chart, maybe with text<br><br>
+                (special case of annotation.line)
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.vertical</td>
+            <td>g.annotation.vertical(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;x position&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;
+                text background color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType&gt;<br>
+                )
+            </td>
+            <td>adds a vertical line to the chart, maybe with text<br><br>
+                (special case of annotation.line)
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.text</td>
+            <td>g.annotation.text(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;x position&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;y position&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;
+                text background color&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType&gt;<br>
+                )
+            </td>
+            <td>adds a text to the chart at the special position<br><br>
+                (special case of annotation.line)
+            </td>
+         </tr>
+      </table>
+
+      <br><h3>Examples</h3>
+      <pre><code class="language-javascript">
+{
+    att: function () {
+        //this function adds a triangle and a down-arrow to the last sensor value,
+        //if the limit is exceeded
+        //usage: in sensor arithmetics: 
+        //    g.att(); x
+        var x0 = g.x0, x = g.x, ix = g.ix;
+        var limit = 50;
+        if (g.noNumber(x) ||
+            x0 !== g.ts_last_db() ||
+            x &lt;= limit) {
+            g.annotation.del({id: 'venting_'+ix});
+            g.annotation.del({id: 'triangle_'+ix});
+            return;
+        }
+        g.annotation.point({id: 'triangle_'+ix, xValue: x0, yValue: x, pointStyle: 'triangle', color: 'red', hide: true});
+        g.annotation.line({id: 'venting_'+ix, xMin: x0, xMax: x0, yMin: limit, yMax: x, arrow_start: true, hide: true});
+    },
+};
+      </code></pre>
+
+      <pre><code class="language-javascript">
+{
+    peak: function () {
+        //this function adds a star to every peak of the sensor
+        //usage: in sensor arithmetics: 
+        //    g.peak(); x
+        var val1 = g.val1, val2 = g.val2, val3 = g.x;
+        var ts1 = g.ts1, ts2 = g.ts2, ts3 = g.x0;
+
+        //page shifted?
+        if (!g.noNumber(ts2, ts3)) &amp;&amp; ts3 &lt; ts2) {
+            val1 = null;
+            ts1 = null;
+            val2 = null;
+            ts2 = null;
+        }
+
+        //store values for next compare
+        if (!g.noNumber(val2)) {
+            g.val1 = val2;
+            g.ts1 = ts2;
+        }
+        if (!g.noNumber(val3)) {
+            g.val2 = val3;
+            g.ts2 = ts3;
+        }
+
+        if (!g.noNumber(val1, val2, val3)) {
+            if (val1 &lt; val2 &amp;&amp; val3 &lt; val2) {
+                g.annotation.point({id: ts2+'', xValue: ts2, yValue: val2, pointStyle: 'star', radius: 15, color: 'red', hide: true});
+            }
+        }
+    },
+};
+      </code></pre>
+
+      <pre><code class="language-javascript">
+{
+    peak: function () {
+        //this function adds a text to every peak of the sensor
+        //usage: in sensor arithmetics: 
+        //    g.peak(); x
+        var val1 = g.val1, val2 = g.val2, val3 = g.x;
+        var ts1 = g.ts1, ts2 = g.ts2, ts3 = g.x0;
+
+        //page shifted?
+        if (!g.noNumber(ts2, ts3)) &amp;&amp; ts3 &lt; ts2) {
+            val1 = null;
+            ts1 = null;
+            val2 = null;
+            ts2 = null;
+        }
+
+        //store values for next compare
+        if (!g.noNumber(val2)) {
+            g.val1 = val2;
+            g.ts1 = ts2;
+        }
+        if (!g.noNumber(val3)) {
+            g.val2 = val3;
+            g.ts2 = ts3;
+        }
+
+        if (!g.noNumber(val1, val2, val3)) {
+            if (val1 &lt; val2 &amp;&amp; val3 &lt; val2) {
+                g.annotation.line({id: ts2+'', xMin: ts2, xMax: ts2, yMin: val2, yMax: val2, text: 'peak', hide: true});
+            }
+        }
+    },
+};
+      </code></pre>
+
+      <h1 id="C4">4. Post Processing</h1>
+
+      This function runs after all sensor data has been processed. It accesses 
+      the data of the currently displayed data window and is called again each 
+      time the displayed data changes.
+      <br>
+      The main application is to add additional objects such as texts, lines, 
+      boxes and symbols to the window.
+
+      <h2 id="C41">4.1 Data</h2>
+      <table>
+         <tr>
+            <th class="center">Name</th>
+            <th>Meaning</th>
+            <th class="center">Abbreviation</th>
+         </tr>
+         <tr>
+            <td class="center">sv[j][i]</td>
+            <td>2-dimensional array of all visible values stored in the 
+                browsers buffer
+               <br>with:<br>
+               j: index of the sensor/line,
+               j=0: timestamps,
+               j&gt;0: sensor/line j<br>
+               i: index of the data point<br>
+            </td>
+            <td class="center">sv</td>
+         </tr>
+         <tr>
+            <td class="center">sv[0]</td>
+            <td>array of all timestamps
+            <td class="center">sv0</td>
+         </tr>
+         <tr>
+            <td class="center">sv[j], j=1..</td>
+            <td>array of all values of sensor/line j</td>
+            <td class="center">svj</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>sv3: array of all values of sensor/line 3</td>
+            <td></td>
+         </tr>
+         <tr>
+            <td class="center">sl[j]</td>
+            <td>1-dimensional array of all sensor labels
+            </td>
+            <td class="center">sl</td>
+         </tr>
+      </table>
+
+      <h2 id="C42">4.2 Functions</h2>
+      <table>
+         <tr>
+            <th class="center">Name</th>
+            <th>Meaning</th>
+         </tr>
+         <tr>
+            <td class="center">g.FIRST(sensor_array)</td>
+            <td>returns the value of the given sensor array at the first 
+                data point in the current display </td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.FIRST(sv0): first timestamp in the current display (the same 
+                as sv[0][0])</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.FIRST(sv3): value of sensor 3 at the first data point in the 
+                current display (the same as sv[3][0])</td>
+         </tr>
+         <tr>
+            <td class="center">g.LAST(sensor_array)</td>
+            <td>returns the value of the given sensor array at the last data 
+                point in the current display</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.LAST(sv0): last timestamp in the current display (the same as 
+                sv[0][sv0.length-1])</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.LAST(sv3): value of sensor 3 at the last data point in the 
+                current display (the same as sv[3][sv0.length-1])</td>
+         </tr>
+         <tr>
+            <td class="center">g.firstTick(<br>[yScalePosition,
+               yScaleType])</td>
+            <td>returns the first displayed tick of the y axis,<br>
+                in case of text axes the ticks are also numbers, but in reverse order:<br>
+                0, 1, 2, 3, ... top down
+         </tr>
+         <tr>
+            <td class="center">g.lastTick(<br>[yScalePosition,
+               yScaleType])</td>
+            <td>returns the last displayed tick of the y axis,<br>
+                in case of text axes the ticks are also numbers, but in reverse order:<br>
+                0, 1, 2, 3, ... top down
+         </tr>
+         <tr>
+            <td class="center">g.SUM(sensor_array[, condition])</td>
+            <td>sums up all values of the given sensor array in the current 
+                display</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.SUM(sv3): sums up all values of sensor 3 in the current 
+                display</td>
+         </tr>
+         <tr>
+            <td class="center">g.MIN(sensor_array[, condition])</td>
+            <td>returns the minimum of all values of the given sensor array 
+                in the current display</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <!--
+            <td>g.MIN(sv5.filter(function(x) {return x &gt; 0;})): The minimum 
+            of all values of sensor 5 &gt; 0 </td>
+            -->
+            <td>g.MIN(sv5, 'x &gt; 0'): The minimum of all values of sensor 5 
+                &gt; 0 </td>
+         </tr>
+         <tr>
+            <td class="center">g.MAX(sensor_array[, condition])</td>
+            <td>returns the maximum of all values of the given sensor array 
+                in the current display</td>
+         </tr>
+         <tr>
+            <td class="center">g.AVG(sensor_array[, condition])</td>
+            <td>returns the average of all values of the given sensor array 
+                in the current display</td>
+         </tr>
+         <tr>
+            <td class="center">g.COUNT(sensor_array[, condition])</td>
+            <td>returns the number of data points in the current display with 
+                the given value</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.COUNT(sv3, 'x == "on"'): the number of datapoints = 'on' of 
+                sensor 3</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.COUNT(sv3, 'x == "on" &amp;&amp; x != x_pre'): the number of 
+                changes to 'on' of sensor 3</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.COUNT(sv3, 'x != x_pre'): the number of any value changes of 
+                sensor 3</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.COUNT(sv3, 'x == g.MAX(sv3)'): the number of data points of 
+                sensor 3 with the maximum value</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.COUNT(sv0): the number of datapoints in the current display</td>
+         </tr>
+         <tr>
+            <td class="center">g.FILTER(sv_array, sensor, condition)</td>
+            <td>filters the 2 dimensional array by condition,
+            the source array is not changed</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.new_array = g.FILTER(sv, 5, 'x &gt; 0'): creates a new array 
+                with the values of sensor 5 &gt; 0<br>
+                for newly defined arrays with different names, there exist no 
+                abbreviations sv[j] and vj!</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>sv = g.FILTER(sv, 5, 'x &gt; 0'): changes the source array</td>
+         </tr>
+         <tr>
+            <td class="center">condition</td>
+            <td>parameter for several functions with:<br>
+                &nbsp;&nbsp;x: sensor value of the current datapoint <br>
+                &nbsp;&nbsp;x_pre: sensor value of the previous datapoint<br>
+                &nbsp;&nbsp;i: index of the current datapoint
+            </td>
+
+         </tr>
+         <tr>
+            <td class="center">g.usertime(timestamp)</td>
+            <td>user friendly output of a timestamp</td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.usertime(g.FIRST(sv0)): time of the first displayed data point
+            </td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.usertime(g.LAST(sv0)): time of the last displayed data point</td>
+         </tr>
+         <tr>
+            <td class="center">g.round(value, decimals)</td>
+            <td>rounds a floating point number to the given number of decimals
+            </td>
+         </tr>
+         <tr>
+            <td class="center"></td>
+            <td>g.round(g.FIRST(sv3), 2): returns the first value of
+                sensor 3 in the current display with 2 decimals</td>
+         </tr>
+      </table>
+     
+      <h2 id="C43">4.3 Abbreviations</h2>
+
+      In the functions FIRST, LAST, SUM, MIN, MAX, AVG, COUNT the sensor_array 
+      can be replaced by the sensor number, 0 can be omitted.<br><br>
+      Example: 
+      <br>g.FIRST(i) == g.FIRST(svi) == g.FIRST(sv[i])
+      <br>g.FIRST() == g.FIRST(0) == g.FIRST(sv0) == g.FIRST(sv[0])
+
+      <h2 id="C44">4.4 Examples</h2>
+
+      <pre><code class="language-javascript">
+    //draws a horizontal line on the maximum of sensor 1
+    var sensor = 1;
+    var value = g.MAX(sensor);
+    var id = 'max_line_' + sensor;
+    var text = 'max ' + g.round(value, 2);
+    g.annotation.horizontal(id, value, text);
+
+    //draws a horizontal line on the average of sensor 1
+    value = g.AVG(sensor);
+    id = 'avg_line_' + sensor;
+    text = 'Ø ' + g.round(value, 2;
+    g.annotation.horizontal(id, value, text);
+
+    //draws a horizontal line on the minimum of sensor 1
+    value = g.MIN(sensor);
+    id = 'min_line_' + sensor;
+    text = 'min ' + g.round(value, 2;
+    g.annotation.horizontal(id, value, text);
+      </code></pre>
+
+
+      <pre><code class="language-javascript">
+    //checks the current humidity and displays a warning, if too high 
+    g.annotation.del({id: 'triangle'});
+    g.annotation.del({id: 'venting'});
+
+    g.ts_last = g.LAST();       //last displayed timestamp
+    if (g.ts_last !== g.ts_last_db()) {
+        return;
+    }
+    g.x4_last = g.LAST(sv4);    //current humidity (sensor 4)
+    g.x5_last = g.LAST(sv5);    //possible humidity (sensor 5)
+
+    if (g.x4_last &gt;= 65) {
+        g.annotation.point({
+            id: 'triangle',
+            xValue: g.ts_last,
+            yValue: g.x4_last,
+            pointStyle: 'triangle',
+            color: 'red'
+        });
+    }
+    if (g.x5_last < g.x4_last &amp;&amp; g.x4_last > 60) {
+        g.limit = 50;
+        g.annotation.line({
+            id: 'venting',
+            xMin: g.ts_last,
+            xMax: g.ts_last,
+            yMin: g.limit,
+            yMax: g.x4_last,
+            arrow_start: true
+        });
+    }
+      </code></pre>
+
+      <pre><code class="language-javascript">
+    //displays the current time at the upper right corner
+    var id = 'time';
+    var x_pos = g.LAST(sv0);
+    var y_pos = g.lastTick();
+    var text = g.usertime(Date.now());
+    g.annotation.text(id, x_pos, y_pos, text);
+      </code></pre>
+
+      <pre><code class="language-javascript">
+    //draws a vertical line at the current time
+    var id = 'now';
+    var x_pos = Date.now();
+    var text = 'now';
+    g.annotation.vertical(id, x_pos, text);
+      </code></pre>
+
+      <pre><code class="language-javascript">
+    //adds the label to sensor 3 at position 30%
+    var sensor = 3;
+    var position = 30;
+    var label = sl[sensor];
+    var ix = g.round(sv0.length / 100 * position);
+    var x_pos = sv0[ix];
+    var y_pos = sv[sensor][ix];
+    if (!notSet(y_pos)) {
+        g.annotation.text(
+            'label_' + sensor,
+            x_pos,
+            y_pos,
+            label,
+            'blue',
+            'lightBlue',
+        );
+    }
+      </code></pre>
+
+      <pre><code class="language-javascript">
+    //adds the label to sensor 11 at position 100%
+    var sensor = 11;
+    var label = sl[sensor];
+    var x_pos = g.LAST();
+    var y_pos = g.LAST(sensor);
+    if (!notSet(y_pos)) {
+        g.annotation.text(
+            'label_' + sensor,
+            x_pos,
+            y_pos,
+            label,
+        );
+    }
+      </code></pre>
+
+      <h1 id="C5">5. In-Display Calculation</h1>
+
+      This function can be used to perform predefined calculations on the
+      currently displayed data window. The result is shown in a subwindow after 
+      button press.
+      <br>
+      Just like in Post Processing, this function accesses the data of the current 
+      window.
+
+      <h2 id="C51">5.1 Example</h2>
+
+      <pre id="structure">
+      <code class="language-javascript">
+      Text:         from:
+      Formula:      g.usertime(g.FIRST())
+
+      Text:         to:
+      Formula:      g.usertime(LAST(sv0))
+
+      Text:         total consumption:
+      Formula:      g.SUM(sv1) + ' kWh'
+
+      Text:         costs with fixed tariff:
+      Formula:      g.round(g.SUM(sv2)/100, 2) + ' €'
+
+      Text:         costs with variable tariff:
+      Formula:      g.round(g.SUM(sv3)/100, 2) + ' €'
+
+      Text:         savings:
+      Formula:      g.round((g.SUM(sv2) - g.SUM(sv3))/100, 2) + ' €'
+    </code>
+    </pre>
+
+      <h1 id="C6">6. Ad-Hoc Calculation</h1>
+      This function enables the administrator to test without having to restart 
+      the instance each time. The same options are available as for Post 
+      Processing and In-Display Calculation.
+
+      <h2 id="C61">6.1 Functions</h2>
+      <table>
+         <tr>
+            <th class="center">Name</th>
+            <th>Meaning</th>
+         </tr>
+         <tr>
+            <td class="center">g.redraw()</td>
+            <td>redraws the current data window, necessary if an annotation
+                is added</td>
+         </tr>
+      </table>
+
+      <h2 id="C62">6.2 Example</h2>
+
+    <pre>
+    <code class="language-javascript">
+    //displays the MxChartDB icon in the middle of the page
+    g.annotation.image({
+        id: 'test', 
+        image: 'icon.png', 
+        width: 50,
+        height: 50,
+    });
+    g.redraw();
+    </code>
+
+    <code class="language-javascript">
+    //displays the alarm icon in the middle of the page
+    g.annotation.image({
+        id: 'test', 
+        image: 'alarm', 
+        width: 50,
+        height: 50,
+    });
+    g.redraw();
+    </code>
+    
+    <code class="language-javascript">
+    //displays an internet image in the middle of the page
+    g.annotation.image({
+        id: 'test', 
+        image: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Database_icon_shortcut.png?20110724224416', 
+        width: 50,
+        height: 50,
+    });
+    g.redraw();
+    </code>
+    
+    </pre>
+   </body>
+</html>
+

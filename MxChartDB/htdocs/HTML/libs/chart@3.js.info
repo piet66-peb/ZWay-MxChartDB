@@ -1,23 +1,24 @@
 #h
-#h Module:              chart.min.js
+#h Module:              chart@3.js
 #h Name:                
 #h Type:                
-#h Version:             V3.6.0
-#h Size:                188.0KiB
+#h Version:             3.9.1
+#h Size:                1.5MiB
 #h Checksum:            
 #h Language:            
-#h License:             
+#h License:             https://github.com/chartjs/Chart.js/blob/master/LICENSE.md
 #h Purpose:             
 #h Source:              
 #h Homepage:            https://www.chartjs.org/
 #h                      https://github.com/chartjs/Chart.js
 #h Forum:               
 #h Support:             
-#h Download URL:        https://cdn.jsdelivr.net/npm/chart.js
-#h Download Time:       2021-11-23 12:47:50
+#h Download URL:        https://www.jsdelivr.com/
+#h                      https://cdn.jsdelivr.net/npm/chart.js@3
+#h Download Time:       2025-08-05 10:00:30
 #h Operation Systems:   
 #h Tags:                
-#h Requirements:        moment-with-locales.js, chartjs-adapter-moment.js
+#h Requirements:        
 #h Key:                 
 #h Comment:             
 #h

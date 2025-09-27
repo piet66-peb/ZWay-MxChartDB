@@ -1,9 +1,9 @@
 #h
-#h Module:              chartjs-plugin-zoom.min(1).js
+#h Module:              chartjs-plugin-zoom@2.2.0.js
 #h Name:                
 #h Type:                
-#h Version:             V1.2.0
-#h Size:                11.7KiB
+#h Version:             
+#h Size:                14.8KiB
 #h Checksum:            
 #h Language:            
 #h License:             
@@ -12,11 +12,11 @@
 #h Homepage:            
 #h Forum:               
 #h Support:             
-#h Download URL:        https://github.com/chartjs/chartjs-plugin-zoom/releases/download/v1.2.0/chartjs-plugin-zoom.min.js
-#h Download Time:       2021-11-16 17:29:15
+#h Download URL:        https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom
+#h Download Time:       2025-08-05 10:54:52
 #h Operation Systems:   
 #h Tags:                
-#h Requirements:        Chart.js >= V3.x, hammer.js
+#h Requirements:        
 #h Key:                 
 #h Comment:             
 #h

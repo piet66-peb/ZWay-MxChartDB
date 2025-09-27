@@ -80,13 +80,14 @@ function modulePostRender(control) {
                     nonnumericLabels_y3IconsWidth:  2.5,
                     axes_time_label: 'null',
                     global_js_lines: 5,
+                    post_processing_lines: 5,
                     axes_y1Label: 'null',
                     axes_y2Label: 'null',
     };  
     
     /* walk through all input fields: */
     var id, type, name, value, checked, positionYAxis_set, poll_method_set;
-    var global_js_lines;
+    var global_js_lines, post_processing_lines;
     $(":input").each(function(){
         type = $(this).attr('type');
         name = $(this).attr('name');
@@ -105,9 +106,15 @@ function modulePostRender(control) {
             }
             if (name === 'global_js_lines') {
                 global_js_lines = value;
+            } else
+            if (name === 'post_processing_lines') {
+                post_processing_lines = value;
             }
             if (id === "global_js_code") {
                 $(this).attr('rows', global_js_lines);
+            } else
+            if (id === "post_processing_code") {
+                $(this).attr('rows', post_processing_lines);
             }
         }
     });
@@ -158,6 +165,10 @@ function modulePostRender(control) {
     $(".global_js").css( "background-color", "#e6e6ff" );
     $(".global_js").css('border-width', '5');
     $(".global_js").css('border-color', 'grey');
+
+    $(".post_processing").css( "background-color", "#e6e6ff" );
+    $(".post_processing").css('border-width', '5');
+    $(".post_processing").css('border-color', 'grey');
 
     /* metric part */
     /* ============ */
@@ -910,7 +921,7 @@ function modulePostRender(control) {
     var MxC = function() {
         return null;
     };
-    var colorInvalid ="rgba(255,0,0,0.2)";
+    var colorInvalid ="rgba(255,0,0,0.1)";
     function checkFormula(alpacaId) {
         var val = $("#"+alpacaId).val();
         if (!val) {
@@ -1090,6 +1101,7 @@ function modulePostRender(control) {
             mess = err.message;
             $("#"+alpacaId).css( "background-color", colorInvalid );
             console.log(mess);
+            console.log(val);
             return mess;
         }
     } /* checkJavascript */
@@ -1103,6 +1115,57 @@ function modulePostRender(control) {
 
     /* check color of global_js_code at start */
     checkJavascript('global_js_code');
+
+    /* post_processing part */
+    /* ==================== */
+
+    /* react on code size change */
+    function resizeCode_pp(event) {
+        var post_processing_lines = $('#post_processing_line').val();
+        $('#post_processing_code').attr('rows', post_processing_lines);
+    } /* resizeCode_pp */
+    $('#post_processing_line').on('change', resizeCode_pp);
+
+    function checkJavascript_pp(alpacaId) {
+        console.log('checkJavascript_pp');
+        $("#"+alpacaId).css( "background-color", "yellow" );
+        var val = $("#"+alpacaId).val();
+        if (!val) {
+            $("#"+alpacaId).css( "background-color", "white" );
+            return;
+        } 
+        
+        var mess, test;
+        var g = {};
+        var t = 'g = {test: function(g) {';
+        t += val;
+        t += '}}';
+        try {
+            /*jshint evil: true */
+            eval(t);
+            /*jshint evil: false */
+            $("#"+alpacaId).css( "background-color", "white" );
+            return;
+        } catch(err) {
+            mess = err.message;
+            $("#"+alpacaId).css( "background-color", colorInvalid );
+            console.log(mess);
+            console.log(val);
+            console.log(t);
+            return mess;
+        }
+    } /* checkJavascript_pp */
+
+    function javascriptOnChange_pp(event) {
+        console.log('javascriptOnChange_pp');
+        var alpacaId = event.target.id;
+        var ret = checkJavascript_pp(alpacaId);
+        if (ret) {alert(ret);}
+    } /* javascriptOnChange_pp */
+    $('#post_processing_code').on('change', javascriptOnChange_pp);
+
+    /* check color of global_js_code at start */
+    checkJavascript_pp('post_processing_code');
 
     console.log('postRender.js end');
 } /* modulePostRender */

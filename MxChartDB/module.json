@@ -9,7 +9,7 @@
   "homepage": "https://github.com/piet66-peb?tab=repositories",
   "icon": "icon.png",
   "moduleName": "MxChartDB",
-  "version": "3.4.6",
+  "version": "3.5.0",
   "maturity": "stable",
   "repository": {
     "type": "git",
@@ -223,6 +223,12 @@
             "default": "on,off",
             "type": "string"
           },
+          "y3IconsPath_Default": {
+            "dependencies": "use_nonnumeric",
+            "required": false,
+            "default": "",
+            "type": "string"
+          },
           "y3Icons": {
             "dependencies": "use_nonnumeric",
             "required": true,
@@ -338,6 +344,12 @@
                 "invisible"
               ]
             },
+            "spanGaps": {
+              "dependencies": "entrytype",
+              "type": "boolean",
+              "required": false,
+              "default": false
+            },
             "fill": {
               "dependencies": "entrytype",
               "type": "string",
@@ -382,6 +394,24 @@
           },
           "code": {
             "dependencies": "define_global_js",
+            "type": "string"
+          }
+        }
+      },
+      "post_processing": {
+        "type": "object",
+        "properties": {
+          "define_post_processing": {
+            "type": "boolean"
+          },
+          "lines": {
+            "dependencies": "define_post_processing",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "code": {
+            "dependencies": "define_post_processing",
             "type": "string"
           }
         }
@@ -633,6 +663,13 @@
             "label": "__y3Labeling__",
             "placeholderX": "on,off"
           },
+          "y3IconsPath_Default": {
+            "dependencies": {
+              "use_nonnumeric": true
+            },
+            "label": "__y3IconsPath__",
+            "placeholder": "./myIcons/"
+          },
           "y3Icons": {
             "dependencies": {
               "use_nonnumeric": true
@@ -802,6 +839,16 @@
                 "__lineType_invisible__"
               ]
             },
+            "spanGaps": {
+              "dependencies": {
+                "entrytype": [
+                  "sensor",
+                  "formula"
+                ]
+              },
+              "type": "checkbox",
+              "rightLabel": "__spanGaps__"
+            },
             "fill": {
               "dependencies": {
                 "entrytype": [
@@ -882,6 +929,36 @@
             "type": "textarea",
             "rows": 0,
             "placeholder": "{\n    v1: <value>,\n    v2: <value>,\n    f1: function(a, b, c) = {\n      return <value>;\n};"
+          }
+        }
+      },
+      "post_processing": {
+        "fieldClass": "post_processing",
+        "label": "__post_processing__",
+        "helpers": [
+          "__post_processing_helper1__"
+        ],
+        "fields": {
+          "define_post_processing": {
+            "type": "checkbox",
+            "rightLabel": "__define_post_processing__"
+          },
+          "lines": {
+            "dependencies": {
+              "define_post_processing": true
+            },
+            "id": "post_processing_line",
+            "label": "__lines__"
+          },
+          "code": {
+            "dependencies": {
+              "define_post_processing": true
+            },
+            "fieldClass": "javascript post_processing_code",
+            "id": "post_processing_code",
+            "label": "__code__",
+            "type": "textarea",
+            "rows": 0
           }
         }
       },

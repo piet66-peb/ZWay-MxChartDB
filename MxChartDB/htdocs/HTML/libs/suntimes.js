@@ -113,5 +113,5 @@ function suntimes(day, lat, lng, tz) {
     var set = toUTC(d, local_set);
 
     //result: civil twilight
-    return [ris, set];
+    return [ris, set, tz_offset];
 }

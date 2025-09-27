@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.2 2025-07-29/peb
+//h Version:      V3.4.4 2025-09-23/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -26,6 +26,8 @@
 //v               V3.4.0 2025-06-01/peb [+]MxC
 //v               V3.4.1 2025-07-15/peb [+]enhance error message 27 with typeof
 //v               V3.4.2 2025-07-29/peb [+]convert tooltips to utf8
+//v               V3.4.3 2025-08-03/peb [+]allow subdirs for icons in modulemedia
+//v               V3.4.4 2025-08-18/peb [+]spanGaps as parameter
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -33,15 +35,16 @@
 
 /*jshint esversion: 6 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils, header_utils, MxC_utils, postcalc, g: true, nightTimes */
+/*globals ch_utils, header_utils, MxC_input: true, MxC_utils, postcalc, g: true */
+/*globals nightTimes, annotation, postprocess, images, imagesPathDefault: true */
 'use strict';
 
 //-----------
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.4.2';
-var WRITTEN = '2025-07-29/peb';
+var VERSION = 'V3.4.4';
+var WRITTEN = '2025-09-23/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -54,6 +57,15 @@ var tableNameIndex;
 //-----------
 //b Functions
 //-----------
+var config;
+var data = {
+    labels: [],
+    datasets: []
+};
+
+var post_processing = false;
+var ts_last; //last stored ts
+
 document.addEventListener("DOMContentLoaded", function(event) {
     var busyi = new busy_indicator(document.getElementById("busybox"),
         document.querySelector("#busybox div"));
@@ -96,14 +108,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
     var sensorsOnlyChange;
     var completeValuesReceived = false;
     var ts_first; //least stored ts
-    var ts_last; //last stored ts
 
     var config_data_datasets_save = [];
     var chartArithmetics;
     var MxC = function(MxC_name, ts) {
-        return MxC_utils.MxC(MxC_data, MxC_name, ts);    
+        return MxC_utils.MxC(MxC_name, ts);    
     };
-    var MxC_data = {};
 
     //----------- text labels and icons ------------
     var y3Labels = []; //text labels list
@@ -121,7 +131,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     var drawIconsTimer, y3IconsCache = {},
         y3IconsVisible, chartAreaBottomLast;
-    var y3IconsDefault = addIconPath('placeholder');
+    var y3IconsDefault = images.addPath('placeholder');
 
     var opacity = 60;
     var opacityHex;
@@ -152,8 +162,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     var maxValues;
     var textAxisNecessary, numberAxisNecessary, scaleType;
 
-    //config structure for chart.js
-    var config = {
+    ///config structure for chart.js
+    config = {
         plugins: [{}],
         data: {},
         options: {
@@ -201,11 +211,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
             },
             animation: false,
             normalized: true,
+
             plugins: {
+                //common: {
+                //    drawTime: 'beforeDraw'
+                //},
                 //we use annotations to create the background for nighttime
-                //annotations are also shown if scale is not defined
                 annotation: {
-                    annotations: {}
+                    drawTime: 'afterDatasetsDraw', //'beforeDraw',
+                    annotations: {},
                 },
                 title: {
                     display: true,
@@ -289,8 +303,23 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             isZoomActive = false;
                             currentIntervalMSEC = header_utils.xRange().len;
                             //console.log('!!!!!!!!!!! currentIntervalMSEC='+currentIntervalMSEC);
-                            display_startTime();
+                            
+                            //add night backgrounds
+                            if (vLog.chartHeader.nightBackground) {
+                                nightTimes.annotations(1);
+                            }
 
+                            //execute post processing
+                            if (post_processing) {
+                                postprocess(1);
+                            }
+                            
+                            if (vLog.chartHeader.nightBackground ||
+                                post_processing) {
+                                g.redraw(1);
+                            }
+
+                            display_startTime();
                         },
                     },
                     pan: {
@@ -307,6 +336,22 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         },
                         onPanComplete: function(chart) {
                             isZoomActive = false;
+
+                            //add night backgrounds
+                            if (vLog.chartHeader.nightBackground) {
+                                nightTimes.annotations(2);
+                            }
+
+                            //execute post processing
+                            if (post_processing) {
+                                postprocess(2);
+                            }
+
+                            if (vLog.chartHeader.nightBackground ||
+                                post_processing) {
+                                g.redraw(2);
+                            }
+
                             display_startTime();
                         },
                     }
@@ -446,13 +491,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
     console.log('isFrame=' + isFrame);
 
     //get constants.js parameters
-    var consts = ch_utils.evalConstants();
-    if (typeof consts === 'string') {
-        ch_utils.displayMessage(0, consts);
+    var vars = ch_utils.evalConstants();
+    if (typeof vars === 'string') {
+        ch_utils.displayMessage(0, vars);
     }
-    var api = consts.api;
-    var snapshots_possible = consts.snapshots_possible;
-    var snapshotAdmin = consts.snapshots.admin_required;
+    var api = vars.api;
+    var snapshots_possible = vars.snapshots_possible;
+    var snapshotAdmin = vars.snapshots.admin_required;
 
     //process output settings
     function correct_aspect(aspect, inp) {
@@ -475,12 +520,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
         return ret;
     } //correct_aspect
 
-    displaySettings = consts.standard_display;
-    if (isFrame && Object.keys(consts.frame).length !== 0) {
-        displaySettings = consts.frame;
+    displaySettings = vars.standard_display;
+    if (isFrame && Object.keys(vars.frame).length !== 0) {
+        displaySettings = vars.frame;
     } else
-    if (isModal && Object.keys(consts.modal).length !== 0) {
-        displaySettings = consts.modal;
+    if (isModal && Object.keys(vars.modal).length !== 0) {
+        displaySettings = vars.modal;
         if (!displaySettings.html_fontSize) {
             displaySettings.html_fontSize = 'small';
         }
@@ -489,8 +534,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
         showShowIx = false;
     } else
-    if (isMobile && Object.keys(consts.mobile).length !== 0) {
-        displaySettings = consts.mobile;
+    if (isMobile && Object.keys(vars.mobile).length !== 0) {
+        displaySettings = vars.mobile;
     }
     if (!displaySettings.html_fontSize) {
         displaySettings.html_fontSize = 'medium';
@@ -641,9 +686,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     config.data = prepareData();
                     //console.log('prepareData: '+(Date.now()-startRun)/1000+' sec');
 
-                    //build up pointer array v_buf to data
-                    postcalc.create_v_buf(config.data);
-
+                    //whenever the data inthe browsers buffer has changed
+                    //we newly build sv array for post processing aso
+                    postcalc.create_sv_buf(config.data);
                 } catch (err) {
                     ch_utils.alertMessage(0, 'prepareData: ' + err.message);
                     throw (err);
@@ -774,8 +819,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.ajax_get(url, success, fail);
 
         function success(data) {
-            MxC_data = data[0];
-            //console.log(JSON.stringify(MxC_data));
+            MxC_input = data[0];
+            //console.log(JSON.stringify(MxC_input));
             program_control(request_mode, from, to);
         } //success
 
@@ -833,7 +878,29 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 //*** prepare and enable arithmetics
                 chartArithmetics = 
                     header_utils.prepare_formulas(vLog.chartHeader);
+
+                //*** enable post calc
                 postcalc.enable_post_calc('postcalcButton', vLog.chartHeader);
+
+                //*** set/reset global object g
+                header_utils.take_global_code(vLog.chartHeader);
+
+                //*** take post processing code postprocess
+                if (typeof vLog.chartHeader.post_processing === 'undefined') {
+                    vLog.chartHeader.post_processing = {
+                        define_post_processing : false,
+                        lines : 30,
+                        code : ''
+                    };
+                }
+
+                //*** take post processing code postprocess
+                if (typeof vLog.chartHeader.post_processing !== 'undefined') {
+                    if (vLog.chartHeader.post_processing.define_post_processing) {
+                        post_processing = true;
+                        header_utils.take_post_processing(vLog.chartHeader);
+                    }
+                }
 
                 //*** test for used  = data;MxC constants
                 program_control(request_mode, from, to);
@@ -914,6 +981,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
             tsLastValues = vLog.chartValues[vLog.chartValues.length - 1][0];
             console.log('tsLastValues new', tsLastValues);
+            if (tsLastValues > ts_last) {
+                ts_last = tsLastValues;
+            }
 
             //*** call drawLogsChart
             program_control(request_mode, from, to);
@@ -1059,6 +1129,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             y3LabelsString = decodeURIComponent(JSON.parse('"' + y3LabelsString +
                 '"'));
         }
+        imagesPathDefault = vLog.chartHeader.y3IconsPath_Default || '';
         y3Labels = y3LabelsString.split(',');
         y3LabelsMaxWidth = 0;
         y3Labels.forEach(function(entry, i) {
@@ -1074,7 +1145,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 y3Icons = vLog.chartHeader.y3Icons.split(',');
                 y3Icons.forEach(function(entry, i) {
                     if (entry.length > 0) {
-                        y3Icons[i] = addIconPath(entry.trim());
+                        y3Icons[i] = images.addPath(entry.trim());
                         if (y3Icons[i].length === 0) {
                             y3Icons[i] = ' '; //= hide text label
                         }
@@ -1103,10 +1174,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         //------------------- buffering ------------------------------------------
 
+/*
         var data = {
             labels: [],
             datasets: []
         };
+*/        
+        data.labels = [];
+        data.datasets = [];
         y3LabelsUsed = {};
 
         //definitions for category part
@@ -1126,9 +1201,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 }
             }
         }
-
-        //set/reset global object g
-        header_utils.take_global_code(vLog.chartHeader);
 
         //*** call setDatasetHeader
         for (var label_ix = 1; label_ix < chartLabelsLen; label_ix++) {
@@ -1217,28 +1289,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
         } //chartValues for ip
         //console.log('chartValues: '+(Date.now()-startRun)/1000+' sec');
-
-        //------------------- set night background -------------------------------
-        if (vLog.chartHeader.nightBackground) {
-            var start = displayStart;
-            var stop = displayEnd;
-            if (lengthChartValues > 0) {
-                var first = vLog.chartValues[0][0];
-                var last = vLog.chartValues[lengthChartValues-1][0];
-                start = Math.min(first, start || first);
-                stop = Math.max(last, stop || last);
-                //console.log('displayStart='+ch_utils.userTime(displayStart)+
-                //    ', first='+ch_utils.userTime(first)+', start='+ch_utils.userTime(start));
-                //console.log('displayEnd='+ch_utils.userTime(displayEnd)+
-                //    ', last='+ch_utils.userTime(last)+', stop='+ch_utils.userTime(stop));
-            }
-            if (start && stop) {
-                config.options.plugins.annotation.annotations = 
-                                    nightTimes.annotations(start, stop);
-            }
-            displayStart = undefined;
-            displayEnd = undefined;
-        }
 
         //------------------- set scales and ticks -------------------------------
         var yAxis1 = false;
@@ -1485,6 +1535,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
             sIx = ix + ' ';
         }
 
+        var spanGaps =  false;
+        if (typeof vLog.chartHeader.spanGaps !== 'undefined') {
+            spanGaps = vLog.chartHeader.spanGaps[ix];
+        }
+
         label = label === 'null' ? null : label;
         var item = {
             label: label === null ? '' : sIx + label.trim(),
@@ -1500,7 +1555,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             pointHitRadius: 10,
             pointBackgroundColor: colorName,
             pointBorderColor: colorName,
-            spanGaps: false, //missing values cause gaps in line
+            spanGaps: spanGaps, //missing values cause gaps in line
             data: [],
             tooltips: [],
             cubicInterpolationMode: 'monotone'
@@ -1760,12 +1815,19 @@ document.addEventListener("DOMContentLoaded", function(event) {
             else {startTime = Math.min(startTime, X[0]);}
             endTime = X[0];
 
-            g.v0 = Xprev[0];
+            g.x0 = X[0];
+            g.x0_prev = Xprev[9];
+            g.v0 = X[0];
 
         //b else if sensor value
         //----------------------
         } else {
+            //current values:
             var x = X[ix];
+            g.ix = ix;
+            g.x = x;
+            g.x_prev = Xprev[ix];
+            //previous value:
             g.v = g['v' + ix];
 
             //b correct value by formula
@@ -2008,13 +2070,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
 
         if (request_mode === 'REQUEST_FIRST') {
+/*            
             //draw chart
             var ctx = document.getElementById('canvas').getContext('2d');
             window.myLine = new Chart(ctx, config);
             busyi.hide();
             console.log('chart displayed: ' + (Date.now() - startRun) / 1000 + 
                 ' sec');
-
+*/
             //show buttons cause we now have a chart
             ch_utils.buttonText('dataJSON', 2);
 
@@ -2069,12 +2132,51 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.buttonVisible('dtpickModal', false);
             ch_utils.buttonVisible('adHocCalcModal', false);
             ch_utils.buttonVisible('adHocCalcResult', false);
+
+            //draw chart
+            var ctx = document.getElementById('canvas').getContext('2d');
+            window.myLine = new Chart(ctx, config);
+
+            //add night backgrounds
+            if (vLog.chartHeader.nightBackground) {
+                nightTimes.annotations(3);
+            }
+
+            //execute post processing
+            if (post_processing) {
+                postprocess(3);
+            }
+
+            if (vLog.chartHeader.nightBackground ||
+                post_processing) {
+                g.redraw(3);
+            }
+
+            //drawing ready
+            busyi.hide();
+            console.log('chart displayed: ' + (Date.now() - startRun) / 1000 + 
+                ' sec');
         } //REQUEST_FIRST
         else {
             //update chart
-console.log('window.myLine.update()');                    
-console.log(config.data);
             window.myLine.update();
+
+/* ????????????? don't know if this is necessary
+            //add night backgrounds
+            if (vLog.chartHeader.nightBackground) {
+                nightTimes.annotations(4);
+            }
+
+            //execute post processing
+            if (post_processing) {
+                postprocess(4);
+            }
+
+            if (vLog.chartHeader.nightBackground ||
+                post_processing) {
+                g.redraw(4);
+            }
+*/            
             busyi.hide();
             console.log('chart updated: ' + (Date.now() - startRun) / 1000 + 
                 ' sec');
@@ -2255,13 +2357,30 @@ console.log(config.data);
     } //drawIcons
 
     //for category icons
+
     function addIconPath(icon) {
+        //no icon
         if (!icon || icon.indexOf('.png') === 0) {
-            return '';
+            return urlIcons + 'placeholder.png';
         }
+        //png + no path or relative to htdocs
+        if (icon.indexOf('.png') > 0 &&
+            (icon.indexOf('/') < 0 ||
+            icon.indexOf('./') === 0)) {
+            //add default path
+            if (imagesPathDefault) {
+                icon = imagesPathDefault + icon;
+            }
+        }
+        //htdocs relative path
+        if (icon.indexOf('./') === 0) {
+            return modulemedia + icon;
+        }
+        //complete path
         if (icon.indexOf('/') >= 0) {
             return icon;
         }
+        //htdocs
         if (icon.indexOf('.png') > 0) {
             return modulemedia + icon;
         }
@@ -2529,14 +2648,11 @@ console.log(config.data);
             //------------------- set night background -------------------------------
             //workaround for incompatibility of annotation plugin with
             //chart.js/ zoom plugin
-            if (vLog.chartHeader.nightBackground) {
-                var start = vLog.chartValues[0][0];
-                var stop = ts_last; //reset max limit of night array
-                config.options.plugins.annotation.annotations = 
-                                    nightTimes.annotations(start, stop);
-                displayStart = undefined;
-                displayEnd = undefined;
-            }
+            var start = vLog.chartValues[0][0];
+            var stop = ts_last; //reset max limit of night array
+            var first = vLog.chartValues[0][0];
+            var lengthChartValues = vLog.chartValues.length;
+            var last = vLog.chartValues[lengthChartValues-1][0];
 
             startRun = Date.now();
             isZoomed = false;
@@ -2545,6 +2661,26 @@ console.log(config.data);
                 1000 + ' sec');
             currentIntervalMSEC = initialIntervalMSEC || (endTime - startTime);
             //console.log('!!!!!!!!!!! currentIntervalMSEC='+currentIntervalMSEC);
+
+            //add night backgrounds
+            if (vLog.chartHeader.nightBackground) {
+                nightTimes.annotations(5);
+            }
+
+            //execute post processing
+            if (post_processing) {
+                postprocess(5);
+            }
+
+            if (vLog.chartHeader.nightBackground ||
+                post_processing) {
+                g.redraw(5);
+            }
+
+            displayStart = undefined;
+            displayEnd = undefined;
+            start = undefined;
+            stop = undefined;
 
             display_startTime();
         }
@@ -2604,21 +2740,39 @@ console.log(config.data);
 
     function do_zoom(from, to) {
         //------------------- set night background -------------------------------
-        if (vLog.chartHeader.nightBackground) {
-            var start = from;
-            var stop = to;
-            start = Math.min(start, vLog.chartValues[0][0]);
-            config.options.plugins.annotation.annotations = 
-                                nightTimes.annotations(start, stop);
-            displayStart = undefined;
-            displayEnd = undefined;
-        }
-
+        var start = from;
+        var stop = to;
+        start = Math.min(start, vLog.chartValues[0][0]);
+        var first = vLog.chartValues[0][0];
+        var lengthChartValues = vLog.chartValues.length;
+        var last = vLog.chartValues[lengthChartValues-1][0];
+    
         isZoomed = true;
         window.myLine.zoomScale('x', {
             min: from,
             max: to
         }, 'none');
+
+        //add night backgrounds
+        if (vLog.chartHeader.nightBackground) {
+            nightTimes.annotations(6);
+        }
+
+        //execute post processing
+        if (post_processing) {
+            postprocess(6);
+        }
+
+        if (vLog.chartHeader.nightBackground ||
+            post_processing) {
+            g.redraw(6);
+        }
+
+        displayStart = undefined;
+        displayEnd = undefined;
+        start = undefined;
+        stop = undefined;
+
         console.log('update time do_zoom: ' + (Date.now() - startRun) / 1000 + 
             ' sec');
         busyi.hide();
