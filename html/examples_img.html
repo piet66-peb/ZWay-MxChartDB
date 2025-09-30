@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <meta name="generator" content="HTML Tidy for HTML5 for Linux version 5.6.0">
+      <title>Example Charts</title>
+      <link rel="shortcut icon" href="../MxChartDB/htdocs/icon.png">
+      <style>
+         img{
+         white-space:pre;
+         max-width: 70%;
+         border: 3px solid #555;
+         }
+         button {font-size: 16px;}
+      </style>
+   </head>
+   <body id="body" style="text-align:center;">
+      <script>
+         function addImage(name, url) {
+             //create image
+             var div = document.createElement("div");
+             let dynamicImage = document.createElement('img');     
+             dynamicImage.src = 'data:image/png;base64,'+url;
+             div.appendChild(dynamicImage);
+         
+             //display
+             el = document.body;
+             el.appendChild(div);
+         
+             var linebreak = document.createElement("br");
+             el.appendChild(linebreak);
+             el.appendChild(linebreak);
+         
+         } //addImage
+      </script> 
+      <script>
+         async function fetchData(url, request_type) {
+             const res = await fetch(url);
+         
+             //console.log(res);
+             //console.log(typeof res);
+             //console.log(JSON.stringify(res));
+             //console.log(res.ok);
+             //console.log(res.status);
+             if (!res.ok) {
+                 alert("There was an error:", res.statusText);
+                 return;
+             }
+             if (res.status !== 200) {
+                 alert('statusText'+ res.statusText);
+                 return;
+             }
+
+             const data = await res.json();
+             if(data.message) {
+                 alert(data.message);
+                 return;
+             }
+
+             //console.log('-------request_type = '+request_type);
+             if (request_type === 'folder') {
+                 //console.log(data[0]);
+                 for (i = 0; i < data.length; i++) {
+                     //console.log('name: '+data[i].name);
+                     //console.log('url: '+data[i].url);
+                     //console.log('html_url: '+data[i].html_url);
+                     if (data[i].name.replace(/^.*\./, '') === 'png') {
+                        fetchData(data[i].url, data[i].name);
+                     }
+                 }
+             } else {
+                 //console.log(data);
+                 //console.log('name: '+data.name);
+                 //console.log('url: '+data.url);
+                 //console.log('html_url: '+data.html_url);
+                 //addImage(data.name, data.url)
+                 //console.log(data.content);
+                 addImage(data.name, data.content)
+             }
+         }   
+         let folder = 'https://api.github.com/repos/piet66-peb/ZWay-MxChartDB/contents/html/img';
+         fetchData(folder, 'folder');
+      </script>
+   </body>
+</html>
+

@@ -18,7 +18,7 @@ Everything you need for installation is included in this package (Linux only).
 
 ## Links
 
-[Example Charts](https://rawcdn.githack.com/piet66-peb/ZWay-MxChartDB/30e03ce/html/examples.html)
+[Example Charts](https://rawcdn.githack.com/piet66-peb/ZWay-MxChartDB/30e03ce/html/examples_img.htmlhttps://rawcdn.githack.com/piet66-peb/ZWay-MxChartDB/30e03ce/html/examples_img.html)
 
 [HowTos](https://rawcdn.githack.com/piet66-peb/ZWay-MxChartDB/30e03ce/html/howtos.html)
 
