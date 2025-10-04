@@ -1003,7 +1003,7 @@
     var ix = g.round(sv0.length / 100 * position);
     var x_pos = sv0[ix];
     var y_pos = sv[sensor][ix];
-    if (!notSet(y_pos)) {
+    if (!g.notSet(y_pos)) {
         g.annotation.text(
             'label_' + sensor,
             x_pos,
@@ -1021,7 +1021,7 @@
     var label = sl[sensor];
     var x_pos = g.LAST();
     var y_pos = g.LAST(sensor);
-    if (!notSet(y_pos)) {
+    if (!g.notSet(y_pos)) {
         g.annotation.text(
             'label_' + sensor,
             x_pos,
