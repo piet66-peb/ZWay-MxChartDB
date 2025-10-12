@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.4 2025-09-23/peb
+//h Version:      V3.6.0 2025-10-11/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -28,6 +28,8 @@
 //v               V3.4.2 2025-07-29/peb [+]convert tooltips to utf8
 //v               V3.4.3 2025-08-03/peb [+]allow subdirs for icons in modulemedia
 //v               V3.4.4 2025-08-18/peb [+]spanGaps as parameter
+//v               V3.6.0 2025-10-09/peb [+]usedYScales
+//v                                     [*]y scales code redesigned
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -43,8 +45,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.4.4';
-var WRITTEN = '2025-09-23/peb';
+var VERSION = 'V3.6.0';
+var WRITTEN = '2025-10-11/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -54,18 +56,27 @@ var url;
 var IndexDBName;
 var tableNameIndex;
 
-//-----------
-//b Functions
-//-----------
 var config;
 var data = {
     labels: [],
     datasets: []
 };
+var usedYScales = {
+    positions: [],
+    types: [],
+    ids: [],
+    visible: [],
+    limit_exceed: []
+};
+var limitYAxis;
 
 var post_processing = false;
 var ts_last; //last stored ts
+var ts_first; //least stored ts
 
+//-----------
+//b Functions
+//-----------
 document.addEventListener("DOMContentLoaded", function(event) {
     var busyi = new busy_indicator(document.getElementById("busybox"),
         document.querySelector("#busybox div"));
@@ -107,7 +118,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     var chartLastValues;
     var sensorsOnlyChange;
     var completeValuesReceived = false;
-    var ts_first; //least stored ts
 
     var config_data_datasets_save = [];
     var chartArithmetics;
@@ -678,6 +688,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 if (initialIntervalMSEC) {
                     currentIntervalMSEC = initialIntervalMSEC;
                 }
+                limitYAxis = vLog.chartHeader.limitYAxis;
                 read_values(request_mode, initialIntervalMSEC, from, to);
                 break;
             case 7:
@@ -875,6 +886,50 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
 
             if (errText <= 0) {
+                //*** set used y axes (only numeric, text axes later)
+                usedYScales = {
+                    positions: [],
+                    types: [],
+                    ids: [],
+                    visible: [],
+                    limit_exceed: []
+                };
+                var posYAxis1 = 'right';
+                if (vLog.chartHeader.hasOwnProperty('positionYAxis')) {
+                    posYAxis1 = vLog.chartHeader.positionYAxis;
+                }
+                if (!vLog.chartHeader.hasOwnProperty('usedYAxes')) {
+                    //for backward compatibility
+                    vLog.chartHeader.usedYAxes =
+                        Array(vLog.chartHeader.chartLabels.length).fill(null);
+                }
+                var usedYAxes = vLog.chartHeader.usedYAxes;
+
+                var used_i, id_i, pos_i, type_i;
+                for (var i = 0; i < usedYAxes.length; i++) {
+                    used_i = usedYAxes[i] || '1_axe';
+                    if (used_i === '1_axe' && posYAxis1 === 'right') {
+                        pos_i = 'right';
+                    } else
+                    if (used_i === '1_axe' && posYAxis1 === 'left') {
+                        pos_i = 'left';
+                    } else
+                    if (used_i === '2_axe' && posYAxis1 === 'right') {
+                        pos_i = 'left';
+                    } else
+                    if (used_i === '2_axe' && posYAxis1 === 'left') {
+                        pos_i = 'right';
+                    }
+                    usedYScales.positions.push(pos_i);
+                    usedYScales.types.push('number');
+                    id_i = 'yU'+pos_i;
+                    usedYScales.ids.push(id_i);
+                    usedYScales.visible.push(false);
+                    usedYScales.limit_exceed.push(false);
+                }
+                //change for category(text) axes later when textAxisNecessary === true
+                console.log(usedYScales);
+
                 //*** prepare and enable arithmetics
                 chartArithmetics = 
                     header_utils.prepare_formulas(vLog.chartHeader);
@@ -1067,9 +1122,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (posYAxis1 === 'right') {
                 config.options.scales.yUright.title.text = yMLabel;
                 config.options.scales.yLright.title.text = yMLabel;
+                //config.options.scales.yUright.title.display = true;
+                //config.options.scales.yLright.title.display = true;
             } else {
                 config.options.scales.yUleft.title.text = yMLabel;
                 config.options.scales.yLleft.title.text = yMLabel;
+                //config.options.scales.yUleft.title.display = true; //!!!!!
+                //config.options.scales.yLleft.title.display = true;
             }
         }
 
@@ -1079,9 +1138,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (posYAxis2 === 'right') {
                 config.options.scales.yUright.title.text = ySLabel;
                 config.options.scales.yLright.title.text = ySLabel;
+                //config.options.scales.yUright.title.display = true;
+                //config.options.scales.yLright.title.display = true;
             } else {
                 config.options.scales.yUleft.title.text = ySLabel;
                 config.options.scales.yLleft.title.text = ySLabel;
+                //config.options.scales.yUleft.title.display = true;
+                //config.options.scales.yLleft.title.display = true;
             }
         }
 
@@ -1174,12 +1237,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         //------------------- buffering ------------------------------------------
 
-/*
-        var data = {
-            labels: [],
-            datasets: []
-        };
-*/        
         data.labels = [];
         data.datasets = [];
         y3LabelsUsed = {};
@@ -1290,101 +1347,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
         } //chartValues for ip
         //console.log('chartValues: '+(Date.now()-startRun)/1000+' sec');
 
-        //------------------- set scales and ticks -------------------------------
-        var yAxis1 = false;
-        var yAxis2 = false;
+        //------------------- set y scales and y ticks -------------------------------
         resetScales();
 
-        //if numeric values
-        if (numberAxisNecessary || !textAxisNecessary) {
-            var maxVal = Math.max.apply(Math, maxValues);
-            var limitYAxis = vLog.chartHeader.limitYAxis || Number.MAX_VALUE;
-            limitYAxis = Math.min(vLog.chartHeader.limitYAxis, maxVal);
-
-            //set axis for numeric values
-            if (!vLog.chartHeader.hasOwnProperty('usedYAxes')) {
-                vLog.chartHeader.usedYAxes = [];
-            }
-            for (i = 0; i < maxValues.length; i++) {
-                var usedYAxe = vLog.chartHeader.usedYAxes[i + 1]; //!!!!!
-                if (usedYAxe) {
-                    if (usedYAxe === '1_axe') {
-                        data.datasets[i].yAxisID = 'yU' + posYAxis1;
-                        yAxis1 = posYAxis1;
-                    }
-                    if (usedYAxe === '2_axe') {
-                        data.datasets[i].yAxisID = 'yU' + posYAxis2;
-                        yAxis2 = posYAxis2;
-                    }
-                    //console.log(i+' '+usedYAxe+' '+data.datasets[i].yAxisID);
-                } else
-                if (scaleType[i] === 'number') {
-                    //console.log(i+' '+scaleType[i]);
-                    if (maxValues[i] === null || maxValues[i] <= limitYAxis) {
-                        data.datasets[i].yAxisID = 'yU' + posYAxis1;
-                        yAxis1 = posYAxis1;
-                    } else {
-                        data.datasets[i].yAxisID = 'yU' + posYAxis2;
-                        yAxis2 = posYAxis2;
-                    }
-                }
-                //console.log(i+': '+i);
-                //console.log(data.datasets[i]);
-            }
-            //set axis for completely null lines
-            for (i = 0; i < maxValues.length; i++) {
-                if (scaleType[i] === null) {
-                    if (yAxis1) {
-                        //console.log(i+': '+posYAxis1);
-                        data.datasets[i].yAxisID = 'yU' + posYAxis1;
-                        yAxis1 = posYAxis1;
-                    } else
-                    if (yAxis2) {
-                        //console.log(i+': '+posYAxis2);
-                        data.datasets[i].yAxisID = 'yU' + posYAxis2;
-                        yAxis2 = posYAxis2;
-                    } else {
-                        //console.log(i+': '+posYAxis1);
-                        data.datasets[i].yAxisID = 'yU' + posYAxis1;
-                        yAxis1 = posYAxis1;
-                    }
-                }
-            }
-        } //numberAxisNecessary
-
-        //display y scales titles
-        //console.log(yAxis1+' '+yAxis2);
-        if (yAxis1 === 'right' || yAxis2 === 'right') {
-            config.options.scales.yUright.display = true;
-            if (config.options.scales.yUright.title.text) {
-                config.options.scales.yUright.title.display = true;
-            }
-        }
-        if (yAxis1 === 'left' || yAxis2 === 'left') {
-            config.options.scales.yUleft.display = true;
-            if (config.options.scales.yUleft.title.text) {
-                config.options.scales.yUleft.title.display = true;
-            }
-        }
-        if (yAxis1 !== 'right' && yAxis2 !== 'right') {
-            if (config.options.scales.yLright.title.text) {
-                config.options.scales.yLright.title.display = true;
-            }
-        }
-        if (yAxis1 !== 'left' && yAxis2 !== 'left') {
-            if (config.options.scales.yLleft.title.text) {
-                config.options.scales.yLleft.title.display = true;
-            }
-        }
-        //console.log(config.options.scales.yUright);
-        //console.log(config.options.scales.yUleft);
-        //console.log(config.options.scales.yLright);
-        //console.log(config.options.scales.yLleft);
-
-        //if text values
+        //for text values prepare data
+        var y3LabelsCount = y3Labels.length;
         if (textAxisNecessary) {
-            var y3LabelsCount = y3Labels.length;
-
             //maybe we must shorten text label axis
             if (y3reduceUnusedTicks) {
                 var y3LabelsNew = [];
@@ -1409,36 +1377,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 y3IconsRender = JSON.parse(JSON.stringify(y3Icons));
             }
 
-            //display text scales
-            for (i = 0; i < maxValues.length; i++) {
-                if (scaleType[i] === 'string' && maxValues[i] === false) {
-                    data.datasets[i].yAxisID = 'yL' + posYAxis1;
-                    config.options.scales.yLright.labels = y3Labels;
-                    config.options.scales.yLleft.labels = y3Labels;
+            //set labels to both text axes
+            config.options.scales.yLright.labels = y3Labels;
+            config.options.scales.yLleft.labels = y3Labels;
 
-                    if (yAxis1 && yAxis2) {
-                        config.options.scales.yLright.display = true;
-                        config.options.scales.yLleft.display = true;
-                    } else
-                    if (posYAxis1 === 'right') {
-                        config.options.scales.yLright.display = true;
-                    } else
-                    if (posYAxis1 === 'left') {
-                        config.options.scales.yLleft.display = true;
-                    } else {
-                        config.options.scales.yLright.display = true;
-                    }
-
-                    if (y3LabelsCount <= 2 && (yAxis1 || yAxis2)) {
-                        //console.log('stacked');
-                        setScale('yUright', 'stack_right', 5, undefined, 1);
-                        setScale('yLright', 'stack_right', 1, true, 2);
-                        setScale('yUleft', 'stack_left', 5, undefined, 4);
-                        setScale('yLleft', 'stack_left', 1, true, 3);
-                    }
-                } //if
-            } //for
-
+            //prepare icons
             //if icons
             if (y3IconsWidth > 0) {
                 //hide text label, if icon defined or icon = blank
@@ -1486,8 +1429,87 @@ document.addEventListener("DOMContentLoaded", function(event) {
             } //icons
         } //textAxisNecessary
 
-        //------------------------------------------------------------------------
+        //for all sensors
+        var sensor_no;
+        var yRightUsed = false, yLeftUsed = false;
+        for (sensor_no = 1; sensor_no < usedYScales.ids.length; sensor_no++) {
+            if (usedYScales.visible[sensor_no]) {
+                //display y scale + title
+                var id = usedYScales.ids[sensor_no];
+                config.options.scales[id].display = true;
+                //if (config.options.scales[id].title.text) {
+                //    config.options.scales[id].title.display = true;
+                //}
+                data.datasets[sensor_no-1].yAxisID = id;
 
+                //for stacking the text axe
+                if (usedYScales.positions[sensor_no] === 'right') {
+                    yRightUsed = true;
+                } else {
+                    yLeftUsed = true;
+                }
+            }
+        }  //for sensor_no
+
+
+        //console.log(posYAxis1);
+        //console.log(config.options.scales.yUright.title.text);
+        //console.log(config.options.scales.yLright.title.text);
+        //console.log(config.options.scales.yLleft.title.text);
+        //console.log(config.options.scales.yUleft.title.text);
+        if (posYAxis1 === 'right') {
+            if (config.options.scales.yUright.title.text &&
+                config.options.scales.yUright.display) {
+                config.options.scales.yUright.title.display = true;
+            } else
+            if (config.options.scales.yLright.title.text &&
+                config.options.scales.yLright.display) {
+                config.options.scales.yLright.title.display = true;
+            }
+        } else {
+            if (config.options.scales.yLleft.title.text &&
+                config.options.scales.yLleft.display) {
+                config.options.scales.yLleft.title.display = true;
+            } else
+            if (config.options.scales.yUleft.title.text &&
+                config.options.scales.yUleft.display) {
+                config.options.scales.yUleft.title.display = true;
+            }
+        }
+        if (posYAxis2 === 'right') {
+            if (config.options.scales.yUright.title.text &&
+                config.options.scales.yUright.display) {
+                config.options.scales.yUright.title.display = true;
+            } else
+            if (config.options.scales.yLright.title.text &&
+                config.options.scales.yLright.display) {
+                config.options.scales.yLright.title.display = true;
+            }
+        } else {
+            if (config.options.scales.yLleft.title.text &&
+                config.options.scales.yLleft.display) {
+                config.options.scales.yLleft.title.display = true;
+            } else
+            if (config.options.scales.yUleft.title.text &&
+                config.options.scales.yUleft.display) {
+                config.options.scales.yUleft.title.display = true;
+            }
+        }
+
+
+
+        //stacking text axes
+        if (numberAxisNecessary && textAxisNecessary && y3LabelsCount <= 2) {
+            setScale('yUright', 'stack_right', 5, undefined, 1);
+            setScale('yLright', 'stack_right', 1, true, 2);
+            setScale('yUleft', 'stack_left', 5, undefined, 4);
+            setScale('yLleft', 'stack_left', 1, true, 3);
+
+            if (yRightUsed && yLeftUsed) {
+                config.options.scales.yLleft.display = true;
+                config.options.scales.yLright.display = true;
+            }
+        }
         return data;
     } //prepareData
 
@@ -1733,8 +1755,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             }
             if (scaleType[ix_store - 1] === undefined) {
                 scaleType[ix_store - 1] = null;
-                //console.log('scaletype of sensor='+ix+' is '+
-                //scaleType [ix_store-1]+' x['+ip+']='+x);
             }
             return x;
         } else
@@ -1745,16 +1765,25 @@ document.addEventListener("DOMContentLoaded", function(event) {
             maxValues[ix_store - 1] = maxValues[ix_store - 1] ? 
                 Math.max(maxValues[ix_store - 1], x) : x;
             scaleType[ix_store - 1] = 'number';
-            //console.log('scaletype of sensor='+ix+' is '+
-            //scaleType [ix_store-1]+' x['+ip+']='+x);
             numberAxisNecessary = true;
+            usedYScales.visible[ix_store] = true;
+            if (limitYAxis !== undefined && x > limitYAxis-0) {
+                if (!usedYScales.limit_exceed[ix_store]) {
+                    usedYScales.limit_exceed[ix_store] = true;
+                    if (usedYScales.positions[ix_store] === 'right') {
+                        usedYScales.positions[ix_store] ='left';
+                        usedYScales.ids[ix_store] = usedYScales.ids[ix_store].replace('right', 'left');
+                    } else {
+                        usedYScales.positions[ix_store] ='right';
+                        usedYScales.ids[ix_store] = usedYScales.ids[ix_store].replace('left', 'right');
+                    }
+                }
+            }
             return Math.round(x * 100) / 100;
         } else
         if (typeof x === 'string') {
             if (maxValues[ix_store - 1]) {
                 x_pre = vLog.chartValues[ip - 1][ix];
-                //console.log('x_pre='+x_pre+' timestamp='+timestamp+' ip='+ip+' ix='+ix);
-                //if (x !== x_pre.toString()) {
                 if (x_pre === null || x_pre === undefined || x !== x_pre.toString()) {
                     mess = ch_utils.buildMessage(27, ix, ip, 
                         ch_utils.userTime(timestamp), add_type(x_pre), add_type(x));
@@ -1765,17 +1794,21 @@ document.addEventListener("DOMContentLoaded", function(event) {
             } else {
                 maxValues[ix_store - 1] = false;
                 scaleType[ix_store - 1] = 'string';
-                //console.log('scaletype of sensor='+ix+' is '+
-                //scaleType [ix_store-1]+' x['+ip+']='+x);
                 textAxisNecessary = true;
+
+                //correct usedYScales for category/text scale
+                if (usedYScales.types[ix] !== 'text') {
+                    usedYScales.types[ix] = 'text';
+                    usedYScales.ids[ix] = usedYScales.ids[ix].replace('U', 'L');
+                    usedYScales.visible[ix] = true;
+                }
+
                 return x;
             }
         } else
         if (typeof x === 'number') {
             if (maxValues[ix_store - 1] === false) {
                 x_pre = vLog.chartValues[ip - 1][ix];
-                //console.log('x_pre='+x_pre+' timestamp='+timestamp+' ip='+ip+' ix='+ix);
-                //if (x.toString() !== x_pre) {
                 if (x_pre === null || x_pre === undefined || x.toString() !== x_pre) {
                     mess = ch_utils.buildMessage(27, ix, ip, 
                         ch_utils.userTime(timestamp), add_type(x_pre), add_type(x));
@@ -1787,9 +1820,20 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 maxValues[ix_store - 1] = maxValues[ix_store - 1] ? 
                     Math.max(maxValues[ix_store - 1], x) : x;
                 scaleType[ix_store - 1] = 'number';
-                //console.log('scaletype of sensor='+ix+' is '+
-                //scaleType [ix_store-1]+' x['+ip+']='+x);
                 numberAxisNecessary = true;
+                usedYScales.visible[ix_store] = true;
+                if (limitYAxis !== undefined && x > limitYAxis-0) {
+                    if (!usedYScales.limit_exceed[ix_store]) {
+                        usedYScales.limit_exceed[ix_store] = true;
+                        if (usedYScales.positions[ix_store] === 'right') {
+                            usedYScales.positions[ix_store] = 'left';
+                            usedYScales.ids[ix_store] = usedYScales.ids[ix_store].replace('right', 'left');
+                        } else {
+                            usedYScales.positions[ix_store] = 'right';
+                            usedYScales.ids[ix_store] = usedYScales.ids[ix_store].replace('left', 'right');
+                        }
+                    }
+                }
                 return Math.round(x * 100) / 100;
             }
         }

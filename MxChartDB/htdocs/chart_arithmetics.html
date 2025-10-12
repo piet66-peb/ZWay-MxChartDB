@@ -370,234 +370,235 @@
       Annotations can be used to add lines, arrows, boxes, points, labels 
       to the chart.
 
-      <br><br><table>
+      <h3>General Parameters for all Annotation Functions</h3>
+
+      <table>
+         <tr>
+            <th class="center">Parameter</th>
+            <th>Purpose</th>
+         </tr>
+         <tr>
+            <td class="center">annotation id</td>
+            <td>a unique id of the annotation object<br>
+                the only mandatory parameter<br>
+                the object remains in place until it is deleted or 
+                overwritten with another object with the same id
+            </td>
+         </tr>
+         <tr>
+            <td class="center">usedYScale</td>
+            <td>denotes the y scale used<br>
+                a chart has one or two y axes: one on the right and/or one on 
+                the left<br>
+                each y axis consists of one or two scales: one numeric scale 
+                and/or one scale with text, symbol, or icon labels<br>
+                the annotation function needs to know which scale to use<br>
+                it may happen, especially if more than one y scale is used,
+                that the software is unable to automatically identify the 
+                correct y scale  
+            </td>
+         </tr>
+         <tr>
+            <td class="center">hide</td>
+            <td>values: true|false, enable hiding of the object with a click</td>
+         </tr>
+         <tr>
+            <td class="center">yValue, yMin, yMax</td>
+            <td>y positions on the display<br>
+                also numeric values for scales of type 'text'<br>
+                the tics are numbered top down: 0, 1, 2, ... </td>
+         </tr>
+      </table>
+
+      <h3>Annotation Functions</h3>
+
+      <table>
          <tr>
             <th class="center">Function</th>
             <th>Invocation</th>
             <th style="width:50%;">Purpose</th>
          </tr>
          <tr>
+            <td class="center">g.yScaleID</td>
+            <td>= g.yScaleID(&lt;sensor number&gt;)
+            </td>
+            <td>returns the id of the y scale, used by the sensor<br><br>
+                <b>together with the option 'Maximum value of the main y-axis'
+                    this version of the function may not work properly
+                   in every case.<br>
+                   that option is deprecated - don't use it anymore!</b>
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.yScaleID</td>
+            <td>= g.yScaleID(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition
+                ('right'|'left')&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType
+                ('number'|'text')&gt;)
+            </td>
+            <td>returns the id of the y scale of the given position and type
+            </td>
+         </tr>
+         <tr>
             <td class="center">g.annotation.point</td>
-            <td>g.annotation.point(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xValue: &lt;x value&gt;,<br>
+            <td>g.annotation.point(&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{xValue: &lt;x value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
-                right|left&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
-                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
+                sensor number|yScaleID&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pointStyle: &lt;
                 point style&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;radius: &lt;
                 point radius&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color: &lt;color&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;
-                draw time&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: true|false})
             </td>
             <td>adds a point object to the chart<br><br>
-                annotation id: mandatory, unique<br>
                 point radius: point radius in pixels<br>
-                hide: hide object at click<br><br>
                 valid point styles:<br>
                 cross, crossRot, dash, line, rect, rectRounded, retRot, 
-                star, triangle, false<br>
-                valid draw times:<br>
-                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
-                y values on axes of type 'text' :<br>
-                the tics are numbered top down: 0, 1, 2, ...
+                star, triangle
             </td>
          </tr>
          <tr>
             <td class="center">g.annotation.label</td>
-            <td>g.annotation.label(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xValue: &lt;x value&gt;,<br>
+            <td>g.annotation.label(&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{xValue: &lt;x value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;content: &lt;content&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
-                right|left&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
-                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
+                sensor number|yScaleID&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color: &lt;color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
                 color&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;draw time&gt;,
-                <br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: true|false})
             </td>
             <td>adds a text or other content to the chart<br><br>
-                annotation id: mandatory, unique<br>
-                hide: hide object at click<br><br>
                 valid content types:<br>
-                string, string[], HTML canvas element<br>
-                valid draw times:<br>
-                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
-                y values on axes of type 'text' :<br>
-                the tics are numbered top down: 0, 1, 2, ...
+                string, string[], HTML canvas element
                 <br>backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
             </td>
          </tr>
          <tr>
             <td class="center">g.annotation.image</td>
-            <td>g.annotation.image(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xValue: &lt;x value&gt;,<br>
+            <td>g.annotation.image(&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{xValue: &lt;x value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;width: &lt;width in pixels&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height: &lt;height in pixels&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;image: &lt;image&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
-                right|left&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
-                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
+                sensor number|yScaleID&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderColor: &lt;borderColor&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
                 color&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;draw time&gt;,
-                <br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: true|false})
             </td>
             <td>adds an image to the chart<br><br>
-                annotation id: mandatory, unique<br>
-                hide: hide object at click<br><br>
                 valid image types:<br>
                 - file name without extension: Z-Way icon<br>
                 - file with extension .png and without path: image in htdocs folder<br>
                 - file with extension .png and relative path: relative to htdocs<br>
                 - file with complete path<br>
-                - image url<br>
-                valid draw times:<br>
-                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
-                y values on axes of type 'text' :<br>
-                the tics are numbered top down: 0, 1, 2, ...
+                - image url
                 <br>backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
             </td>
          </tr>
          <tr>
             <td class="center">g.annotation.line</td>
-            <td>g.annotation.line(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMin: &lt;x min value&gt;,<br>
+            <td>g.annotation.line(&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{xMin: &lt;x min value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMax: &lt;x max value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMin: &lt;y min value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMax: &lt;y max value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderWidth: &lt;
                 line width in pics&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
-                right|left&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
-                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
+                sensor number|yScaleID&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text: &lt;text&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text_color: &lt;
                 text color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text_background: &lt;
                 text background color&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arrow_start: &lt;
-                true|false&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arrow_end: &lt;
-                true|false&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;
-                draw time&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arrow_start: true|false,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arrow_end: true|false,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: true|false})
             </td>
             <td>adds a line object to the chart, maybe with arrows and text
                 <br><br>
-                annotation id: mandatory, unique<br>
                 arrow_start: display arrow at line start<br>
-                arrow_end:display arrow at line end<br>
-                hide: hide object at click<br><br>
-                valid draw times:<br>
-                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
-                y values on axes of type 'text' :<br>
-                the tics are numbered top down: 0, 1, 2, ...
+                arrow_end:display arrow at line end
             </td>
          </tr>
          <tr>
             <td class="center">g.annotation.box</td>
-            <td>g.annotation.box(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMin: &lt;x min value&gt;,<br>
+            <td>g.annotation.box(&lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{xMin: &lt;x min value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xMax: &lt;x max value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMin: &lt;y min value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMax: &lt;y max value&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScalePosition: &lt;
-                right|left&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yScaleType: &lt;
-                number|text&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
+                sensor number|yScaleID&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
                 color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderWidth: &lt;
-                true|false&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drawTime: &lt;
-                draw time&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: &lt;true|false&gt;})
+                line width in pics&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hide: true|false})
             </td>
             <td>adds a box object to the chart<br><br>
-                annotation id: mandatory, unique<br>
-                hide: hide object at click<br><br>
-                valid draw times:<br>
-                beforeDraw, beforeDatasetsDraw, afterDatasetsDraw, afterDraw<br>
-                y values on axes of type 'text' :<br>
-                the tics are numbered top down: 0, 1, 2, ...
-                <br>backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
+                backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
             </td>
          </tr>
          <tr>
             <td class="center">g.annotation.del</td>
-            <td>g.annotation.del({id: &lt;annotation id&gt;})
+            <td>g.annotation.del(&lt;annotation id&gt;)
             </td>
             <td>deletes an annotation object from the chart</td>
          </tr>
          <tr>
             <td class="center">g.annotation.horizontal</td>
-            <td>g.annotation.horizontal(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;annotation id&gt;,<br>
+            <td>g.annotation.horizontal(&lt;annotation id&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;y position&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;
                 text background color&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType&gt;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;usedYScale&gt;,<br>
                 )
             </td>
-            <td>adds a horizontal line to the chart, maybe with text<br><br>
+            <td>adds a horizontal line to the chart, maybe with text<br>
                 (special case of annotation.line)
             </td>
          </tr>
          <tr>
             <td class="center">g.annotation.vertical</td>
-            <td>g.annotation.vertical(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;annotation id&gt;,<br>
+            <td>g.annotation.vertical(&lt;annotation id&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;x position&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;
                 text background color&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType&gt;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;usedYScale&gt;,<br>
                 )
             </td>
-            <td>adds a vertical line to the chart, maybe with text<br><br>
+            <td>adds a vertical line to the chart, maybe with text<br>
                 (special case of annotation.line)
             </td>
          </tr>
          <tr>
             <td class="center">g.annotation.text</td>
-            <td>g.annotation.text(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;annotation id&gt;,<br>
+            <td>g.annotation.text(&lt;annotation id&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;x position&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;y position&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;text color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;
                 text background color&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition&gt;,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType&gt;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;usedYScale&gt;,<br>
                 )
             </td>
-            <td>adds a text to the chart at the special position<br><br>
+            <td>adds a text to the chart at the special position<br>
                 (special case of annotation.line)
             </td>
          </tr>
@@ -616,12 +617,12 @@
         if (g.noNumber(x) ||
             x0 !== g.ts_last_db() ||
             x &lt;= limit) {
-            g.annotation.del({id: 'venting_'+ix});
-            g.annotation.del({id: 'triangle_'+ix});
+            g.annotation.del('venting_'+ix);
+            g.annotation.del('triangle_'+ix);
             return;
         }
-        g.annotation.point({id: 'triangle_'+ix, xValue: x0, yValue: x, pointStyle: 'triangle', color: 'red', hide: true});
-        g.annotation.line({id: 'venting_'+ix, xMin: x0, xMax: x0, yMin: limit, yMax: x, arrow_start: true, hide: true});
+        g.annotation.point('triangle_'+ix, {xValue: x0, yValue: x, pointStyle: 'triangle', color: 'red', hide: true});
+        g.annotation.line('venting_'+ix, {xMin: x0, xMax: x0, yMin: limit, yMax: x, arrow_start: true, hide: true});
     },
 };
       </code></pre>
@@ -655,7 +656,7 @@
 
         if (!g.noNumber(val1, val2, val3)) {
             if (val1 &lt; val2 &amp;&amp; val3 &lt; val2) {
-                g.annotation.point({id: ts2+'', xValue: ts2, yValue: val2, pointStyle: 'star', radius: 15, color: 'red', hide: true});
+                g.annotation.point(ts2+'', {xValue: ts2, yValue: val2, pointStyle: 'star', radius: 15, color: 'red', hide: true});
             }
         }
     },
@@ -691,7 +692,7 @@
 
         if (!g.noNumber(val1, val2, val3)) {
             if (val1 &lt; val2 &amp;&amp; val3 &lt; val2) {
-                g.annotation.line({id: ts2+'', xMin: ts2, xMax: ts2, yMin: val2, yMax: val2, text: 'peak', hide: true});
+                g.annotation.line(ts2+'', {xMin: ts2, xMax: ts2, yMin: val2, yMax: val2, text: 'peak', hide: true});
             }
         }
     },
@@ -743,8 +744,7 @@
          </tr>
          <tr>
             <td class="center">sl[j]</td>
-            <td>1-dimensional array of all sensor labels
-            </td>
+            <td>1-dimensional array of all sensor labels</td>
             <td class="center">sl</td>
          </tr>
       </table>
@@ -786,15 +786,13 @@
                 current display (the same as sv[3][sv0.length-1])</td>
          </tr>
          <tr>
-            <td class="center">g.firstTick(<br>[yScalePosition,
-               yScaleType])</td>
+            <td class="center">g.firstTick([sensor number|yScaleID])</td>
             <td>returns the first displayed tick of the y axis,<br>
                 in case of text axes the ticks are also numbers, but in reverse order:<br>
                 0, 1, 2, 3, ... top down
          </tr>
          <tr>
-            <td class="center">g.lastTick(<br>[yScalePosition,
-               yScaleType])</td>
+            <td class="center">g.lastTick([sensor number|yScaleID])</td>
             <td>returns the last displayed tick of the y axis,<br>
                 in case of text axes the ticks are also numbers, but in reverse order:<br>
                 0, 1, 2, 3, ... top down
@@ -946,8 +944,8 @@
 
       <pre><code class="language-javascript">
     //checks the current humidity and displays a warning, if too high 
-    g.annotation.del({id: 'triangle'});
-    g.annotation.del({id: 'venting'});
+    g.annotation.del('triangle');
+    g.annotation.del('venting');
 
     g.ts_last = g.LAST();       //last displayed timestamp
     if (g.ts_last !== g.ts_last_db()) {
@@ -957,9 +955,9 @@
     g.x5_last = g.LAST(sv5);    //possible humidity (sensor 5)
 
     if (g.x4_last &gt;= 65) {
-        g.annotation.point({
-            id: 'triangle',
-            xValue: g.ts_last,
+        g.annotation.point(
+            'triangle',
+           {xValue: g.ts_last,
             yValue: g.x4_last,
             pointStyle: 'triangle',
             color: 'red'
@@ -967,9 +965,9 @@
     }
     if (g.x5_last < g.x4_last &amp;&amp; g.x4_last > 60) {
         g.limit = 50;
-        g.annotation.line({
-            id: 'venting',
-            xMin: g.ts_last,
+        g.annotation.line(
+            'venting',
+           {xMin: g.ts_last,
             xMax: g.ts_last,
             yMin: g.limit,
             yMax: g.x4_last,
@@ -1078,7 +1076,7 @@
          <tr>
             <td class="center">g.redraw()</td>
             <td>redraws the current data window, necessary if an annotation
-                is added</td>
+                is added in Ad-Hoc Calculation</td>
          </tr>
       </table>
 
@@ -1087,9 +1085,9 @@
     <pre>
     <code class="language-javascript">
     //displays the MxChartDB icon in the middle of the page
-    g.annotation.image({
-        id: 'test', 
-        image: 'icon.png', 
+    g.annotation.image(
+        'test', 
+       {image: 'icon.png', 
         width: 50,
         height: 50,
     });
@@ -1098,9 +1096,9 @@
 
     <code class="language-javascript">
     //displays the alarm icon in the middle of the page
-    g.annotation.image({
-        id: 'test', 
-        image: 'alarm', 
+    g.annotation.image(
+        'test', 
+       {image: 'alarm', 
         width: 50,
         height: 50,
     });
@@ -1109,8 +1107,8 @@
     
     <code class="language-javascript">
     //displays an internet image in the middle of the page
-    g.annotation.image({
-        id: 'test', 
+    g.annotation.image(
+        'test', 
         image: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Database_icon_shortcut.png?20110724224416', 
         width: 50,
         height: 50,

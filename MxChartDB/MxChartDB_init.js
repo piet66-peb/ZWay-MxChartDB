@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.3.4 2025-09-06/peb
+//h Version:      V3.3.4 2025-10-10/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -36,7 +36,7 @@
 //-----------
 //var MODULE='MxChartDB_init.js';
 //var VERSION='V3.3.4';
-//var WRITTEN='2025-09-06/peb';
+//var WRITTEN='2025-10-10/peb';
 
 //-----------
 //b Functions
@@ -168,7 +168,6 @@ var init = function (self) {
         if(! self.config.DBName.match(letterNumber)) {
             throw(self.instanceMessage+': invalid database name, break.');
         }
-        //if (!self.config.axes.limitYAxis) {self.config.axes.limitYAxis = 1000;}
         if (!self.config.opacity) {self.config.opacity = 60;}
         if (!self.config.axes.time_label) {self.config.axes.time_label = 'null';}
         if (!self.config.axes.y1Label) {self.config.axes.y1Label = 'null';}

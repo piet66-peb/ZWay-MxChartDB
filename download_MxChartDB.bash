@@ -16,7 +16,7 @@
 #h Resources:    
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V1.0.0 2025-08-05/peb
+#h Version:      V1.0.1 2025-10-09/peb
 #v History:      V1.0.0 2024-10-02/peb first version
 #h Copyright:    (C) piet66 2024
 #h
@@ -25,8 +25,8 @@
 #b Constants
 #-----------
 MODULE='download_MxChartDB.bash'
-VERSION='V1.0.0'
-WRITTEN='2025-08-05/peb'
+VERSION='V1.0.1'
+WRITTEN='2025-10-09/peb'
 
 #b Variables
 #-----------
@@ -54,14 +54,12 @@ echo extracting $gitzip...
 [ -e "$module" ] && rm -R $module
 unzip -q -o $gitzip
 
+d=${tardir}${pack}/htdocs/HTML/libs
+echo clearing $d...
+rm -f $d/*.*
+
 echo copying $pack to $tardir...
 cp -dpR $module $tardir
-
-d=${tardir}${pack}/htdocs/HTML/libs/
-echo clearing $d...
-cd $d
-rm -f *.xxx
-rm -f 'MIT LICENSE.txt'
 
 echo done.
 popd >/dev/null

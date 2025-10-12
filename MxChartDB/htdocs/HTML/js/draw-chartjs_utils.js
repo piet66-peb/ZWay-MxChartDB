@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.1 2025-09-23/peb
+//h Version:      V3.4.1 2025-10-12/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //v               V3.4.0 2025-08-14/peb [+]annotation
@@ -24,14 +24,14 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 6 */
-/*globals ch_utils, suntimes, SunCalc, config, data, ts_last, imagesDefaultPath */
+/*globals ch_utils, suntimes, SunCalc, config, usedYScales, data, ts_last, imagesDefaultPath */
 'use strict';
 
 //b version data
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.4.1';
-var WRITTEN='2025-09-23/peb';
+var WRITTEN='2025-10-12/peb';
 
 //b common: common functions
 //--------------------------
@@ -196,7 +196,7 @@ var header_utils = {
     //h g = take_global_code(<target object>, <chart header>);
     //-------------------------------------------------------------------------
     take_global_code: function (header) {
-        console.log('take_global_code');
+        //console.log('take_global_code');
 
         var g_ini = {
             notSet:   ch_utils.notSet,
@@ -232,17 +232,19 @@ var header_utils = {
             COUNT: postcalc.COUNT,
             FIRST: postcalc.FIRST,
             LAST: postcalc.LAST,
+            yScaleID: yScales.yScaleID,
             firstTick: yScales.firstTick,
             lastTick: yScales.lastTick,
             yMin: yScales.yMin,
             yMax: yScales.yMax,
-            ticksArray: yScales.ticksArray,
-            ticksLabels: yScales.ticksLabels,
-            tickNumber: yScales.tickNumber,
-            yScaleID: yScales.yScaleID,
+            //ticksArray: yScales.ticksArray,
+            //ticksLabels: yScales.ticksLabels,
+            //tickNumber: yScales.tickNumber,
+            //scalesArray: yScales.scalesArray,
+            //defaultScaleID: yScales.defaultScaleID,
             redraw: function(pos) {
-                console.log('redraw('+pos+')');
-                console.log('images_pending='+images_pending);
+                //console.log('redraw('+pos+')');
+                //console.log('images_pending='+images_pending);
                 if (images_pending) {
                     if(!imagesTimer) {
                         //console.log('set timeout');
@@ -260,6 +262,7 @@ var header_utils = {
             },
             MxC: MxC_utils.MxC,
             MxC_data: MxC_utils.MxC_data,
+            usedYScales: usedYScales,
         };
 
         if (!header.hasOwnProperty('global_js')) {
@@ -285,7 +288,7 @@ var header_utils = {
                 g = g_ini;
             }
         }
-        console.log(g);
+        //console.log(g);
     }, // take_global_code
 
     //h
@@ -294,18 +297,18 @@ var header_utils = {
     //h g = take_post_processing(<target object>, <chart header>);
     //-------------------------------------------------------------------------
     take_post_processing: function (header) {
-        console.log('take_post_processing');
+        //console.log('take_post_processing');
 
         var pp_empty = function() {
             return;
         };
         var pp_first = [
 "postprocess = function(pos) {\n",
-"    console.log('post_processing('+pos+')');\n",
+"    //console.log('post_processing('+pos+')');\n",
 "    annotation.restrict_to_visible = true;\n",
 "    try {\n",
 "        ++pp_count;\n",
-"        console.log('pos=' + pos + ' pp_count=' + pp_count);\n",
+"        //console.log('pos=' + pos + ' pp_count=' + pp_count);\n",
 "        //every time ad post processing is called\n",
 "        //we restrict buffer to visible part\n",
 "        sv = undefined;\n",
@@ -330,10 +333,10 @@ var header_utils = {
             var comm ='';
             try {
                 comm = pp_first;
-                comm += abbrevs;
+                comm += postcalc.abbrevs;
                 comm += ch_utils.convertToUTF8(header.post_processing.code);
                 comm += pp_last;
-                console.log(comm);
+                //console.log(comm);
                 /*jshint evil: true */
                 pp_empty = eval(comm);
                 /*jshint evil: false */
@@ -426,6 +429,8 @@ var header_utils = {
 //b postcalc: postcalc functions
 //------------------------------
 var postcalc = {
+    abbrevs: '',
+
     //h
     //h enable_post_calc
     //h enables/ disables the post calc button 
@@ -474,9 +479,9 @@ var postcalc = {
         }
 
         //create abbreviations for remaining sensors > 20
-        abbrevs = '';
+        postcalc.abbrevs = '';
         for (i = 21; i <= n; i++) {
-            abbrevs += 'var sv'+i+'=sv['+i+'];';
+            postcalc.abbrevs += 'var sv'+i+'=sv['+i+'];';
         }
     }, //create_abbrevs_S;
 
@@ -484,7 +489,7 @@ var postcalc = {
 
         function exec_eval (form_calc) {
             //console.log('exec_eval form_calc='+form_calc);
-            var comp, c = abbrevs + form_calc;
+            var comp, c = postcalc.abbrevs + form_calc;
             annotation.restrict_to_visible = true;
             try {
                 /*jshint evil: true */
@@ -862,9 +867,9 @@ var adHocCalc = {
         annotation.restrict_to_visible = true;
         try {
             /*jshint evil: true */
-            result += eval(abbrevs + adHocCode);
+            result += eval(postcalc.abbrevs + adHocCode);
             /*jshint evil: false */
-            console.log('result='+result);
+            //console.log('result='+result);
         } catch(err) {
             console.log(err.message);
             console.log(adHocCode);
@@ -897,18 +902,44 @@ document.getElementById('adHocCalcButton').onclick = function(event) {
 //b yScales: helper functions for to check existing y scales
 //----------------------------------------------------------
 var yScales = {
-    scales: function(position, type) {
+    yScaleID: function (arg1, arg2) {
+    //returns the internal scale id
     //usage:
-    //    yScales.scales(position: <right|left>,
+    //    = yScales.yScaleID(sensor_no);
+    //    = yScales.yScaleID(position: <right|left>,
+    //                       type:     <number|text>);
+        if (!isNaN(arg1)) {
+                return usedYScales.ids[arg1];
+        }
+        var scaleid = 'y';
+        if (arg1 === 'number' || arg2 === 'number') {
+            scaleid += 'U';
+        } else
+        if (arg1 === 'text' || arg2 === 'text') {
+            scaleid += 'L';
+        } else {
+            return undefined;
+        }
+
+        if (arg1 === 'right' || arg2 === 'right') {
+            scaleid += 'right';
+        } else
+        if (arg1 === 'left' || arg2 === 'left') {
+            scaleid += 'left';
+        } else {
+            return undefined;
+        }
+        return scaleid;
+    }, //yScaleID
+
+    scalesArray: function(position, type) {
+    //usage:
+    //    yScales.scalesArrayArray(position: <right|left>,
     //                   type: <number|text>,
     //    });
-        //console.log('yScales.scales: '+position+' '+type);
-        var scales = [];
+        //console.log('yScales.scalesArrayArray: '+position+' '+type);
+        var scalesArray = [];
         var scaleIds = Object.keys(config.options.scales);
-
-        if (typeof position === 'undefined' && typeof type === 'undefined') {
-            return scaleIds;
-        }
 
         for (var i = 0; i < scaleIds.length; i++)   {
             var currpos, currtype;
@@ -930,231 +961,97 @@ var yScales = {
             if (type && type !== currtype) {
                 continue;
             }
-            
-            scales.push(scale);
-        }
-        return scales;
-    }, //scales
-
-    testScale: function(yScaleID) {
-    //usage:
-    //    yScales.testScale(yScaleID);
-        var position, type;
-        var scaleIds = Object.keys(config.options.scales);
-
-        if (yScaleID === undefined) {
-            return false;
-        }
-        if (yScaleID.charAt(0) !== 'y') {
-            return false;
-        }
-        if (scaleIds.indexOf(yScaleID) < 0) {
-            return false;
-        }
-        if (config.options.scales[yScaleID].display !== true) {
-            return false;
+            scalesArray.push(scale);
         }
 
-        type = null;
-        type = yScaleID.charAt(1) === 'U' ? 'number' : type;
-        type = yScaleID.charAt(1) === 'L' ? 'text' : type;
-        if (!type) {
-            return false;
-        }
+        //console.log(scalesArray);
+        //console.log(usedYScales);
+        return scalesArray;
+    }, //scalesArray
 
-        position = config.options.scales[yScaleID].position;
-        if (position !== 'left' && position !== 'right') {
-            return false;
-        }
-        return true;
-    }, //testScale
-
-    ticksArray: function (yScalePosition, //<right|left>
-                          yScaleType,     //<number|text>
-                          yScaleID 
-                         ) {
+    ticksArray: function (yScaleID) {
         //returns the array of ticks for the given y scale
+        yScaleID = yScales.defaultScaleID(yScaleID);
         var myChart = window.myLine;
-
-        var avail_scales;
-        if (typeof yScaleID === 'undefined') {
-            if (typeof yScalePosition !== 'undefined' && 
-                typeof yScaleType!== 'undefined') {
-                yScaleID = 'y';
-                if (yScaleType === 'number') {yScaleID += 'U';}
-                if (yScaleType === 'text') {yScaleID += 'L';}
-                yScaleID += yScalePosition;
-            } else
-            if (typeof yScalePosition !== 'undefined') {
-                avail_scales = yScales.scales.apply(null, [yScalePosition]);
-                if (avail_scales.length >= 1) {
-                    yScaleID = avail_scales[0];
-                }
-            } else
-            if (typeof yScaleType !== 'undefined') {
-                avail_scales = yScales.scales.apply(null, [undefined, yScaleType]);
-                if (avail_scales.length >= 1) {
-                    yScaleID = avail_scales[0];
-                }
-            } else {
-                avail_scales = yScales.scales();
-                if (avail_scales.length > 1) {
-                    yScaleID = avail_scales[1];
-                }
-            }
-        }
-        if (typeof yScaleID === 'undefined') {
-            return [];
-        }
-        var ticksArr = myChart.scales[yScaleID].ticks;
-        //console.log(myChart.scales);
-        return ticksArr;
+        return myChart.scales[yScaleID].ticks;
     }, //ticksArray;
 
-    ticksLabels: function (yScalePosition, //<right|left>
-                           yScaleType,     //<number|text>
-                           yScaleID 
-                          ) {
-        //returns the array of tick labels for the given y scale
-        //!!!! only returns string labels, not images !!!!
-        if (!yScaleID) {
-            yScaleID = g.yScaleID(yScalePosition, yScaleType);
-        }
-        //alert(yScalePosition+' '+yScaleType+' '+yScaleID);
-        var ticksArray = 
-            yScales.ticksArray.apply(null,
-                               [yScalePosition,
-                               yScalePosition,
-                               yScaleID]);
-        var labels = null;
-        if (ticksArray.length > 0) {
-            //labels = ticksArray.map(tick => tick.label);
-            labels = ticksArray.map(function(tick) { return tick.label; });
-            //console.log(labels);
-        }
-        return labels;
-    }, //ticksLabels;
-
-    firstTick: function (yScalePosition, //<right|left>
-                         yScaleType,     //<number|text>
-                         yScaleID 
-                        ) {
+    firstTick: function (yScaleID) {
         //returns the first tick for the given y scale
-        var ticksArray = 
-            yScales.ticksArray.apply(null,
-                               [yScalePosition,
-                               yScaleType,
-                               yScaleID]);
-        var tick = null;
-        if (ticksArray.length > 0) {
-            tick = ticksArray[0].value;
-        }
+        var ticksArray = yScales.ticksArray(yScaleID);
+        var tick = ticksArray[0].value;
         return tick;
     }, //firstTick;
 
-    lastTick: function (yScalePosition, //<right|left>
-                        yScaleType,     //<number|text>
-                        yScaleID 
-                       ) {
+    lastTick: function (yScaleID) {
         //returns the last tick for the given y scale
-        var ticksArray = 
-            yScales.ticksArray.apply(null,
-                               [yScalePosition,
-                               yScaleType,
-                               yScaleID]);
-        var tick = null;
-        if (ticksArray.length > 0) {
-            tick = ticksArray[ticksArray.length-1].value;
-        }
+        var ticksArray = yScales.ticksArray(yScaleID);
+        var tick = ticksArray[ticksArray.length-1].value;
         return tick;
     }, //lastTick;
 
-    yMin: function (yScalePosition, //<right|left>
-                    yScaleType,     //<number|text>
-                    yScaleID 
-                   ) {
+    yMin: function (yScaleID) {
         //returns the minimum y value for the given y scale
-        if (!yScaleID) {
-            yScaleID = yScales.yScaleID(yScalePosition, yScaleType);
-        }
+        yScaleID = yScales.defaultScaleID(yScaleID);
         var myChart = window.myLine;
         var yMin = myChart.scales[yScaleID].min;
         return yMin;
     }, //yMin;
 
-    yMax: function (yScalePosition, //<right|left>
-                    yScaleType,     //<number|text>
-                    yScaleID 
-                   ) {
+    yMax: function (yScaleID) {
         //returns the maximum y value for the given y scale
-        if (!yScaleID) {
-            yScaleID = yScales.yScaleID(yScalePosition, yScaleType);
-        }
+        yScaleID = yScales.defaultScaleID(yScaleID);
         var myChart = window.myLine;
         var yMax = myChart.scales[yScaleID].max;
         return yMax;
     }, //yMin;
+/* experimental
+    ticksLabels: function (yScaleID) {
+        //returns the array of tick labels for the given y scale
+        //!!!! only returns string labels, not images !!!!
+        var ticksArray = yScales.ticksArray(yScaleID);
+        var labels;
+        if (ticksArray.length > 0) {
+            labels = ticksArray.map(function(tick) { return tick.label; });
+        }
+        return labels;
+    }, //ticksLabels;
 
-    tickNumber: function (label,
-                          yScalePosition, //<right|left>
-                          yScaleType,     //<number|text>
-                          yScaleID 
-                         ) {
+    tickNumber: function (label, yScaleID) {
         //returns the tick for the given y label and the given y scale
         //!!!! only returns string labels, not images !!!!
-        var labels = 
-            yScales.ticksLabels.apply(null,
-                                      [yScalePosition,
-                                       yScalePosition,
-                                       yScaleID]);
-        //console.log(label);
-        //console.log(labels);
+        //sensor_no?
+        if (!isNaN(yScaleID)) {
+            yScaleID = g.yScaleID(yScaleID);
+        }
+        if (config.options.scales[yScaleID].display !== true) {
+            return undefined;
+        }
+        var labels = yScales.ticksLabels(yScaleID);
         var myChart = window.myLine;
-        //console.log(config.options.scales);
         var tickNumber = labels.indexOf(label);
         return tickNumber;
     }, //tickNumber;
-
-    yScaleID: function (yScalePosition, //<right|left>
-                        yScaleType    //<number|text>
-                       ) {
-        //returns the internal scale id
-        var avail_scales, yScaleID;
-        if (yScalePosition && yScaleType) {
-            yScaleID = 'y';
-            if (yScaleType === 'number') {yScaleID += 'U';}
-            if (yScaleType === 'text') {yScaleID += 'L';}
-            yScaleID += yScalePosition;
-        } else
-        if (yScalePosition) {
-            avail_scales = yScales.scales(yScalePosition);
-            if (avail_scales.length >= 1) {
-                yScaleID = avail_scales[0];
-            }
-        } else
-        if (yScaleType) {
-            avail_scales = yScales.scales(undefined, yScaleType);
-            if (avail_scales.length >= 1) {
-                yScaleID = avail_scales[0];
-            }
-        } else {
-            //get visible y scales
-            var scales = yScales.scales('right');
-            var scalesLeft = yScales.scales('left');
-            if (scalesLeft.length > scales) {
-                scales = scalesLeft;
-            }
-            yScaleID = scales[0];
+*/
+    defaultScaleID: function (arg) {
+        //returns the id of the y scale, checks if displayed
+        //if not displayed: a default id
+        //usage:
+        //  = defaultScaleID(sensor no);
+        //  = defaultScaleID(yScaleID);
+        //  = defaultScaleID();
+        var yScaleID = arg;
+        if (yScaleID && !isNaN(yScaleID)) {
+            yScaleID = g.yScaleID(yScaleID);
         }
-
-        if (yScaleID && !yScales.testScale(yScaleID)) {
-            console.log('yScaleID '+yScaleID+'/'+
-                yScalePosition+'/'+yScaleType+' is not displayed!');
-            console.log('available scales: ', yScales.scales());
-            yScaleID = undefined;
+        if (!yScaleID || !config.options.scales[yScaleID].display) {
+            var avail_scales = yScales.scalesArray();
+            if (avail_scales.length > 0) {
+                yScaleID = avail_scales[0];
+            }
         }
         return yScaleID;
-    }, //yScaleID;
+    }, //defaultScaleID;
 }; //yScales
 
 //b annotation: adds or deletes an annotation to chart,js config
@@ -1165,32 +1062,19 @@ var annotation = {
     //(some label fragments remain visible)
     //we restrict annotation.line in post processing to the visible part
 
-    del: function(arg1) {
+    del: function(id) {
     //usage:
-    //    annotation.del({id: <unique annotation id>});
-        //console.log('annotation.del');
-        if (arg1) {
-            if (typeof arg1 === 'string') {
-                config.options.plugins.annotation.annotations[arg1] = undefined;
-                return;
-            } else
-            if (typeof arg1 === 'object' &&
-                typeof arg1.id+'' === 'string') {
-                config.options.plugins.annotation.annotations[arg1.id+''] = undefined;
-                return;
-            }
-        }
-        alert('parameter error in function annotation.del({}) !');
+    //    annotation.del(<unique annotation id>);
+        //console.log('annotation.del('+id+')');
+        config.options.plugins.annotation.annotations[id] = undefined;
     }, //del
 
-    point: function(arg1) {
+    point: function(id, arg1) {
     //usage:
-    //    annotation.point({id: <unique annotation id>,   //for storing the annotation, mandatory
-    //                      xValue: <x value>,
+    //    annotation.point(<unique annotation id>,   //for storing the annotation, mandatory
+    //                     {xValue: <x value>,
     //                      yValue: <y value>,
-    //                      yScaleID: <'yUright'|'yLright'|'yUleft'|'<yLleft'>,
-    //                      yScalePosition: <right|left>,
-    //                      yScaleType: <number|text>,
+    //                      usedYScale: <sensor no|'yUright'|'yLright'|'yUleft'|'<yLleft'>,
     //                      pointStyle: <'cross'|'crossRot'|'dash'|'line'|'rect'|'rectRounded'|'retRot'|'star'|'triangle'|false>,
     //                      radius: <point radius in pixels>
     //                      color: <color>,
@@ -1198,42 +1082,26 @@ var annotation = {
     //                      hide: <true|false>  //hide point at click
     //    });
         //console.log('annotation.point');
-        //console.log('annotation.point: pointStyle='+arg1.pointStyle+', yScaleID='+arg1.yScaleID+'/'+
-        //        arg1.yScalePosition+'/'+arg1.yScaleType);
+        //console.log('annotation.point: pointStyle='+arg1.pointStyle+'/'+
+        //        arg1.usedYScale);
         if (!arg1 || 
             typeof arg1 !== 'object' ||
-            typeof arg1.id !== 'string'
+            typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.point({}) !');
             return;
         }
 
-        var yScaleID = arg1.yScaleID, avail_scales;
-        if (typeof arg1.yScaleID === 'undefined') {
-            if (arg1.yScalePosition && arg1.yScaleType) {
-                yScaleID = 'y';
-                if (arg1.yScaleType === 'number') {yScaleID += 'U';}
-                if (arg1.yScaleType === 'text') {yScaleID += 'L';}
-                yScaleID += arg1.yScalePosition;
-            } else
-            if (arg1.yScalePosition) {
-                avail_scales = yScales.scales(arg1.yScalePosition);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
-            } else
-            if (arg1.yScaleType) {
-                avail_scales = yScales.scales(undefined, arg1.yScaleType);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
+        //sensor_no?
+        var yScaleID = arg1.usedYScale;
+        if (yScaleID) {
+            if (!isNaN(yScaleID)) {
+                yScaleID = g.yScaleID(yScaleID);
             }
-        }
-
-        if (yScaleID && !yScales.testScale(yScaleID)) {
-            console.log('annotation.point: yScaleID '+arg1.yScaleID+'/'+
-                arg1.yScalePosition+'/'+arg1.yScaleType+' is not displayed!');
-            console.log('available scales: ', yScales.scales());
+            if (config.options.scales[yScaleID].display !== true) {
+                console.log('annotation.point: yScaleID '+yScaleID+' is not displayed!');
+                //return undefined;
+            }
         }
 
         if (arg1.hide === undefined) {arg1.hide = true;}
@@ -1251,67 +1119,49 @@ var annotation = {
             yValue: arg1.yValue,
             click: function(e) { 
                         if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[arg1.id+''].drawTime = null;
+                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
                             window.myLine.update();
                    }
             },
         };
-        config.options.plugins.annotation.annotations[arg1.id+''] = anno_config;
+        config.options.plugins.annotation.annotations[id+''] = anno_config;
     }, //point
 
-    label: function(arg1) {
+    label: function(id, arg1) {
     //usage:
-    //    annotation.label({id: <unique annotation id>,   //for storing the annotation, mandatory
-    //                      xValue: <x value>,
+    //    annotation.label(<unique annotation id>,   //for storing the annotation, mandatory
+    //                     {xValue: <x value>,
     //                      yValue: <y value>,
     //                      content: <string|string[]|HTMLCanvasElement>,
     //                      color: <color>,
     //                      backgroundColor: <backgroundColor>,
-    //                      yScaleID: <'yUright'|'yLright'|'yUleft'|'<yLleft'>,
-    //                      yScalePosition: <right|left>,
-    //                      yScaleType: <number|text>,
+    //                      usedYScale: <sensor no|'yUright'|'yLright'|'yUleft'|'<yLleft'>,
     //                      drawTime: <drawTime>,
     //                      hide: <true|false>  //hide point at click
     //    });
         //console.log('annotation.label');
         if (!arg1 || 
             typeof arg1 !== 'object' ||
-            typeof arg1.id !== 'string'
+            typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.label({}) !');
             return;
         }
 
-        var yScaleID = arg1.yScaleID, avail_scales;
-        if (typeof arg1.yScaleID === 'undefined') {
-            if (arg1.yScalePosition && arg1.yScaleType) {
-                yScaleID = 'y';
-                if (arg1.yScaleType === 'number') {yScaleID += 'U';}
-                if (arg1.yScaleType === 'text') {yScaleID += 'L';}
-                yScaleID += arg1.yScalePosition;
-            } else
-            if (arg1.yScalePosition) {
-                avail_scales = yScales.scales(arg1.yScalePosition);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
-            } else
-            if (arg1.yScaleType) {
-                avail_scales = yScales.scales(undefined, arg1.yScaleType);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
+        //sensor_no?
+        var yScaleID = arg1.usedYScale;
+        if (yScaleID) {
+            if (!isNaN(yScaleID)) {
+                yScaleID = g.yScaleID(yScaleID);
+            }
+            if (config.options.scales[yScaleID].display !== true) {
+                console.log('annotation.label: yScaleID '+yScaleID+' is not displayed!');
+                //return undefined;
             }
         }
 
-        if (yScaleID && !yScales.testScale(yScaleID)) {
-            console.log('annotation.label: yScaleID '+arg1.yScaleID+'/'+
-                arg1.yScalePosition+'/'+arg1.yScaleType+' is not displayed!');
-            console.log('available scales: ', yScales.scales());
-        }
-
         /*
-g.annotation.label({id: 'test', content: ['line 1', 'line 2'], 
+g.annotation.label('test', {content: ['line 1', 'line 2'], 
                     color: 'green', 
                     backgroundColor: 'lightGreen',
                     hide: true});
@@ -1334,65 +1184,47 @@ g.redraw();
             yScaleID: yScaleID,
             click: function(e) { 
                         if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[arg1.id+''].drawTime = null;
+                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
                             window.myLine.update();
                    }
             },
         };
-        config.options.plugins.annotation.annotations[arg1.id+''] = anno_config;
+        config.options.plugins.annotation.annotations[id+''] = anno_config;
     }, //label
 
-    image: function(arg1) {
+    image: function(id, arg1) {
     //usage:
-    //    annotation.image({id: <unique annotation id>,   //for storing the annotation, mandatory
-    //                      xValue: <x value>,
+    //    annotation.image(<unique annotation id>,   //for storing the annotation, mandatory
+    //                     {xValue: <x value>,
     //                      yValue: <y value>,
     //                      image: <image>,
     //                      width: <pixel>,
     //                      hight: <pixel>,
     //                      borderColor: <borderColor>,
     //                      backgroundColor: <backgroundColor>,
-    //                      yScaleID: <'yUright'|'yLright'|'yUleft'|'<yLleft'>,
-    //                      yScalePosition: <right|left>,
-    //                      yScaleType: <number|text>,
+    //                      usedYScale: <sensor no|'yUright'|'yLright'|'yUleft'|'<yLleft'>,
     //                      drawTime: <drawTime>,
     //                      hide: <true|false>  //hide point at click
     //    });
-        console.log('annotation.image');
+        //console.log('annotation.image');
         if (!arg1 || 
             typeof arg1 !== 'object' ||
-            typeof arg1.id !== 'string'
+            typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.image({}) !');
             return;
         }
 
-        var yScaleID = arg1.yScaleID, avail_scales;
-        if (typeof arg1.yScaleID === 'undefined') {
-            if (arg1.yScalePosition && arg1.yScaleType) {
-                yScaleID = 'y';
-                if (arg1.yScaleType === 'number') {yScaleID += 'U';}
-                if (arg1.yScaleType === 'text') {yScaleID += 'L';}
-                yScaleID += arg1.yScalePosition;
-            } else
-            if (arg1.yScalePosition) {
-                avail_scales = yScales.scales(arg1.yScalePosition);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
-            } else
-            if (arg1.yScaleType) {
-                avail_scales = yScales.scales(undefined, arg1.yScaleType);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
+        //sensor_no?
+        var yScaleID = arg1.usedYScale;
+        if (yScaleID) {
+            if (!isNaN(yScaleID)) {
+                yScaleID = g.yScaleID(yScaleID);
             }
-        }
-
-        if (yScaleID && !yScales.testScale(yScaleID)) {
-            console.log('annotation.image: yScaleID '+arg1.yScaleID+'/'+
-                arg1.yScalePosition+'/'+arg1.yScaleType+' is not displayed!');
-            console.log('available scales: ', yScales.scales());
+            if (config.options.scales[yScaleID].display !== true) {
+                console.log('annotation.image: yScaleID '+yScaleID+' is not displayed!');
+                //return undefined;
+            }
         }
 
         if (arg1.hide === undefined) {arg1.hide = true;}
@@ -1412,7 +1244,7 @@ g.redraw();
             yScaleID: yScaleID,
             click: function(e) { 
                         if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[arg1.id+''].drawTime = null;
+                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
                             window.myLine.update();
                    }
             },
@@ -1438,14 +1270,13 @@ g.redraw();
         img.onload = function() {
             //console.log('onload');
             anno_config.content = img;
-            config.options.plugins.annotation.annotations[arg1.id+''] = anno_config;
+            config.options.plugins.annotation.annotations[id+''] = anno_config;
             --images_pending;
         };
     }, //image
 /*
-g.annotation.image({
-    id: 'test', 
-    image: 'icon.png', 
+g.annotation.image('test', 
+   {image: 'icon.png', 
     //image: ',/myIcons/bath.png', 
     //image: 'caution', 
     //image: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Database_icon_shortcut.png?20110724224416',
@@ -1453,17 +1284,15 @@ g.annotation.image({
 g.redraw(9);
 */
 
-    line: function(arg1) {
+    line: function(id, arg1) {
     //usage:
-    //    annotation.line({id: <unique annotation id>,   //for storing the annotation, mandatory
-    //                     xMin: <x min value>,
+    //    annotation.line(<unique annotation id>,   //for storing the annotation, mandatory
+    //                    {xMin: <x min value>,
     //                     xMax: <x max value>,
     //                     yMin: <y min value>,
     //                     yMax: <y max value>,
     //                     borderWidth: <line width in pics>,
-    //                     yScaleID: <'yUright'|'yLright'|'yUleft'|'<yLleft'>,
-    //                     yScalePosition: <'right'|'left'>,
-    //                     yScaleType: <'number'|'text'>,
+    //                     usedYScale: <sensor no|'yUright'|'yLright'|'yUleft'|'<yLleft'>,
     //                     text: <text>,
     //                     text_color: <text color>,
     //                     text_background: <text background color>,
@@ -1475,39 +1304,25 @@ g.redraw(9);
         //console.log('annotation.line');
         if (!arg1 || 
             typeof arg1 !== 'object' ||
-            typeof arg1.id !== 'string'
+            typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.line({}) !');
             return;
         }
 
-        var yScaleID = arg1.yScaleID, avail_scales;
-        if (typeof arg1.yScaleID === 'undefined') {
-            if (arg1.yScalePosition && arg1.yScaleType) {
-                yScaleID = 'y';
-                if (arg1.yScaleType === 'number') {yScaleID += 'U';}
-                if (arg1.yScaleType === 'text') {yScaleID += 'L';}
-                yScaleID += arg1.yScalePosition;
-            } else
-            if (arg1.yScalePosition) {
-                avail_scales = yScales.scales(arg1.yScalePosition);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
-            } else
-            if (arg1.yScaleType) {
-                avail_scales = yScales.scales(undefined, arg1.yScaleType);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
+        //sensor_no?
+        var yScaleID = arg1.usedYScale;
+        //console.log('arg1.usedYScale='+arg1.usedYScale);
+        if (yScaleID) {
+            if (!isNaN(yScaleID)) {
+                yScaleID = g.yScaleID(yScaleID);
+            }
+            if (config.options.scales[yScaleID].display !== true) {
+                console.log('annotation.line: yScaleID '+yScaleID+' is not displayed!');
+                ///return undefined;
             }
         }
-
-        if (yScaleID && !yScales.testScale(yScaleID)) {
-            console.log('annotation.line: yScaleID '+arg1.yScaleID+'/'+
-                arg1.yScalePosition+'/'+arg1.yScaleType+' is not displayed!');
-            console.log('available scales: ', yScales.scales());
-        }
+        //console.log('yScaleID='+yScaleID);
 
         if (arg1.hide === undefined) {arg1.hide = true;}
         var anno_config = {
@@ -1545,14 +1360,14 @@ g.redraw(9);
             yMax: arg1.yMax,
             click: function(e) { 
                         if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[arg1.id+''].drawTime = null;
+                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
                             window.myLine.update();
                    }
             },
         };
         
         if (annotation.restrict_to_visible) {
-            //console.log(arg1.id+' '+anno_config.label.content);
+            //console.log(id+' '+anno_config.label.content);
             var x_first = g.FIRST() || null;
             var x_last = g.LAST() || null;
             //console.log(g.usertime(anno_config.xMin)+'-'+g.usertime(anno_config.xMax));
@@ -1568,68 +1383,49 @@ g.redraw(9);
             //console.log('>>> '+g.usertime(anno_config.xMin)+'-'+g.usertime(anno_config.xMax));
             if (anno_config.xMax < x_first ||
                 anno_config.xMin > x_last) {
-                console.log('skip/ delete '+arg1.id);
-                annotation.del({id: arg1.id});
+                console.log('annotation.line: skip/ delete '+id);
+                annotation.del(id);
                 return;
             }
         }        
-        console.log('create line '+arg1.id);
-        config.options.plugins.annotation.annotations[arg1.id+''] = anno_config;
+        //console.log('create line '+id);
+        config.options.plugins.annotation.annotations[id+''] = anno_config;
     }, //line
 
-    box: function(arg1) {
+    box: function(id, arg1) {
     //usage:
-    //    annotation.box({id: <unique annotation id>,   //for storing the annotation, mandatory
-    //                    xMin: <x min value>,
+    //    annotation.box(<unique annotation id>, //mandatory
+    //                   {xMin: <x min value>,
     //                    xMax: <x max value>,
     //                    yMin: <y min value>,
     //                    yMax: <y max value>,
-    //                    yScaleID: <'yUright'|'yLright'|'yUleft'|'<yLleft'>,
-    //                    yScalePosition: <right|left>,
-    //                    yScaleType: <number|text>,
+    //                    usedYScale: <sensor_no|'yUright'|'yLright'|'yUleft'|'<yLleft'>,
     //                    backgroundColor: <color>,
-    //                    borderWidth: <true|false>,
+    //                    borderWidth: <line width in pics>,
     //                    drawTime: <drawTime>,
     //                    hide: <true|false>  //hide point at click
     //    });
-        //console.log('annotation.box');
-        if (!arg1 || 
-            typeof arg1 !== 'object' ||
-            typeof arg1.id !== 'string'
+        //console.log('annotation.box: '+id+', '+arg1.usedYScale);
+        if (typeof id !== 'string' ||
+            !arg1 || 
+            typeof arg1 !== 'object'
            ) {
             alert('parameter error in function annotation.box({}) !');
             return;
         }
 
-        var yScaleID = arg1.yScaleID, avail_scales;
-        if (typeof arg1.yScaleID === 'undefined') {
-            if (arg1.yScalePosition && arg1.yScaleType) {
-                yScaleID = 'y';
-                if (arg1.yScaleType === 'number') {yScaleID += 'U';}
-                if (arg1.yScaleType === 'text') {yScaleID += 'L';}
-                yScaleID += arg1.yScalePosition;
-            } else
-            if (arg1.yScalePosition) {
-                avail_scales = yScales.scales(arg1.yScalePosition);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
-            } else
-            if (arg1.yScaleType) {
-                avail_scales = yScales.scales(undefined, arg1.yScaleType);
-                if (avail_scales.length === 1) {
-                    yScaleID = avail_scales[0];
-                }
+        //sensor_no?
+        var yScaleID = arg1.usedYScale;
+        if (yScaleID) {
+            if (!isNaN(yScaleID)) {
+                yScaleID = g.yScaleID(yScaleID);
+            }
+            if (config.options.scales[yScaleID].display !== true) {
+                console.log('annotation.box: yScaleID '+yScaleID+' is not displayed!');
+                //return undefined;
             }
         }
 
-        if (yScaleID && !yScales.testScale(yScaleID)) {
-            console.log('annotation.box: yScaleID '+arg1.yScaleID+'/'+
-                arg1.yScalePosition+'/'+arg1.yScaleType+' is not displayed!');
-            console.log('available scales: ', yScales.scales());
-        }
-
-        if (arg1.hide === undefined) {arg1.hide = true;}
         var anno_config = {
             drawTime: arg1.drawTime || 'afterDatasetsDraw',
             type: 'box',
@@ -1641,10 +1437,16 @@ g.redraw(9);
             yScaleID: yScaleID,
             backgroundColor: arg1.backgroundColor,
             borderWidth: arg1.borderWidth,
+            click: function(e) { 
+                        if (!arg1.hide || arg1.hide === true) {
+                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
+                            window.myLine.update();
+                   }
+            },
         };
 
         if (annotation.restrict_to_visible) {
-            //console.log(arg1.id);
+            //console.log(id);
             var x_first = g.FIRST() || null;
             var x_last = g.LAST() || null;
             //console.log(g.usertime(anno_config.xMin)+'-'+g.usertime(anno_config.xMax));
@@ -1660,31 +1462,28 @@ g.redraw(9);
             //console.log('>>> '+g.usertime(anno_config.xMin)+'-'+g.usertime(anno_config.xMax));
             if (anno_config.xMax < x_first ||
                 anno_config.xMin > x_last) {
-                console.log('skip/ delete '+arg1.id);
-                annotation.del({id: arg1.id});
+                //console.log('annotation.box: skip/ delete '+id);
+                annotation.del(id);
                 return;
             }
         }        
 
-        console.log('create box '+arg1.id);
-        config.options.plugins.annotation.annotations[arg1.id+''] = anno_config;
-    }, //box
+        //console.log('annotation.box: create '+id);
+        config.options.plugins.annotation.annotations[id+''] = anno_config;
+    }, //annotation.box
 
     horizontal: function(id,
                          y_pos,
                          text,
                          text_color,
                          text_background,
-                         yScalePosition,
-                         yScaleType) {
-        g.annotation.line({
-            id: id,
-            xMin: null, xMax: null, yMin: y_pos, yMax: y_pos,
+                         usedYScale) {
+        g.annotation.line(id,
+           {xMin: null, xMax: null, yMin: y_pos, yMax: y_pos,
             text: text || g.round(y_pos, 2),
             text_color: text_color || 'green',
             text_background: text_background || 'lightGreen',
-            yScalePosition: yScalePosition,
-            yScaleType: yScaleType,
+            usedYScale: usedYScale,
             hide: true,
         });
     }, //horizontal
@@ -1694,29 +1493,26 @@ g.redraw(9);
                        text,
                        text_color,
                        text_background,
-                       yScalePosition,
-                       yScaleType) {
+                       usedYScale) {
         if (!x_pos) {
             x_pos = Date.now();
             if (!text) {
                 text = g.usertime(x_pos);
             }
         }
-        if (yScalePosition || yScaleType) {
-            g.annotation.line({
-                id: id,
-                xMin: x_pos, xMax: x_pos,
+        if (usedYScale) {
+            g.annotation.line(id,
+               {xMin: x_pos, xMax: x_pos,
                 text: text,
                 text_color: text_color || 'green',
                 text_background: text_background || 'lightGreen',
-                yScalePosition: yScalePosition,
-                yScaleType: yScaleType,
+                usedYScale: usedYScale,
                 hide: true,
             });
         } else {
             //get visible y scales
-            var scales = yScales.scales('right');
-            var scalesLeft = yScales.scales('left');
+            var scales = yScales.scalesArray('right');
+            var scalesLeft = yScales.scalesArray('left');
             if (scalesLeft.length > scales) {
                 scales = scalesLeft;
             }
@@ -1724,13 +1520,12 @@ g.redraw(9);
             //add to all scales 
             for (var i = 0; i < scales.length; i++) {
                 var text_i = scales[i].indexOf('U') > 0 ? text : undefined;
-                g.annotation.line({
-                    id: id+'_'+i,
-                    xMin: x_pos, xMax: x_pos,
+                g.annotation.line(id+'_'+i,
+                   {xMin: x_pos, xMax: x_pos,
                     text: text_i,
                     text_color: text_color || 'green',
                     text_background: text_background || 'lightGreen',
-                    yScaleID: scales[i],
+                    usedYScale: scales[i],
                     hide: true,
                 });
             }
@@ -1743,33 +1538,29 @@ g.redraw(9);
                    text,
                    text_color,
                    text_background,
-                   yScalePosition,
-                   yScaleType) {
-        g.annotation.line({
-            id: id,
-            xMin: x_pos, xMax: x_pos, yMin: y_pos, yMax: y_pos,
+                   usedYScale) {
+        g.annotation.line(id,
+           {xMin: x_pos, xMax: x_pos, yMin: y_pos, yMax: y_pos,
             text: text || g.round(y_pos, 2),
             text_color: text_color || 'green',
             text_background: text_background || 'lightGreen',
-            yScalePosition: yScalePosition,
-            yScaleType: yScaleType,
+            usedYScale: usedYScale,
             hide: true,
         });
     }, //text
 
     MxC_horizontals: function(MxC_name, label) {
     //draws horizontals for the MxC data Preis
-     console.log('annotation.MxC_horizontals '+ MxC_name + ' '+ label);
+     //console.log('annotation.MxC_horizontals '+ MxC_name + ' '+ label);
      var arr = g.MxC_data.apply(null, [MxC_name]);
-     console.log(arr);
+     //console.log(arr);
      for (var i = 0; i < arr.length; i++) {
          var xMin = arr[i][0];
          var xMax = arr[i][2];
          var yMin = arr[i][4];
          var yMax = arr[i][4];
-         g.annotation.line({
-             id: label + i,
-             xMin: xMin,
+         g.annotation.line(label + i,
+            {xMin: xMin,
              xMax: xMax,
              yMin: yMin,
              yMax: yMax,
@@ -1840,21 +1631,21 @@ var images = {
 //b nightTimes: compute sunrise and sunset array depending date, longitude, latitude
 //----------------------------------------------------------------------------------
 var nightTimes = {
-    nightArray: [],
+    nightBoxes: [],
     annotations: function (pos) {
     //usage:
     //    nightTimes.annotations();
-        console.log('nightTimes.annotations ('+pos+')');
+        //console.log('nightTimes.annotations ('+pos+')');
 
-        //delete old annotations
-        console.log('delete old nights');
-        nightTimes.nightArray.forEach(function (el, index) {
-            console.log('delete '+'night_'+el[0]);
-            annotation.del({id: 'night_'+el[0]});
+        //delete old annotation boxes
+        //console.log('delete old nights');
+        nightTimes.nightBoxes.forEach(function (el, index) {
+            annotation.del('night_'+el);
         });
-        nightTimes.nightArray = [];
+        nightTimes.nightBoxes = [];
 
         //build new nightArray
+        var nightArray = [];
         var day_length = 1000 * 60 * 60 * 24;
         //console.log('day_length='+day_length);
         //console.log('g.FIRST()='+g.FIRST());
@@ -1867,24 +1658,46 @@ var nightTimes = {
         //      days + ' days');
 
         for (var i= 0; i < days; i++) {
-            nightTimes.nightArray.push(
+            nightArray.push(
                 [nightTimes.sunset(day_first + i * day_length), 
                  nightTimes.sunrise(day_first + (i+1) * day_length)]);
         }
-        console.log(nightTimes.nightArray);
+        //console.log(nightArray);
+
+        var scaleList = ['yUright', 'yLright','yUleft', 'yLleft'];
+        var yScaleIDs = [], weight1;
+        for (i = 0; i < scaleList.length; i++) {
+            if (config.options.scales[scaleList[i]].display === true) {
+                if (!weight1) {
+                    weight1 = config.options.scales[scaleList[i]].stackWeight;
+                    yScaleIDs.push(scaleList[i]);
+                    if (weight1 === undefined) {break;}
+                } else {
+                    if (config.options.scales[scaleList[i]].stackWeight !== weight1) {
+                        yScaleIDs.push(scaleList[i]);
+                        break;
+                    }
+                }
+            }
+        }
+        //console.log('nightTimes', yScaleIDs);
 
         //add night backgrounds
-        console.log('add new nights');
+        //console.log('add new nights');
         annotation.restrict_to_visible = true;
-        nightTimes.nightArray.forEach(function(night, index) {
-            console.log('index='+index);
-            annotation.box({id: 'night_'+night[0], 
-                            xMin: night[0], 
-                            xMax: night[1],
-                            backgroundColor: ch_utils.night.backColor || '#cccccc60',
-                            //yScaleID: scales[i],
-                            borderWidth: 0,
-                            drawTime: 'beforeDatasetsDraw'});
+        yScaleIDs.forEach(function(scaleid, ix1) {
+            nightArray.forEach(function(night, ix) {
+                var id = 'night_'+scaleid+'_'+ix;
+                //console.log('==== create night id='+id);
+                annotation.box(id, 
+                               {xMin: night[0], 
+                                xMax: night[1],
+                                backgroundColor: ch_utils.night.backColor || '#cccccc60',
+                                usedYScale: scaleid,
+                                borderWidth: 0,
+                                drawTime: 'beforeDatasetsDraw'});
+                nightTimes.nightBoxes.push(id);
+            });
         });
         annotation.restrict_to_visible = false;
     }, //annotations
@@ -2001,6 +1814,7 @@ var g; //object for global user defined functions
 var postprocess; //post processing code
 var pp_count = 0; //postprocess counter for testing
 
+/*
 //abbrevations for the postcalc configuration
 var abbrevs = '';
 var FILTER = postcalc.FILTER;
@@ -2013,10 +1827,11 @@ var FIRST = postcalc.FIRST;
 var LAST = postcalc.LAST;
 var firstTick = yScales.firstTick;
 var lastTick = yScales.lastTick;
-var ticksArray = yScales.ticksArray;
-var ticksLabels = yScales.ticksLabels;
-var tickNumber = yScales.tickNumber;
-var yScaleID = yScales.yScaleID;
+//var ticksArray = yScales.ticksArray;
+//var ticksLabels = yScales.ticksLabels;
+//var tickNumber = yScales.tickNumber;
+//var yScaleID = yScales.yScaleID;
+*/
 
 //2-dimensional sensor arrays
 var sv_buf;  //complete buffered, pointers to config
@@ -2025,6 +1840,5 @@ var sv0, sv1, sv2, sv3, sv4, sv5, sv6, sv7, sv8, sv9, sv10;
 var sv11, sv12, sv13, sv14, sv15, sv16, sv17, sv18, sv19, sv20;
 
 //sensor labels
-var sl;
-
+var sl = [];
 
