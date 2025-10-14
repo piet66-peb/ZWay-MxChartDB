@@ -328,12 +328,12 @@
          <tr>
             <td class="center">g.sunrise</td>
             <td>timestamp = g.sunrise(&lt;timestamp&gt;)</td>
-            <td></td>
+            <td>returns the sunrise of the day</td>
          </tr>
          <tr>
             <td class="center">g.sunset</td>
             <td>timestamp = g.sunset(&lt;timestamp&gt;)</td>
-            <td></td>
+            <td>returns the sunset of the day</td>
          </tr>
          <tr>
             <td class="center">g.azimuth</td>
@@ -380,7 +380,7 @@
          <tr>
             <td class="center">annotation id</td>
             <td>a unique id of the annotation object<br>
-                the only mandatory parameter<br>
+                the only mandatory parameter for the annotation functions<br>
                 the object remains in place until it is deleted or 
                 overwritten with another object with the same id
             </td>
@@ -395,7 +395,11 @@
                 the annotation function needs to know which scale to use<br>
                 it may happen, especially if more than one y scale is used,
                 that the software is unable to automatically identify the 
-                correct y scale  
+                correct y scale  <br>
+                <br>valid parameters:
+                <br>- id of the y scale ('yUright', 'yUleft', 'yLright', 'yLleft')
+                <br>- number of the sensor using this scale (1,2,3,...)
+                <br>- [position ('right', 'left'), type ('number', 'text')]
             </td>
          </tr>
          <tr>
@@ -404,9 +408,10 @@
          </tr>
          <tr>
             <td class="center">yValue, yMin, yMax</td>
-            <td>y positions on the display<br>
-                also numeric values for scales of type 'text'<br>
-                the tics are numbered top down: 0, 1, 2, ... </td>
+            <td>y positions on the display<br><br>
+                scales of type 'text':<br>
+                the y-positions must also be numbers,
+                and the ticks are numbered from top to bottom: 0, 1, 2, ... </td>
          </tr>
       </table>
 
@@ -432,10 +437,10 @@
          <tr>
             <td class="center">g.yScaleID</td>
             <td>= g.yScaleID(<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScalePosition
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[&lt;yScalePosition
                 ('right'|'left')&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;yScaleType
-                ('number'|'text')&gt;)
+                ('number'|'text')&gt;])
             </td>
             <td>returns the id of the y scale of the given position and type
             </td>
@@ -446,7 +451,7 @@
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{xValue: &lt;x value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
-                sensor number|yScaleID&gt;,<br>
+                used scale&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pointStyle: &lt;
                 point style&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;radius: &lt;
@@ -468,7 +473,7 @@
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yValue: &lt;y value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;content: &lt;content&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
-                sensor number|yScaleID&gt;,<br>
+                used scale&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color: &lt;color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
                 color&gt;,<br>
@@ -489,7 +494,7 @@
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;height: &lt;height in pixels&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;image: &lt;image&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
-                sensor number|yScaleID&gt;,<br>
+                used scale&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderColor: &lt;borderColor&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
                 color&gt;,<br>
@@ -515,7 +520,7 @@
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderWidth: &lt;
                 line width in pics&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
-                sensor number|yScaleID&gt;,<br>
+                used scale&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text: &lt;text&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text_color: &lt;
                 text color&gt;,<br>
@@ -539,7 +544,7 @@
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMin: &lt;y min value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yMax: &lt;y max value&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;usedYScale: &lt;
-                sensor number|yScaleID&gt;,<br>
+                used scale&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor: &lt;
                 color&gt;,<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderWidth: &lt;
@@ -786,14 +791,14 @@
                 current display (the same as sv[3][sv0.length-1])</td>
          </tr>
          <tr>
-            <td class="center">g.firstTick([sensor number|yScaleID])</td>
-            <td>returns the first displayed tick of the y axis,<br>
+            <td class="center">g.firstTick([used_scale])</td>
+            <td>returns the first displayed tick of the y scale,<br>
                 in case of text axes the ticks are also numbers, but in reverse order:<br>
                 0, 1, 2, 3, ... top down
          </tr>
          <tr>
-            <td class="center">g.lastTick([sensor number|yScaleID])</td>
-            <td>returns the last displayed tick of the y axis,<br>
+            <td class="center">g.lastTick([used_scale])</td>
+            <td>returns the last displayed tick of the y scale,<br>
                 in case of text axes the ticks are also numbers, but in reverse order:<br>
                 0, 1, 2, 3, ... top down
          </tr>
