@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.6.0 2025-10-11/peb
+//h Version:      V3.6.0 2025-10-14/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -46,7 +46,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.6.0';
-var WRITTEN = '2025-10-11/peb';
+var WRITTEN = '2025-10-14/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -419,9 +419,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         color: "black",
                     },
                 },
-                yLright: {
-                    type: 'category',
-                    position: 'right',
+                yUleft: {
+                    type: 'linear',
+                    position: 'left',
                     title: {
                         display: false,
                         text: '',
@@ -431,9 +431,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         color: "black",
                     },
                 },
-                yUleft: {
-                    type: 'linear',
-                    position: 'left',
+                yLright: {
+                    type: 'category',
+                    position: 'right',
                     title: {
                         display: false,
                         text: '',
@@ -2205,7 +2205,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             //update chart
             window.myLine.update();
 
-/* ????????????? don't know if this is necessary
             //add night backgrounds
             if (vLog.chartHeader.nightBackground) {
                 nightTimes.annotations(4);
@@ -2220,7 +2219,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 post_processing) {
                 g.redraw(4);
             }
-*/            
+            
             busyi.hide();
             console.log('chart updated: ' + (Date.now() - startRun) / 1000 + 
                 ' sec');
