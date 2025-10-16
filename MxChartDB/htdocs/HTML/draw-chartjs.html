@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta charset="utf-8">
+      <!--<base href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/">-->
+      <title>MxChartDB</title>
+      <link rel="shortcut icon" href="../icon.png">
+      <link rel='stylesheet' href='css/busy_indicator.css'>
+
+      <script defer="" src='../constants.js'></script>
+      <script defer="" src='js/draw-chartjs.js'></script>
+      <script defer="" src='js/draw-chartjs-lang.js'></script>
+      <script defer="" src='js/ch_utils.js'></script>
+      <script defer="" src='js/draw-chartjs_utils.js'></script>
+      <script defer="" src='libs/suntimes.js'></script>
+      <script defer="" src='libs/suncalc.js'></script>
+    
+      <script defer="" src="libs/chart@3.js"></script>
+      <script defer="" src="libs/chartjs-plugin-annotation@2.1.0.min.js"></script>
+
+      <script defer="" src="libs/moment-with-locales@2.js"></script>
+      <script defer="" src="libs/chartjs-adapter-moment@1.js"></script>
+      <script defer="" src="libs/hammer.min.js"></script>
+      <script defer="" src="libs/chartjs-plugin-zoom@2.js"></script>
+
+      <!--
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@3"></script>
+      <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/min/moment-with-locales.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
+      <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
+      -->
+      
+      <!--
+      <script defer="" src="libs/chart.min.js"></script>
+      <script defer="" src="libs/moment-with-locales.min.js"></script>
+      <script defer="" src="libs/chartjs-adapter-moment.min.js"></script>
+      <script defer="" src="libs/chartjs-plugin-annotation.min.js"></script>
+      <script defer="" src="libs/hammer.min.js"></script>
+      <script defer="" src="libs/chartjs-plugin-zoom.min.js"></script>
+      -->
+
+      <script defer="" src="libs/w3color.min.js"></script>
+      <script defer="" src='libs/busy_indicator.min.js'></script>
+
+      <style>
+         .smaller {
+         font-size: x-small;
+         text-align: center;
+         }
+      </style>
+      <style>
+         .fog_div{
+         display:none;
+         position:fixed;
+         top:0;
+         left:0;
+         height:100%;
+         width:100%;
+         z-index:100;
+         background-color:rgba(30,30,30,.5)}
+         #busybox.show{display:block}
+      </style>
+      <style>
+         /* position objects */
+         .left_right {
+         width:100%;
+         display:inline;
+         overflow: auto;
+         white-space: nowrap;
+         }
+      </style>
+
+      <style>
+         /* dtpickModal + postcalcModal: The Modal (background) */
+         .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            top: 20px; /* Location of the box */
+            left: 20px; /* Location of the box */
+            overflow: auto; /* Enable scroll if needed */
+            resize: both;
+            font-size: 13px;
+         }
+
+         /* Modal Content */
+         .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            background-color: #f2f2f2;
+            border: 1px solid #888;
+         }
+      </style>
+
+      <script>
+      var mouse_from;
+      function drag(event) {
+        mouse_from = {x: event.clientX, y: event.clientY};
+        event.dataTransfer.setData("text", event.target.id);
+      }
+
+      function allowDrop(event) {
+        event.preventDefault();
+      }
+
+      function drop(event) {
+        var mouse_to = {x: event.clientX, y: event.clientY};
+
+        var divId = event.dataTransfer.getData("text");
+        var el = document.getElementById(divId);
+        var pos_old = el.getBoundingClientRect();
+        el.style.top = (mouse_to.y - mouse_from.y + pos_old.y)+'px';
+        el.style.left = (mouse_to.x -mouse_from.x + pos_old.x)+'px';
+      }
+      </script>
+
+   </head>
+   <body>
+      <script>
+         console.log(window.location);
+         console.log('pathname='+window.location.pathname);
+         console.log('parameter='+window.location.search);
+      </script>          
+      <div id='main' ondrop="drop(event)" ondragover= "allowDrop(event)">
+         <div id="htmlText"></div>
+         <!--<div style="width:100%">-->
+         <div  id="canvas_container" class="chart-container" style="position: relative;">
+            <canvas id="canvas"></canvas>
+         </div>
+         <div class='left_right'>
+            <div id="interval_start" style='float: left;'>Date+Time</div>
+            <div id="date_time_picker" style='text-align: center; float: none;'>
+               <!--<button id="dtpickButton" onclick='datetimepicker()' style=''>date picker</button>
+               <button id="post_calc" onclick='post_calc()' style='display:none;'>post_calc</button>-->
+               <button id="dtpickButton" style=''>date picker</button>
+               <button id="postcalcButton" style='display:none;'>post_calc</button>
+               <button id="adHocCalcButton" style='display:none;'>ad Hoc</button>
+               <div id="interval_end" style='float: right;'>Date+Time</div>
+            </div>
+         </div>
+         <hr style="height:5px; visibility:hidden;" />
+         <button id="showComplete" style="display:none; font-weight:bold">howComplete</button>
+         <div id="taskbar" style="display:inline;">
+            <button id="shiftLeftLong" style="display:none;"><b>&nbsp; &lt;&lt;&nbsp;</b></button>
+            <button id="shiftLeft" style="display:none;"><b>&nbsp; &lt;&nbsp;</b></button>
+            <button id="shiftRight" style="display:none;"><b>&nbsp;&gt; &nbsp;</b></button>
+            <button id="shiftRightLong" style="display:none;"><b>&nbsp;&gt;&gt; &nbsp;</b></button>
+         </div>
+         <button id="recoverData" style="display:none;; font-weight:bold">recover</button>
+         <button id="newTab" style="display:none;">New Window</button>
+         <button id="dataJSON" style="display:none;">Data</button>
+         <button id="chartIndex" style="display:none;">Chart Index</button>
+         <button id="configuration" style="display:none;">Configuration</button>
+         <button id="snapshot" style="display:none;">Snapshot</button>
+         &nbsp;&nbsp;
+         <label id='textRefresh' style="display:none;">Update
+         <input type="checkbox" id="refreshCheckbox">
+         </label>
+         &nbsp;
+         <label id='textTooltip' style="display:none;">Show Tooltipbox
+         <input type="checkbox" id="tooltipCheckbox">
+         </label>
+         &nbsp;
+         <label id='textShowIx' style="display:none;">Show Index
+         <input type="checkbox" id="showIxCheckbox">
+         </label>
+         &nbsp;
+         <button id="expand" style="display:none;">Expand.</button>
+         <br>
+         <div id="notif3" class="smaller"></div>
+         <hr>
+         <div id="notification">
+            <div id="notification-message"></div>
+         </div>
+         <br>
+         <div id="notif2"></div>
+         <!-- busy indicator -->
+         <div id='busybox' class='fog_div'>
+            <div>&nbsp;</div>
+         </div>
+
+         <!-- date time picker -->
+         <div id="dtpickModal"  class="modal" style="display:none;" 
+                draggable="true" ondragstart="drag(event)">
+            <div id="dtpick_child" class="modal-content">
+               <table id="dtpick_table_interval" style="display:inline;">
+                  <tr>
+                     <th><label id='dtpick_title'>Display Interval </label></th>
+                     <th></th>
+                  </tr>
+                  <tr>
+                     <th></th>
+                     <th></th>
+                  </tr>
+
+                  <!-- start time -->
+                  <tr>
+                     <td>
+                        <label id='dtpick_date_start'>Date Start: </label>
+                     </td>
+                     <td>
+                        <select name="year_start" id="dtpick_year_start">
+                        </select>
+                        -
+                        <select name="month_start" id="dtpick_month_start">
+                        </select>
+                        -
+                        <select name="day_start" id="dtpick_day_start">
+                        </select>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                        <label id='dtpick_time_start'></label>
+                     </td>
+                     <td>
+                        <select name="hour_start" id="dtpick_hour_start">
+                        </select>
+                        :
+                        <select name="minute_start" id="dtpick_minute_start">
+                        </select>
+                     </td>
+                  </tr>
+
+                  <!-- end time -->
+                  <tr>
+                     <td>
+                        <input type="radio" id='dtpick_nointerval' name="intervalRadio">
+                        <label id='dtpick_date_end'>Date End: </label>
+                     </td>
+                     <td>
+                        <select name="year_end" id="dtpick_year_end">
+                        </select>
+                        -
+                        <select name="month_end" id="dtpick_month_end">
+                        </select>
+                        -
+                        <select name="day_end" id="dtpick_day_end">
+                        </select>
+                     </td>
+                  </tr>
+                  <tr>
+                     <td>
+                        <label id='dtpick_time_end'></label>
+                     </td>
+                     <td>
+                        <select name="hour_end" id="dtpick_hour_end">
+                        </select>
+                        :
+                        <select name="minute_end" id="dtpick_minute_end">
+                        </select>
+                     </td>
+                  </tr>
+
+                  <!-- interval length -->
+                  <tr>
+                     <td>
+                        <input type="radio" id='dtpick_interval' name="intervalRadio" checked>
+                        <label id='dtpick_length'>Interval Length: </label>
+                     </td>
+                     <td>
+                        <select name="interval_length" id="dtpick_intervallength">
+                        </select>
+                        <select name="interval_type" id="dtpick_intervaltype">
+                        </select>
+                     </td>
+                  </tr>
+
+               </table>
+               <br><br>
+               <label id="dtpick_count_text"></label>
+               <br><br>
+               <button id="dtpick_exec"><b>OK</b></button>
+               <button id="dtpick_break" onclick='datetimepicker()'><b>Break</b></button>
+            </div>
+            <!--dtpick_child-->
+         </div>
+         <!--dtpick-->
+
+         <!-- in display calculation -->
+         <div id="postcalcModal" class="modal" draggable="true"
+                ondragstart="drag(event)">
+            <div class="modal-content">
+               <div id='postcalcContents'>Some text in the Modal..</div>
+            </div>
+         </div>
+         <!-- post_calc -->
+
+         <!-- adHocCalc calculation -->
+         <!--<div id="adHocCalcModal" class="modal" draggable="true"
+             ondragstart="drag(event)">
+             drag does not work with textarea -->
+         <div id="adHocCalcModal" class="modal">
+            <div id='adHocCalcPage' class="modal-content">
+               <div id='adHocCalcContents'>Some text in the Modal..</div>
+            </div>
+         </div>
+         <div id="adHocCalcResult" class="modal" draggable="true"
+                ondragstart="drag(event)">
+            <div id='adHocCalcResultPage' class="modal-content">
+               <div id='adHocCalcResultContents'>Some text in the Modal..</div>
+            </div>
+         </div>
+         <!-- adHocCalc -->
+
+      </div>
+      <!--main-->
+
+      <!-- for testings: -->
+      <!--
+      <button onclick="call_new('3.5.1')">call 3.5 1</button> 
+      <script>
+      function call_new(version) {
+          var loc = window.location.href;
+          loc = loc.replace('draw-chartjs.html', 'draw-chartjs_'+version+'.html');
+          window.open(loc, '_blank'); 
+      }
+      </script>
+      -->
+   </body>
+</html>
+
