@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.6.0 2025-10-14/peb
+//h Version:      V3.6.1 2025-11-18/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -30,6 +30,7 @@
 //v               V3.4.4 2025-08-18/peb [+]spanGaps as parameter
 //v               V3.6.0 2025-10-09/peb [+]usedYScales
 //v                                     [*]y scales code redesigned
+//v               V3.6.1 2025-10-29/peb [x]fill with color if target sensor=1
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -45,8 +46,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.6.0';
-var WRITTEN = '2025-10-14/peb';
+var VERSION = 'V3.6.1';
+var WRITTEN = '2025-11-18/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -676,7 +677,36 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     program_control(request_mode, from, to);
                 }
                 break;
-            case 6:
+             case 6:
+                //*** test for usercode in separate file
+                if (vLog.chartHeader.global_js.define_global_js &&
+                    vLog.chartHeader.global_js.file_name) {
+                    obtain_usercode(vLog.chartHeader.global_js.file_name,
+                                    request_mode, from, to);
+                } else {
+                    //*** set/reset global object g
+                    header_utils.take_global_code(vLog.chartHeader);
+                    program_control(request_mode, from, to);
+                }
+                break;
+             case 7:
+                //*** test for usercode in separate file
+                if (vLog.chartHeader.post_processing.define_post_processing &&
+                    vLog.chartHeader.post_processing.file_name) {
+                    obtain_post_processing(vLog.chartHeader.post_processing.file_name,
+                                           request_mode, from, to);
+                } else {
+                    //*** take post processing code postprocess
+                    if (typeof vLog.chartHeader.post_processing !== 'undefined') {
+                        if (vLog.chartHeader.post_processing.define_post_processing) {
+                            post_processing = true;
+                            header_utils.take_post_processing(vLog.chartHeader);
+                        }
+                    }
+                    program_control(request_mode, from, to);
+                }
+                break;
+           case 8:
                 //console.log('read_values start: '+(Date.now()-startRun)/1000+' sec');
                 if (!vLog.chartHeader.initialInterval ||
                     vLog.chartHeader.initialInterval === 'complete') {
@@ -691,7 +721,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 limitYAxis = vLog.chartHeader.limitYAxis;
                 read_values(request_mode, initialIntervalMSEC, from, to);
                 break;
-            case 7:
+            case 9:
                 //console.log('prepareData start: '+(Date.now()-startRun)/1000+' sec');
                 try {
                     config.data = prepareData();
@@ -826,12 +856,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     //obtain MxC constants
     function obtain_MxC (request_mode, from, to) {
-        url = 'http://' + api + '/MxChartDB/MxC/select_next';
+        //console.log('obtain_MxC');
+        url = 'http://' + api + '/MxChartDB/MxC/select_last';
         ch_utils.ajax_get(url, success, fail);
 
         function success(data) {
             MxC_input = data[0];
-            //console.log(JSON.stringify(MxC_input));
+            //console.log('MxC_input', MxC_input);
             program_control(request_mode, from, to);
         } //success
 
@@ -840,6 +871,62 @@ document.addEventListener("DOMContentLoaded", function(event) {
             alert('obtain MxC: '+ status + ' ' + responseText);
         } //fail
     } //obtain_MxC
+
+    //obtain usercode from file
+    function obtain_usercode (filename, request_mode, from, to) {
+        console.log('obtain_usercode');
+        url = '../myUsercode/' + filename;
+        url = ch_utils.convertToUTF8(url);
+        ch_utils.ajax_get(url, success, fail);
+
+        function success(data) {
+            vLog.chartHeader.global_js.code = data;
+            //*** set/reset global object g
+            header_utils.take_global_code(vLog.chartHeader);
+            program_control(request_mode, from, to);
+        } //success
+
+        function fail(status, responseText) {
+            if (status === 500) {
+                responseText = 'file not found';
+            }
+            var err = 'obtain_usercode '+filename+': '+ status + ' ' + responseText;
+            console.log(err);
+            alert(err);
+            header_utils.take_global_code(vLog.chartHeader);
+            program_control(request_mode, from, to);
+        } //fail
+    } //obtain_usercode
+
+    //obtain post_processing code from file
+    function obtain_post_processing (filename, request_mode, from, to) {
+        console.log('obtain_post_processing');
+        url = '../myPostprocessing/' + filename;
+        url = ch_utils.convertToUTF8(url);
+        ch_utils.ajax_get(url, success, fail);
+
+        function success(data) {
+            vLog.chartHeader.post_processing.code = data;
+            //*** take post processing code postprocess
+            if (typeof vLog.chartHeader.post_processing !== 'undefined') {
+                if (vLog.chartHeader.post_processing.define_post_processing) {
+                    post_processing = true;
+                    header_utils.take_post_processing(vLog.chartHeader);
+                }
+            }
+            program_control(request_mode, from, to);
+        } //success
+
+        function fail(status, responseText) {
+            if (status === 500) {
+                responseText = 'file not found';
+            }
+            var err = 'obtain_post_processing '+filename+': '+ status + ' ' + responseText;
+            console.log(err);
+            alert(err);
+            program_control(request_mode, from, to);
+        } //fail
+    } //obtain_post_processing
 
     //read chart header
     function read_header(request_mode, from, to) {
@@ -936,7 +1023,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
                 //*** enable post calc
                 postcalc.enable_post_calc('postcalcButton', vLog.chartHeader);
-
+/*
                 //*** set/reset global object g
                 header_utils.take_global_code(vLog.chartHeader);
 
@@ -956,7 +1043,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         header_utils.take_post_processing(vLog.chartHeader);
                     }
                 }
-
+*/
                 //*** test for used  = data;MxC constants
                 program_control(request_mode, from, to);
             } else {
@@ -1056,6 +1143,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (status === 304) { //not modified
                 //console.log('not modified: '+(Date.now()-startRun)/1000+' sec');
                 if (!headerChanged) {
+/*                    
+                    //execute post processing
+                    if (post_processing) {
+                        postprocess(7);
+                        g.redraw();
+                    }
+*/                    
                     ch_utils.displayMessage2(8, ch_utils.userTime('now'));
                     return;
                 }
@@ -1264,6 +1358,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             var label_text = vLog.chartHeader.chartLabels[label_ix];
             data.datasets.push(setDatasetHeader(label_text, label_ix));
         }
+        //console.log('+++++++++++++ data.datasets');
+        //console.log(data.datasets);
 
         //restore user hidden line flag to the state before update 
         for (var ih = 0; ih < config_data_datasets_save.length; ih++) {
@@ -1673,7 +1769,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         } else if (fillArr[0] === 99) { //fill to top
                             fill0 = 'end';
                         } else if (fillArr[0] >= 1) {
-                            fill0 = fillArr[0] - 1;
+                            fill0 = (fillArr[0] - 1)+'';
                         }
                     }
                     //part 2:
@@ -1715,8 +1811,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             };
                         }
                     }
-                    //console.log('ix='+ix+': '+fillStr);
-                    //console.log(item.fill);
+                    //console.log('ix='+ix+': fillStr='+fillStr+': item.fill='+item.fill);
                 }
             } //fillStr
         }
@@ -1725,6 +1820,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 item.hidden = vLog.chartHeader.chartHidden[ix] || false;
             }
         }
+        //console.log('+++++++++++++ item');
         //console.log(item);
         return item;
     } //setDatasetHeader
@@ -1860,7 +1956,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             endTime = X[0];
 
             g.x0 = X[0];
-            g.x0_prev = Xprev[9];
+            g.x0_prev = Xprev[0] || null;
+            g.v0_prev = g.v0 || null;
             g.v0 = X[0];
 
         //b else if sensor value
@@ -1870,10 +1967,15 @@ document.addEventListener("DOMContentLoaded", function(event) {
             var x = X[ix];
             g.ix = ix;
             g.x = x;
-            g.x_prev = Xprev[ix];
+            g.x_prev = Xprev[ix] || null;
             //previous value:
-            g.v = g['v' + ix];
-
+            g['v' + ix+ '_prev'] = g['v' + ix] || null;
+            g.v = g['v' + ix] || null;
+/*            
+            if (x) {
+                console.log('g', g);
+            }
+*/
             //b correct value by formula
             //--------------------------
             //console.log(ip+'-'+ix);
@@ -1900,14 +2002,27 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     x = eval(formula);
                     /*jshint evil: false */
 
+                    if (typeof x === 'undefined') {
+                        console.log(ch_utils.buildMessage(24, ix, label, 
+                            ch_utils.userTime(X[0])));
+                        console.log(ch_utils.buildMessage(25));
+                        console.log('formula = "' + formula + '"');
+                        console.log('Xprev', Xprev);
+                        console.log('X', X);
+                        console.log('g', g);
+                        console.log('result = ' + x);
+                        setErrormessage(ix, '4 ' + errmess+'\n'+
+                            ch_utils.buildMessage(39), data.datasets[ix - 1]);
+                    } else
                     if (typeof x === 'number' && !isFinite(x)) {
                         console.log(ch_utils.buildMessage(24, ix, label, 
                             ch_utils.userTime(X[0])));
                         console.log(ch_utils.buildMessage(25));
                         console.log('formula = "' + formula + '"');
-                        console.log(Xprev);
-                        console.log(X);
-                        //console.log(g);
+                        console.log('Xprev', Xprev);
+                        console.log('X', X);
+                        console.log('g', g);
+                        console.log('result = ' + x);
                         setErrormessage(ix, '3 ' + errmess+'\n'+
                             ch_utils.buildMessage(39), data.datasets[ix - 1]);
                     } else
@@ -1915,10 +2030,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         if (label.indexOf(ch_utils.buildMessage(34)) < 0) {
                             console.log(ch_utils.buildMessage(25));
                             console.log('formula = "' + formula + '"');
-                            console.log(Xprev);
-                            console.log(X);
-                            //console.log(g);
-                            console.log('x=' + x);
+                            console.log('Xprev', Xprev);
+                            console.log('X', X);
+                            console.log('g', g);
+                            console.log('result = ' + x);
                             setErrormessage(ix, '1 ' + errmess, 
                                 data.datasets[ix - 1]);
                         }
@@ -1933,7 +2048,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         console.log('formula = "' + formula + '"');
                         console.log(Xprev);
                         console.log(X);
-                        //console.log(g);
+                        console.log(g);
                         setErrormessage(ix, '2 ' + errmess+'\n'+err.message, 
                             data.datasets[ix - 1]);
                     }
@@ -2756,7 +2871,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
     function shiftleft(length) {
         var timeRange = header_utils.xRange();
         timeRange.len = currentIntervalMSEC;
-
         var xMin_target = Math.round(timeRange.min - Math.round(timeRange.len * 
             length));
         var xMax_target = xMin_target + timeRange.len;
@@ -2782,6 +2896,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     } //shiftLeft
 
     function do_zoom(from, to) {
+        console.log('do_zoom: from=' + ch_utils.userTime(from) + 
+            ' to=' + ch_utils.userTime(to));
         //------------------- set night background -------------------------------
         var start = from;
         var stop = to;
@@ -2958,7 +3074,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
         vLog.chartValues = data.concat(vLog.chartValues);
         tsLastValues = vLog.chartValues[vLog.chartValues.length - 1][0];
-        step = 6;
+        step = 8;   //!!!!!!!!!!!!!!!
         program_control('REQUEST_UPDATE');
         do_zoom((from || startTime), (to || endTime));
     } //process_previous

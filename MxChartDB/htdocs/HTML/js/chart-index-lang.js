@@ -213,4 +213,8 @@
             de: ' ⌫ ',
             en: ' ⌫ '
         },
+        {//53
+            de: 'MxC Konstanten',
+            en: 'MxC Constants',
+        },
     ];

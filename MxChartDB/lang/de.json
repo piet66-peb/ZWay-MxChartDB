@@ -155,10 +155,16 @@
    "global_js": "Option: Benutzerdefinierter Javascript Code (<a rel='Hilfe' href='/ZAutomation/api/v1/load/modulemedia/MxChartDB/chart_arithmetics.html' target='_blank'><u><font color=blue>&gt;&gt; help</font></u></a>)",
    "global_js_helper1": "For global gültige Konstanten, Variablen und Funktionen. ",
    "define_global_js": "Den Code definieren",
-   "lines": "Anzahl Zeilent",
+   "lines": "Anzahl Zeilen",
    "code": "Javascript Code",
    "code_helper": "Ein Objekt mit geschweifen Klammern.",
    "post_processing": "Option: Post Processing (<a rel='help' href='/ZAutomation/api/v1/load/modulemedia/MxChartDB/chart_arithmetics.html' target='_blank'><u><font color=blue>&gt;&gt; help</font></u></a>)",
    "post_processing_helper1": "Dieser Code wird zum Schluß Zeile für Zeile im dargestellten Displa ausgeführt.",
-   "define_post_processing": "Den Code definieren"   
+   "define_post_processing": "Den Code definieren"   ,
+   "pp_radio_code": "den Code hier definieren",
+   "pp_radio_file": "den Code in einer Datei speichern",
+   "pp_file_name": "Dateiname in Verzeichnis ./htdocs/myPostprocessing/",
+   "uc_radio_code": "den Code hier definieren",
+   "uc_radio_file": "den Code in einer Datei speichern",
+   "uc_file_name": "Dateiname in Verzeichnis ./htdocs/myUsercode/"
 }

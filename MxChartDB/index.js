@@ -1,4 +1,4 @@
-/*** MxChartDB V1.0.2 2025-01-23 Z-Way HA module *********************************/
+/*** MxChartDB V3.7.0 2025-11-14 Z-Way HA module *********************************/
 
 //h-------------------------------------------------------------------------------
 //h
@@ -14,7 +14,7 @@
 //h Resources:    MxBaseModule
 //h Issues:
 //h Authors:      peb piet66
-//h Version:      V1.0.2 2025-01-23/peb
+//h Version:      V3.7.0 2025-11-14/peb
 //v History:      V1.0.0 2024-06-29/peb first version
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
@@ -35,8 +35,8 @@ function MxChartDB(id, controller) {
     MxChartDB.super_.call(this, id, controller);
 
     this.MODULE='index.js';
-    this.VERSION='V1.0.2';
-    this.WRITTEN='2025-01-23/peb';
+    this.VERSION='V3.7.0';
+    this.WRITTEN='2025-11-14/peb';
 }
 inherits(MxChartDB, MxBaseModule);
 _module = MxChartDB;

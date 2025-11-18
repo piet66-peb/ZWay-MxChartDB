@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=utf-8">
+  <title>MxChartDB</title>
+  <link rel="shortcut icon" href="../icon.png">
+  <script src='../constants.js'></script>
+  <script src='js/MxC.js'></script>
+  <script src='js/MxC-lang.js'></script>
+  <script defer src='js/ch_utils.js'></script>
+  <style type="text/css">
+         table {
+            //width: 95%;
+         }
+         th {
+            background-color: #666;
+            color: #fff;
+         }
+         tr {
+            background-color: #fffbf0;
+            color: #000;
+         }
+            tr:nth-child(odd) {
+            background-color: #e4ebf2;
+         }
+         tr:hover {
+            background-color: #dfac20;
+            color: #fff;
+         }
+  </style>
+  <style>
+        input:required, select:required, textarea:required {
+            border: 2px solid red;      /* roter Rahmen für Pflichtfelder */
+            background-color: #ffe6e620;  /* helle rote Hintergrundfarbe */
+        }
+
+        input:required:focus, select:required:focus, textarea:required:focus {
+            border-color: darkred;      /* dunklerer Rahmen bei Fokus */
+            outline: none;
+        }
+  </style>
+</head>
+<body>
+  <script>
+    console.log(window.location);
+    console.log('pathname='+window.location.pathname);
+    console.log('parameter='+window.location.search);
+  </script>
+  <div>
+    <br>
+    <div id="notification-message0"></div>
+    <div id="notification-message"></div>
+    <br>
+    <button id="request" style="display:none;"> </button>
+    <button id="del_row" style="display:none;"> </button>
+    <button id="dup_row" style="display:none;"> </button>
+    <button id="ins_row" style="display:none;"> </button>
+    <button id="store" style="display:none;"> </button>
+
+    <pre id="html-renderer"></pre>
+  </div>
+</body>
+</html>

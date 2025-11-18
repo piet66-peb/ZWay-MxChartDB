@@ -60,26 +60,27 @@
       </script>          
       <br>
       <div class="flex-container">
-      <div id="notification">
-         <div id="AspectRatio" style='float: right;'></div>
-         <div id="notification-message">Reading chart-index.js...</div>
-      </div>
-      <div>
-          <input type="text" id="myInput" onkeyup="myFunction()" 
-                placeholder="Search for names..">      
-          <button type="button" id="delInput" onclick="del()"> - </button>
-
-          <input type="checkbox" id="actives" checked onchange="display(this)">
-          <label id="activesT">actives charts</label>
-          <input type="checkbox" id="inactives" checked onchange="display(this)">
-          <label id="inactivesT">inactive charts</label>
-          <input type="checkbox" id="orphaned" checked onchange="display(this)">
-          <label id="orphanedT">orphaned charts</label>
-          <input type="checkbox" id="snapshots" onchange="display(this)">
-          <label id="snapshotsT">snapshots</label>
-      </div>
-      <pre id="json-renderer"></pre>
-      <input type="file" accept=".json" id="selectFile">
+          <div id="notification">
+             <div id="AspectRatio" style='float: right;'></div>
+             <div id="notification-message">Reading chart-index.js...</div>
+          </div>
+          <div>
+              <input type="text" id="myInput" onkeyup="myFunction()" 
+                    placeholder="Search for names..">      
+              <button type="button" id="delInput" onclick="del()"> - </button>
+    
+              <input type="checkbox" id="actives" checked onchange="display(this)">
+              <label id="activesT">actives charts</label>
+              <input type="checkbox" id="inactives" checked onchange="display(this)">
+              <label id="inactivesT">inactive charts</label>
+              <input type="checkbox" id="orphaned" checked onchange="display(this)">
+              <label id="orphanedT">orphaned charts</label>
+              <input type="checkbox" id="snapshots" onchange="display(this)">
+              <label id="snapshotsT">snapshots</label>
+          </div>
+          <pre id="json-renderer"></pre>
+          <input type="file" accept=".json" id="selectFile">
+          <button type="button" id="MxC" onclick="callMxC()"> MxC Constants </button>
       </div>
 
       <!-- busy indicator -->
@@ -92,6 +93,13 @@
             document.getElementById("myInput").value = '';
             myFunction();
             framing(2);
+        }
+      </script>
+      <script>
+        function callMxC() {
+            //TODO allgemein formulieren !!!!
+            var url = './MxC.html';
+            window.open(url);
         }
       </script>
       <script>

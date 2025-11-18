@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.1 2025-10-13/peb
+//h Version:      V3.4.1 2025-11-17/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //v               V3.4.0 2025-08-14/peb [+]annotation
@@ -31,7 +31,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.4.1';
-var WRITTEN='2025-10-13/peb';
+var WRITTEN='2025-11-17/peb';
 
 //b common: common functions
 //--------------------------
@@ -58,9 +58,12 @@ var MxC_utils = {
     //h true|false = test_MxC_used(header);
     //-------------------------------------------------------------------------
     test_MxC_used: function (header, api) {
-        var match = JSON.stringify(header).match(/MxC\s*\([^\),]*,?[^\),]*\)/);
+        var match = JSON.stringify(header).match(/MxC\s*\(/);
         if (!match) {
-            match = JSON.stringify(header).match(/MxC_horizontals\s*\([^\),]*,?[^\),]*\)/);
+            match = JSON.stringify(header).match(/MxC_data/);
+        }
+        if (!match) {
+            match = JSON.stringify(header).match(/MxC_horizontals/);
         }
         if (match) {
             return true;
@@ -74,7 +77,7 @@ var MxC_utils = {
     //h returns the constant value:
     //h value = MxC_utils.MxC(MxC_name, ts);
     //-------------------------------------------------------------------------
-    MxC: function(MxC_name, ts) {
+    MxC: function(MxC_name, ts, returntype) {
         function return_value(MxC_entry) {
             var value = MxC_entry[4];
             var type = MxC_entry[5];
@@ -103,7 +106,13 @@ var MxC_utils = {
         //real copy, cause otherwise reverse doesn't work:
         var MxC_name_data = JSON.parse(JSON.stringify(MxC_input[MxC_name]));
         var len = MxC_name_data.length;
-        if (len === 0) {return null;}
+        if (len === 0) {
+            if (returntype === 'array') {
+                return [];
+            } else {
+                return null;
+            }
+        }
 
         //if previous MxC version 1.0.0
         var i;
@@ -158,16 +167,27 @@ var MxC_utils = {
             len = MxC_name_data.length;
             if (ts === undefined) {
                 //return last value
-                return return_value(MxC_name_data[len - 1]);
-            } else {
-                for (i = 0; i < MxC_name_data.length; i++) {
-                    if (MxC_name_data[i][0] > 0 &&
-                        ts >= MxC_name_data[i][0] &&
-                        (MxC_name_data[i][2] === null ||
-                            ts < MxC_name_data[i][2])) {
+                if (returntype === 'array') {
+                    return MxC_name_data[len - 1];
+                } else {
+                    return return_value(MxC_name_data[len - 1]);
+                }
+            }
+            for (i = 0; i < MxC_name_data.length; i++) {
+                if (MxC_name_data[i][0] > 0 &&
+                    ts >= MxC_name_data[i][0] &&
+                    (MxC_name_data[i][2] === null ||
+                        ts < MxC_name_data[i][2])) {
+                    if (returntype === 'array') {
+                        return MxC_name_data[i];
+                    } else {
                         return return_value(MxC_name_data[i]);
-                    } else
-                    if (MxC_name_data[i][0] === null) {
+                    }
+                } else
+                if (MxC_name_data[i][0] === null) {
+                    if (returntype === 'array') {
+                        return MxC_name_data[i];
+                    } else {
                         return return_value(MxC_name_data[i]);
                     }
                 }
@@ -180,9 +200,10 @@ var MxC_utils = {
     //h returns the complete arry for the given constant name:
     //h entry array| [] = MxC_utils.MxC_data(MxC_name);
     //-------------------------------------------------------------------------
-    MxC_data: function(MxC_name) {
-        console.log('MxC_data('+MxC_name+')');
-        console.log(MxC_input);
+    MxC_data: function(MxC_name, ts) {
+        if (ts !== undefined) {
+            return MxC_utils.MxC(MxC_name, ts, 'array');
+        }
         return MxC_input[MxC_name] || [];
     }, //MxC_data
 }; //MxC_utils,
@@ -273,13 +294,20 @@ var header_utils = {
         } else {
             var comm ='';
             try {
-                var g_tmp = {};
-                comm = 'g_tmp = ' + header.global_js.code;
-                /*jshint evil: true */
-                eval(comm);
-                /*jshint evil: false */
-                comm = 'common.concatObjects';
-                common.concatObjects(g_ini, g_tmp);
+                if (header.global_js.code) {
+                    var g_tmp = {};
+                    header.global_js.code = 
+                        //header.global_js.code.replace(/\s*var\s+myUsercode\s+=\s*\n/, '');
+                        header.global_js.code.replace(/^[^\{]*{/, '{');
+                    comm = 'g_tmp = ' + header.global_js.code;
+                    /*jshint evil: true */
+                    eval(comm);
+                    /*jshint evil: false */
+                    comm = 'common.concatObjects';
+                    common.concatObjects(g_ini, g_tmp);
+                } else {
+                    console.log('header_utils.take_global_code: no header.global_js.code defined!');
+                }
                 g = g_ini;
             } catch (err) {
                 console.log(err.message);
@@ -304,7 +332,7 @@ var header_utils = {
         };
         var pp_first = [
 "postprocess = function(pos) {\n",
-"    //console.log('post_processing('+pos+')');\n",
+"    console.log('post_processing('+pos+')');\n",
 "    annotation.restrict_to_visible = true;\n",
 "    try {\n",
 "        ++pp_count;\n",
@@ -1313,6 +1341,9 @@ g.redraw(9);
         }
 
         if (arg1.hide === undefined) {arg1.hide = true;}
+        if (!g.notSet(arg1.text) && typeof arg1.text === 'number') {
+            arg1.text = arg1.text+'';
+        }
         var anno_config = {
             drawTime: arg1.drawTime || 'afterDatasetsDraw',
             type: 'line',
@@ -1525,17 +1556,19 @@ g.redraw(9);
         });
     }, //text
 
-    MxC_horizontals: function(MxC_name, label) {
+    MxC_horizontals: function(MxC_name, label, usedYScale) {
     //draws horizontals for the MxC data Preis
      //console.log('annotation.MxC_horizontals '+ MxC_name + ' '+ label);
      var arr = g.MxC_data.apply(null, [MxC_name]);
      //console.log(arr);
+
      for (var i = 0; i < arr.length; i++) {
          var xMin = arr[i][0];
          var xMax = arr[i][2];
          var yMin = arr[i][4];
          var yMax = arr[i][4];
-         g.annotation.line(label + i,
+
+         var param = 
             {xMin: xMin,
              xMax: xMax,
              yMin: yMin,
@@ -1543,7 +1576,9 @@ g.redraw(9);
              text: label + ' ' + yMin,
              text_color: 'green',
              text_background: 'lightGreen',
-         });
+             usedYScale: usedYScale,
+         };
+         g.annotation.line(label + i, param);
      }
     }, //MxC_horizontals
 
@@ -1611,7 +1646,7 @@ var nightTimes = {
     annotations: function (pos) {
     //usage:
     //    nightTimes.annotations();
-        //console.log('nightTimes.annotations ('+pos+')');
+        console.log('nightTimes.annotations ('+pos+')');
 
         //delete old annotation boxes
         //console.log('delete old nights');

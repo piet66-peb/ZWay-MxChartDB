@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.3.4 2025-10-10/peb
+//h Version:      V3.7.0 2025-11-14/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -35,8 +35,8 @@
 //b Constants
 //-----------
 //var MODULE='MxChartDB_init.js';
-//var VERSION='V3.3.4';
-//var WRITTEN='2025-10-10/peb';
+//var VERSION='V3.7.0';
+//var WRITTEN='2025-11-14/peb';
 
 //-----------
 //b Functions
@@ -190,13 +190,21 @@ var init = function (self) {
         }
         if (!self.config.hasOwnProperty('global_js')) {
             self.config.global_js = {define_global_js: false,
+                                     uc_radio: 'code',
                                      lines: 5,
                                      code: ''};
         }
+        if (!self.config.global_js.hasOwnProperty('uc_radio')) {
+            self.config.global_js.uc_radio = 'code';
+        }
         if (!self.config.hasOwnProperty('post_processing')) {
             self.config.post_processing = {define_post_processing: false,
+                                           pp_radio: 'code',
                                            lines: 5,
                                            code: ''};
+        }
+        if (!self.config.post_processing.hasOwnProperty('pp_radio')) {
+            self.config.post_processing.pp_radio = 'code';
         }
     
         //b get API version (=>ajax_get)

@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2025-03-21/peb
+//h Version:      V2.1.0 2025-11-12/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2025-03-21/peb';
+var WRITTEN='2025-11-12/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -87,6 +87,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     if (ADMIN === 'YES') {
         document.title = ch_utils.buildMessage(17);
         ch_utils.displayMessage(17);
+        ch_utils.buttonText('MxC', 53);
     } else {
         document.title = ch_utils.buildMessage(4);
         ch_utils.displayMessage(4);

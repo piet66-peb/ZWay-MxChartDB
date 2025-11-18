@@ -13,8 +13,9 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.0 2025-02-07/peb
+//h Version:      V3.3.1 2025-11-15/peb
 //v History:      V1.0.0 2022-01-02/peb first version
+//v               V3.3.1 2025-11-11/peb [x]notSet
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h
@@ -28,8 +29,8 @@
 //b Constants
 //-----------
 var MODULE='ch_utils.js';
-var VERSION='V3.3.0';
-var WRITTEN='2025-02-07/peb';
+var VERSION='V3.3.1';
+var WRITTEN='2025-11-15/peb';
 
 //-----------
 //b Functions
@@ -83,15 +84,16 @@ var ch_utils = {
     //check if any argument is not set (undefined or null)
     notSet: function() {
         for (var i = 0; i < arguments.length; i++) {
-            if (arguments[i] === undefined ||
+            if (typeof arguments[i] === 'undefined' ||
+                arguments[i] === undefined ||
                 arguments[i] === null ||
                 typeof arguments[i] === 'string' &&  
                     arguments[i].trim() === ''
             ) {
                 return true;
             }
-            return false;
         }
+        return false;
     }, //notSet
 
     //check if any argument is not set (undefined or null) or no number
@@ -531,7 +533,7 @@ var ch_utils = {
         for (var i = 1; i < arguments.length; i++) {
             text = text.replace("{"+(i-1)+"}", arguments[i]);
         }
-        //console.log('displayMessage: '+arguments[0]+' '+text);
+        //console.log('displayMessage2: '+arguments[0]+' '+text);
         document.getElementById('notif2').innerHTML = text;
 
     }, //displayMessage2

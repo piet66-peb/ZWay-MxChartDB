@@ -63,6 +63,7 @@
 <li><a href="#C4">4. Post Processing</a></li>
 <li><a href="#C5">5. In-Display Calculation</a></li>
 <li><a href="#C6">6. Ad-Hoc Calculation</a></li>
+<li><a href="#C7">2. MxC: General Constants across Charts</a></li>
 </ul>
 
       <h1 id="C1">1. Sensor Arithmetic</h1>
@@ -158,6 +159,7 @@
       Javascript code:
 
       <pre><code class="language-javascript">
+var g =
 {
       ts1: 1728968400000,
       ts2: 1730264400000,
@@ -1120,8 +1122,39 @@
     });
     g.redraw();
     </code>
-    
     </pre>
+
+      <h1 id="C7">3. MxC: General Constants across Charts</h1>
+
+     In a database table called 'MxC', constants can be stored for common access by different charts.
+      <br>
+
+      These general constants can be administered via a special webpage:
+      <a href="/ZAutomation/api/v1/load/modulemedia/MxChartDB/HTML/MxC.html">MxC Konstanten</a>.
+      <br><br>
+
+      It's possible to store per entry:
+      <ul>
+          <li>the constant name</li>
+          <li>the constant value</li>
+          <li>the constant type (number or string)</li>
+          <li>the unit (scale title)</li>
+          <li>the validity of this definition (a date+time: valid from, valid to )</li>
+          <li>a comment</li>
+      </ul>
+      All constant names can be defined several times with different values and different scopes of validity.
+      <br><br>
+    
+      The constants values defined by this mechanism can be obtained in the arithmetics of all charts 
+      with one of these function calls:
+      <pre><code class="language-javascript">
+      constant_value = g.MxC(constant_name[,timestamp]);    //current value of the constant
+      </code></pre>
+      respectively:
+      <pre><code class="language-javascript">
+      constant_array = g.MxC_data(constant_name[,timestamp])    //complete current entry of the constant
+      </code></pre>
+
    </body>
 </html>
 

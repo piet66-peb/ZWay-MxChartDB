@@ -9,7 +9,7 @@
   "homepage": "https://github.com/piet66-peb?tab=repositories",
   "icon": "icon.png",
   "moduleName": "MxChartDB",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "maturity": "stable",
   "repository": {
     "type": "git",
@@ -385,14 +385,26 @@
           "define_global_js": {
             "type": "boolean"
           },
-          "lines": {
+          "uc_radio": {
             "dependencies": "define_global_js",
+            "enum": [
+              "code",
+              "file"
+            ],
+            "required": true
+          },
+          "lines": {
+            "dependencies": "uc_radio",
             "type": "integer",
             "minimum": 0,
             "maximum": 100
           },
           "code": {
-            "dependencies": "define_global_js",
+            "dependencies": "uc_radio",
+            "type": "string"
+          },
+          "file_name": {
+            "dependencies": "uc_radio",
             "type": "string"
           }
         }
@@ -403,14 +415,26 @@
           "define_post_processing": {
             "type": "boolean"
           },
-          "lines": {
+          "pp_radio": {
             "dependencies": "define_post_processing",
+            "enum": [
+              "code",
+              "file"
+            ],
+            "required": true
+          },
+          "lines": {
+            "dependencies": "pp_radio",
             "type": "integer",
             "minimum": 0,
             "maximum": 100
           },
           "code": {
-            "dependencies": "define_post_processing",
+            "dependencies": "pp_radio",
+            "type": "string"
+          },
+          "file_name": {
+            "dependencies": "pp_radio",
             "type": "string"
           }
         }
@@ -910,16 +934,25 @@
             "type": "checkbox",
             "rightLabel": "__define_global_js__"
           },
-          "lines": {
+          "uc_radio": {
             "dependencies": {
               "define_global_js": true
+            },
+            "optionLabels": [
+              "__uc_radio_code__",
+              "__uc_radio_file__"
+            ]
+          },
+          "lines": {
+            "dependencies": {
+              "uc_radio": "code"
             },
             "id": "global_js_line",
             "label": "__lines__"
           },
           "code": {
             "dependencies": {
-              "define_global_js": true
+              "uc_radio": "code"
             },
             "fieldClass": "javascript global_js_code",
             "id": "global_js_code",
@@ -927,7 +960,14 @@
             "helper": "__code_helper__",
             "type": "textarea",
             "rows": 0,
-            "placeholder": "{\n    v1: <value>,\n    v2: <value>,\n    f1: function(a, b, c) = {\n      return <value>;\n};"
+            "placeholder": "var g =\n{\n    v1: <value>,\n    v2: <value>,\n    f1: function(a, b, c) = {\n      return <value>;\n};"
+          },
+          "file_name": {
+            "dependencies": {
+              "uc_radio": "file"
+            },
+            "label": "__uc_file_name__",
+            "placeholder": "example.js"
           }
         }
       },
@@ -942,22 +982,38 @@
             "type": "checkbox",
             "rightLabel": "__define_post_processing__"
           },
-          "lines": {
+          "pp_radio": {
             "dependencies": {
               "define_post_processing": true
+            },
+            "optionLabels": [
+              "__pp_radio_code__",
+              "__pp_radio_file__"
+            ]
+          },
+          "lines": {
+            "dependencies": {
+              "pp_radio": "code"
             },
             "id": "post_processing_line",
             "label": "__lines__"
           },
           "code": {
             "dependencies": {
-              "define_post_processing": true
+              "pp_radio": "code"
             },
             "fieldClass": "javascript post_processing_code",
             "id": "post_processing_code",
             "label": "__code__",
             "type": "textarea",
             "rows": 0
+          },
+          "file_name": {
+            "dependencies": {
+              "pp_radio": "file"
+            },
+            "label": "__pp_file_name__",
+            "placeholder": "example.js"
           }
         }
       },

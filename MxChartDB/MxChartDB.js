@@ -14,7 +14,7 @@
 //h Resources:    MxBaseModule
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.3.2 2025-04-01/peb
+//h Version:      V3.7.0 2025-11-14/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -62,8 +62,8 @@ MxChartDB.prototype.start = function(config) {
     var self = this;
 
     self.MODULE = 'MxChartDB.js';
-    self.VERSION = 'V3.3.2';
-    self.WRITTEN = '2025-04-01/peb';
+    self.VERSION = 'V3.7.0';
+    self.WRITTEN = '2025-11-14/peb';
 
     self.LEAST_API_VERSION = '1.1.0';
     self.POLL_INIT = 999;

@@ -19,7 +19,7 @@
    "lang_system":"browser/system language",
    "lang_en":"english",
    "lang_de":"german",
-   "interval_label":"Chart lengt (stored data)",
+   "interval_label":"Chart length (stored data)",
    "interval_helper":"When time interval exceeds old entries are removed.",
    "interval_infinite":"infinite",
    "interval_2days":"2 days",
@@ -160,5 +160,11 @@
    "code_helper": "One object with curly brackets.",
    "post_processing": "Option: Post processing (<a rel='help' href='/ZAutomation/api/v1/load/modulemedia/MxChartDB/chart_arithmetics.html' target='_blank'><u><font color=blue>&gt;&gt; help</font></u></a>)",
    "post_processing_helper1": "This code is performed on the visible display right after all data is processed.",
-   "define_post_processing": "Define a code"
+   "define_post_processing": "Define a code",
+   "pp_radio_code": "define code here",
+   "pp_radio_file": "include code from file",
+   "pp_file_name": "File name in folder ./htdocs/myPostprocessing/",
+   "uc_radio_code": "define code here",
+   "uc_radio_file": "include code from file",
+   "uc_file_name": "File name in folder ./htdocs/myUsercode/"
 }
