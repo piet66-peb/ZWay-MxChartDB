@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.6.1 2025-11-18/peb
+//h Version:      V3.7.0 2026-01-02/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -31,6 +31,7 @@
 //v               V3.6.0 2025-10-09/peb [+]usedYScales
 //v                                     [*]y scales code redesigned
 //v               V3.6.1 2025-10-29/peb [x]fill with color if target sensor=1
+//v               V3.7.0 2026-01-02/peb [-]adHocCalcResult
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h 
@@ -46,8 +47,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.6.1';
-var WRITTEN = '2025-11-18/peb';
+var VERSION = 'V3.7.0';
+var WRITTEN = '2026-01-02/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -678,6 +679,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 }
                 break;
              case 6:
+                if (!headerChanged) {    //TODO ????????????
+                    program_control(request_mode, from, to);
+                    break;
+                }
                 //*** test for usercode in separate file
                 if (vLog.chartHeader.global_js.define_global_js &&
                     vLog.chartHeader.global_js.file_name) {
@@ -690,6 +695,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 }
                 break;
              case 7:
+                if (!headerChanged) {    //TODO ????????????
+                    program_control(request_mode, from, to);
+                    break;
+                }
                 //*** test for usercode in separate file
                 if (vLog.chartHeader.post_processing.define_post_processing &&
                     vLog.chartHeader.post_processing.file_name) {
@@ -1143,13 +1152,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
             if (status === 304) { //not modified
                 //console.log('not modified: '+(Date.now()-startRun)/1000+' sec');
                 if (!headerChanged) {
-/*                    
+                    /*
                     //execute post processing
-                    if (post_processing) {
+                    if (post_processing) {  //TODO ????????????????????
                         postprocess(7);
                         g.redraw();
                     }
-*/                    
+                    */
                     ch_utils.displayMessage2(8, ch_utils.userTime('now'));
                     return;
                 }
@@ -2709,8 +2718,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     window.onclick = function(event) {
         var buttonEvent = ch_utils.buttonIdEvent(event);
         var parentEvent = event.target.parentNode.id;
-        //console.log(buttonEvent);
-        //console.log(event.target.parentNode.id);
+       
         if (buttonEvent !== 'dtpickButton' && 
             ch_utils.isVisible('dtpickModal')) {
             hide_dtpickModal(event);

@@ -17,32 +17,20 @@
     
       <script defer="" src="libs/chart@3.js"></script>
       <script defer="" src="libs/chartjs-plugin-annotation@2.1.0.min.js"></script>
-
       <script defer="" src="libs/moment-with-locales@2.js"></script>
       <script defer="" src="libs/chartjs-adapter-moment@1.js"></script>
       <script defer="" src="libs/hammer.min.js"></script>
       <script defer="" src="libs/chartjs-plugin-zoom@2.js"></script>
 
-      <!--
-      <script src="https://cdn.jsdelivr.net/npm/chart.js@3"></script>
-      <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/min/moment-with-locales.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1"></script>
-      <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
-      <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
-      -->
-      
-      <!--
-      <script defer="" src="libs/chart.min.js"></script>
-      <script defer="" src="libs/moment-with-locales.min.js"></script>
-      <script defer="" src="libs/chartjs-adapter-moment.min.js"></script>
-      <script defer="" src="libs/chartjs-plugin-annotation.min.js"></script>
-      <script defer="" src="libs/hammer.min.js"></script>
-      <script defer="" src="libs/chartjs-plugin-zoom.min.js"></script>
-      -->
-
       <script defer="" src="libs/w3color.min.js"></script>
       <script defer="" src='libs/busy_indicator.min.js'></script>
+
+      <link rel="stylesheet" href="css/prism.css">
+      <script src="libs/prism.js" data-manual></script>
+      <script src="libs/code-input.min.js"></script>
+      <link rel='stylesheet' href='css/code-input.css'>
+      <script src="libs/indent.min.js"></script>
+      <script>codeInput.registerTemplate("syntax-highlighted", new codeInput.templates.Prism(Prism, [new codeInput.plugins.Indent()]));</script>
 
       <style>
          .smaller {
@@ -129,7 +117,8 @@
          <!--<div style="width:100%">-->
          <div  id="canvas_container" class="chart-container" style="position: relative;">
             <canvas id="canvas"></canvas>
-         </div>
+         </div> <!-- canvas_container -->
+
          <div class='left_right'>
             <div id="interval_start" style='float: left;'>Date+Time</div>
             <div id="date_time_picker" style='text-align: center; float: none;'>
@@ -275,10 +264,8 @@
                <br><br>
                <button id="dtpick_exec"><b>OK</b></button>
                <button id="dtpick_break" onclick='datetimepicker()'><b>Break</b></button>
-            </div>
-            <!--dtpick_child-->
-         </div>
-         <!--dtpick-->
+            </div> <!--dtpick_child-->
+         </div> <!--dtpickModal-->
 
          <!-- in display calculation -->
          <div id="postcalcModal" class="modal" draggable="true"
@@ -286,8 +273,7 @@
             <div class="modal-content">
                <div id='postcalcContents'>Some text in the Modal..</div>
             </div>
-         </div>
-         <!-- post_calc -->
+         </div> <!-- postcalcModal -->
 
          <!-- adHocCalc calculation -->
          <!--<div id="adHocCalcModal" class="modal" draggable="true"
@@ -297,17 +283,9 @@
             <div id='adHocCalcPage' class="modal-content">
                <div id='adHocCalcContents'>Some text in the Modal..</div>
             </div>
-         </div>
-         <div id="adHocCalcResult" class="modal" draggable="true"
-                ondragstart="drag(event)">
-            <div id='adHocCalcResultPage' class="modal-content">
-               <div id='adHocCalcResultContents'>Some text in the Modal..</div>
-            </div>
-         </div>
-         <!-- adHocCalc -->
+         </div> <!-- adHocCalcModal -->
 
-      </div>
-      <!--main-->
+      </div> <!--main-->
 
       <!-- for testings: -->
       <!--

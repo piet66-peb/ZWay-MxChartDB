@@ -13,9 +13,10 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.3.1 2025-11-15/peb
+//h Version:      V3.4.0 2026-01-03/peb
 //v History:      V1.0.0 2022-01-02/peb first version
-//v               V3.3.1 2025-11-11/peb [x]notSet
+//v               V3.3.1 2025-11-11/peb [x]ch_utils.notSet
+//v               V3.4.0 2026-01-03/peb [+]ch_utils.show
 //h Copyright:    (C) piet66 2022
 //h License:      http://opensource.org/licenses/MIT
 //h
@@ -29,8 +30,8 @@
 //b Constants
 //-----------
 var MODULE='ch_utils.js';
-var VERSION='V3.3.1';
-var WRITTEN='2025-11-15/peb';
+var VERSION='V3.4.0';
+var WRITTEN='2026-01-03/peb';
 
 //-----------
 //b Functions
@@ -80,6 +81,46 @@ var ch_utils = {
     isMobile: function () {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }, //isMobile
+
+    //improved version of standard function 'alert:
+    //- accepts several parameters
+    //- converts objects to strings
+    show: function() {
+        var i, v, w, text = '';
+    
+        function add_item(v) {
+            if (v === undefined) {
+                text += 'undefined';
+            } else
+            if (typeof v === 'object') {
+                text += JSON.stringify(v);
+            } else {
+                text += v;
+            }
+        }
+    
+        if (arguments.length === 1 && Array.isArray(arguments[0])) {
+            w = arguments[0];
+            for (i = 0; i < w.length; i++) {
+                if (!text) {
+                    text += '[\n    ';
+                } else {
+                    text += ',\n    ';
+                }
+                add_item(w[i]);
+            }
+            text += '\n]';
+        } else {
+            for (i = 0; i < arguments.length; i++) {
+                if (text) {
+                    text += ', ';
+                }
+                v = arguments[i];
+                add_item(v);
+            }
+        }
+        alert(text);
+    }, //show
 
     //check if any argument is not set (undefined or null)
     notSet: function() {

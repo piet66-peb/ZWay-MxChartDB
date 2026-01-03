@@ -83,16 +83,16 @@
             en: 'Type'
         },
         {
-            de: 'Gültig ab',
-            en: 'Valid from'
+            de: 'Gültig ab (inkl.)',
+            en: 'Valid from (incl.)'
         },
         {
             de: 'Timestamp',
             en: 'Timestamp'
         },
         {
-            de: 'Gültig bis',
-            en: 'Valid to'
+            de: 'Gültig bis (exkl.)',
+            en: 'Valid to (excl.)'
         },
         {
             de: 'Timestamp',

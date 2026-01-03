@@ -13,11 +13,13 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.1 2025-11-17/peb
+//h Version:      V3.8.0 2026-01-03/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //v               V3.4.0 2025-08-14/peb [+]annotation
-//v               V3.4.1 2025-08-14/peb [x]MxC bugfix
+//v               V3.4.1 2025-08-14/peb [x]MxC: bugfix
+//v               V3.7.0 2026-01-02/peb [+]adHocCalc: syntax highlighting
+//v                                     [+]ch_utils.show
 //h Copyright:    (C) piet66 2024
 //h License:      http://opensource.org/licenses/MIT
 //h
@@ -30,8 +32,8 @@
 //b version data
 //--------------
 var MODULE='chartjs_utils.js';
-var VERSION='V3.4.1';
-var WRITTEN='2025-11-17/peb';
+var VERSION='V3.8.0';
+var WRITTEN='2026-01-03/peb';
 
 //b common: common functions
 //--------------------------
@@ -78,7 +80,7 @@ var MxC_utils = {
     //h value = MxC_utils.MxC(MxC_name, ts);
     //-------------------------------------------------------------------------
     MxC: function(MxC_name, ts, returntype) {
-        function return_value(MxC_entry) {
+        function return_number(MxC_entry) {
             var value = MxC_entry[4];
             var type = MxC_entry[5];
             //alert(value);
@@ -93,19 +95,24 @@ var MxC_utils = {
             }
             alert('MxC: unknown value type '+type+ ' for ' + MxC_name);
             return null;
-        }
+        } //return_number
 
         if (!MxC_name) {return null;}
-        if (!MxC_input[MxC_name]) {
-            alert('MxC: unknown constant ' + MxC_name);
-            console.log('MxC: unknown constant ' + MxC_name);
+        var MxC_array = MxC_input[MxC_name];
+        //console.log('typeof MxC_array='+typeof MxC_array);
+        if (!MxC_array) {
+            alert('MxC: unknown constant name' + MxC_name);
+            console.log('MxC: unknown constant name' + MxC_name);
             console.log(JSON.stringify(MxC_input));
             return null;
         }
+        //console.log(MxC_array);
 
         //real copy, cause otherwise reverse doesn't work:
         var MxC_name_data = JSON.parse(JSON.stringify(MxC_input[MxC_name]));
+        //console.log(MxC_name_data);
         var len = MxC_name_data.length;
+        //console.log('len='+len);
         if (len === 0) {
             if (returntype === 'array') {
                 return [];
@@ -114,19 +121,57 @@ var MxC_utils = {
             }
         }
 
-        //if previous MxC version 1.0.0
+        //order according timestamp reverse
+        MxC_name_data.reverse(function(a,b) { //sort:    -fist nulls
+            return a[0]-b[0];                 //         - then others up
+                                              //reverse: -first others down
+                                              //         - then nulls
+        });
+        //console.log(MxC_name_data);
+   
+        //if current MxC version > 1.0.0
         var i;
-        if (MxC_name_data[0].length === 5) {
+        if (MxC_name_data[0].length !== 5) {
+            //console.log('1.1.0');
+            //if no timestamp required
+            len = MxC_name_data.length;
+            if (ts === undefined) {
+                //return last value
+                if (returntype === 'array') {
+                    return MxC_name_data[len - 1];
+                } else {
+                    return return_number(MxC_name_data[len - 1]);
+                }
+            }
+
+            //else if timestamp required
+            for (i = 0; i < MxC_name_data.length; i++) {
+                //take first match
+                if (MxC_name_data[i][0] > 0 &&
+                    ts >= MxC_name_data[i][0] &&
+                    (MxC_name_data[i][2] === null ||
+                        ts < MxC_name_data[i][2])) {
+                    if (returntype === 'array') {
+                        return MxC_name_data[i];
+                    } else {
+                        return return_number(MxC_name_data[i]);
+                    }
+                } else
+                if (MxC_name_data[i][0] === null) {
+                    if (returntype === 'array') {
+                        return MxC_name_data[i];
+                    } else {
+                        return return_number(MxC_name_data[i]);
+                    }
+                }
+            }
+        //else if previuous MxC version == 1.0.0
+        } else {
+            //console.log('1.0.0');
             var ix_found, ret;
             if (ts === undefined) {
                 ix_found = 0;
             } else {
-                MxC_name_data.reverse(function(a,b) {    //sort:    -fist nulls
-                    return a[0]-b[0];               //         - then others up
-                                                    //reverse: -first others down
-                                                    //         - then nulls
-                });
-    
                 for (i = 0; i < MxC_name_data.length; i++) {
                     if (MxC_name_data[i][0] > 0 &&
                         ts >= MxC_name_data[i][0]) {
@@ -155,44 +200,6 @@ var MxC_utils = {
             alert('MxC: unknown value type '+type+ ' for ' + MxC_name);
             return null;
         }  //1.0.0
-        //else if MxC version 1.1.0
-        else {
-            //order according timestamp
-            MxC_name_data.reverse(function(a,b) {//sort:    -fist nulls
-                return a[0]-b[0];                //         - then others up
-                                                 //reverse: -first others down
-                                                 //         - then nulls
-            });
-            //if no timestamp required
-            len = MxC_name_data.length;
-            if (ts === undefined) {
-                //return last value
-                if (returntype === 'array') {
-                    return MxC_name_data[len - 1];
-                } else {
-                    return return_value(MxC_name_data[len - 1]);
-                }
-            }
-            for (i = 0; i < MxC_name_data.length; i++) {
-                if (MxC_name_data[i][0] > 0 &&
-                    ts >= MxC_name_data[i][0] &&
-                    (MxC_name_data[i][2] === null ||
-                        ts < MxC_name_data[i][2])) {
-                    if (returntype === 'array') {
-                        return MxC_name_data[i];
-                    } else {
-                        return return_value(MxC_name_data[i]);
-                    }
-                } else
-                if (MxC_name_data[i][0] === null) {
-                    if (returntype === 'array') {
-                        return MxC_name_data[i];
-                    } else {
-                        return return_value(MxC_name_data[i]);
-                    }
-                }
-            }
-        } //1.1.0
     }, //MxC
 
     //h
@@ -220,6 +227,7 @@ var header_utils = {
         //console.log('take_global_code');
 
         var g_ini = {
+            show:     ch_utils.show,
             notSet:   ch_utils.notSet,
             noNumber: ch_utils.noNumber,
             notChanged: ch_utils.notChanged,
@@ -831,15 +839,13 @@ var postcalc = {
 //-------------------------------
 var adHocCalc = {
     raiseModal: function() {
-        //console.log('adHocCalc.raiseModal');
-
         var html = [
             '<style>',
             'textarea {',
             '  resize: true;',
             '}',
             '</style>',
-            '<div id="adHocCalcCodeI">',
+            '<div id="adHocCalcCodeI" >',
             'This function makes it possible to define and execute',
             '<br>ad hoc commands for evaluating the displayed data.',
             '<br>',
@@ -848,9 +854,14 @@ var adHocCalc = {
             '',
             '<p><label for="adHocCalcCode">Javascript code:</label></p>',
             '',
-            '<textarea id="adHocCalcCode" rows="15" cols="60"">',
-            adHocCode,
-            '</textarea><br><br>',
+            '<div style="border:1px solid black;">',
+                '<code-input language="JavaScript">',
+                    '<textarea data-code-input-fallback id="adHocCalcCode">',
+                        adHocCode,
+                    '</textarea>',
+                '</code-input>',
+            '</div>',
+            '<br>',
             '<input id="adHocCalcBreak" type="button" value="Break" onclick="adHocCalc.Break();" />',
             '<input id="adHocCalcClear" type="button" value="Clear" onclick="adHocCalc.Clear();" />',
             '<input id="adHocCalcStore" type="button" value="Store" onclick="adHocCalc.Store();" />',
@@ -858,7 +869,10 @@ var adHocCalc = {
             '</div>'
         ].join("\n");
 
-        document.getElementById('adHocCalcContents').innerHTML = html;
+        var ta = document.getElementById('adHocCalcCode');
+        if (!document.getElementById("adHocCalcCode")) {
+            document.getElementById('adHocCalcContents').innerHTML = html;
+        }
         ch_utils.buttonVisible('adHocCalcModal', true);
         document.getElementById("adHocCalcCode").focus();
     },
@@ -868,64 +882,68 @@ var adHocCalc = {
     },
     Break: function() {
         ch_utils.buttonVisible('adHocCalcModal', false);
-        ch_utils.buttonVisible('adHocCalcResult', false);
     },
     Clear: function() {
-        document.getElementById('adHocCalcCode').value = '';
-        document.getElementById("adHocCalcCode").focus();
+        var ta = document.getElementById('adHocCalcCode');
+        adHocCode = '';
+        ta.value = adHocCode;
+        ta.focus();
     },
     Store: function() {
-        adHocCode = document.getElementById('adHocCalcCode').value;
-        document.getElementById("adHocCalcCode").focus();
+        var ta = document.getElementById('adHocCalcCode');
+        adHocCode = ta.value;
+        ta.focus();
     },
-    Return: function() {
-        ch_utils.buttonVisible('adHocCalcResult', false);
-        adHocCalc.raiseModal();
+    Return: function(cursorPos) {
+        var ta = document.getElementById('adHocCalcCode');
+        ta.focus();
+        if (cursorPos !== undefined) {
+            ta.setSelectionRange(cursorPos.start, cursorPos.end);
+        }
     },
     Execute: function() {
-        adHocCode = document.getElementById('adHocCalcCode').value;
-        ch_utils.buttonVisible('adHocCalcModal', false);
+        //save current cusor position
+        var ta = document.getElementById('adHocCalcCode');
+        //var cursorPos = {start: ta.selectionStart, end: ta.selectionEnd};
 
+        adHocCode = ta.value;
+        console.log(adHocCode);
         //every time ad hoc calc is called
         //we restrict buffer to visible part
         sv = undefined;
         sv = postcalc.FILTER(sv_buf, 0, 'g.isVisible(x)', 'sv');
 
-        var result = '';
         annotation.restrict_to_visible = true;
         try {
             /*jshint evil: true */
-            result += eval(postcalc.abbrevs + adHocCode);
+            var result = eval(postcalc.abbrevs + adHocCode);
             /*jshint evil: false */
-            //console.log('result='+result);
+            if (typeof result !== 'undefined') {
+                g.show(result);
+            }
         } catch(err) {
+            g.show(err.message);
             console.log(err.message);
             console.log(adHocCode);
-            result += err.message;
         }
         annotation.restrict_to_visible = false;
-        if (!result || result === 'undefined') {
-            var err_message ="this code doesn't return anything";
-            console.log(err_message);
-            console.log(adHocCode);
-            result = err_message;
-        }
-
-        result += '<br><br>'+
-            '<input id="adHocCalcBreak" type="button" value="OK" onclick="adHocCalc.Break();" />';
-        result += ' '+
-            '<input id="adHocCalcReturn" type="button" value="Return" onclick="adHocCalc.Return();" />';
-        document.getElementById('adHocCalcResultContents').innerHTML = result;
-        ch_utils.buttonVisible('adHocCalcResult', true);
+        adHocCalc.Return();
     },
 }; //adHocCalc
 
 var adHocCode = '';
 
 document.getElementById('adHocCalcButton').onclick = function(event) {
-    ch_utils.buttonVisible('adHocCalcResult', false);
+    if (ch_utils.isVisible('adHocCalcModal')) {
+        ch_utils.buttonVisible('adHocCalcModal', false);
+        return;
+    }
     adHocCalc.raiseModal();
-}; //onclick adHocCalc
+}; //onclick adHocCalcButton
+
+document.getElementById('adHocCalcPage').onclick = function(event) {
+    adHocCalc.Return();
+}; //onclick adHocCalcPage
 
 //b yScales: helper functions for to check existing y scales
 //----------------------------------------------------------
