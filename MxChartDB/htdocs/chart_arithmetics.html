@@ -60,10 +60,12 @@
 <li><a href="#C1">1. Sensor Arithmetic</a></li>
 <li><a href="#C2">2. Global User Definitions</a></li>
 <li><a href="#C3">3. Standard Functions and Variables</a></li>
+<li><a href="#C31">3.1. Basic Functions and Variables</a></li>
+<li><a href="#C32">3.2. Annotations</a></li>
 <li><a href="#C4">4. Post Processing</a></li>
 <li><a href="#C5">5. In-Display Calculation</a></li>
 <li><a href="#C6">6. Ad-Hoc Calculation</a></li>
-<li><a href="#C7">2. MxC: General Constants across Charts</a></li>
+<li><a href="#C7">2. MxC: General Constants for all Charts</a></li>
 </ul>
 
       <h1 id="C1">1. Sensor Arithmetic</h1>
@@ -507,7 +509,6 @@ var g =
                 - file name without extension: Z-Way icon<br>
                 - file with extension .png and without path: image in htdocs folder<br>
                 - file with extension .png and relative path: relative to htdocs<br>
-                - file with complete path<br>
                 - image url
                 <br>backgroundColor: for increase the opacity use HEX colors (#ccccccoo)
             </td>
@@ -607,6 +608,23 @@ var g =
             </td>
             <td>adds a text to the chart at the special position<br>
                 (special case of annotation.line)
+            </td>
+         </tr>
+         <tr>
+            <td class="center">g.annotation.sensor_value</td>
+            <td>g.annotation.sensor_value(<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{id: &lt;annotation id&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x_pos: &lt;x_pos&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sensor_no: &lt;sensor_no&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sensor_value: &lt;sensor_value&gt;})
+            </td>
+            <td>fixes the sensor value as a black text to a sensor chart<br>
+                (special case of annotation.line)<br><br>
+                defaults:<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id: &lt;sensor_no&gt;_&lt;x_pos&gt;,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x_pos: current position (timestamp), <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sensor_no: current sensor number, <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sensor_value: current sensor value (if read from the database)
             </td>
          </tr>
       </table>
@@ -1081,6 +1099,17 @@ var g =
             <th>Meaning</th>
          </tr>
          <tr>
+            <td class="center">g.list([type])</td>
+            <td>lists all available standard functions and variables in g
+            <br>optional input parameter: JavaScript data type</td>
+         </tr>
+         <tr>
+            <td class="center">g.show()</td>
+            <td>improved version of the JavaScript standard function 'alert':
+            <br>- accepts more than one input parameters
+            <br>- converts JavaScript objects to strings</td>
+         </tr>
+         <tr>
             <td class="center">g.redraw()</td>
             <td>redraws the current data window, necessary if an annotation
                 is added in Ad-Hoc Calculation</td>
@@ -1116,7 +1145,7 @@ var g =
     //displays an internet image in the middle of the page
     g.annotation.image(
         'test', 
-        image: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Database_icon_shortcut.png?20110724224416', 
+        {image: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Database_icon_shortcut.png?20110724224416', 
         width: 50,
         height: 50,
     });
@@ -1124,7 +1153,7 @@ var g =
     </code>
     </pre>
 
-      <h1 id="C7">3. MxC: General Constants across Charts</h1>
+      <h1 id="C7">3. MxC: General Constants for all Charts</h1>
 
      In a database table called 'MxC', constants can be stored for common access by different charts.
       <br>

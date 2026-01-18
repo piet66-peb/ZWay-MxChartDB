@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.7.0 2026-01-02/peb
+//h Version:      V3.7.0 2026-01-18/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -39,8 +39,9 @@
 
 /*jshint esversion: 6 */
 /*globals Chart, moment, w3color, busy_indicator, ixButtonTextBase */
-/*globals ch_utils, header_utils, MxC_input: true, MxC_utils, postcalc, g: true */
+/*globals ch_utils, header_utils, MxC_input: true, MxC_utils, postcalc, g: true, adHocCalc */
 /*globals nightTimes, annotation, postprocess, images, imagesPathDefault: true */
+/*globals annotation.fixed */
 'use strict';
 
 //-----------
@@ -48,7 +49,7 @@
 //-----------
 var MODULE = 'draw-chartjs.js';
 var VERSION = 'V3.7.0';
-var WRITTEN = '2026-01-02/peb';
+var WRITTEN = '2026-01-18/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -251,6 +252,29 @@ document.addEventListener("DOMContentLoaded", function(event) {
                             }
                             return true;
                         }
+                    },
+                    //change behavior at click on legend
+                    onClick: function(event, legendItem, legend) {
+                        //toggle visibility
+                        var hidden = legendItem.hidden;
+                        hidden = hidden === true ? false : true;
+                        data.datasets[legendItem.datasetIndex].hidden = hidden;
+
+                        //toggle visibility of fixed annotations
+                        var sensor_no = legendItem.datasetIndex+1;
+                        if (annotation.fixed[sensor_no]) {
+                            var id, drawTime, ids = annotation.fixed[sensor_no];
+                            for (var i = 0; i < ids.length; i++) {
+                                id = ids[i];
+                                drawTime = hidden === false ? 'afterDatasetsDraw' : null;
+                                if (config.options.plugins.annotation.annotations[id]) {
+                                    config.options.plugins.annotation.annotations[id].drawTime = drawTime;
+                                } else {
+                                    delete annotation.fixed[sensor_no][i];
+                                }
+                            }
+                        }
+                        g.redraw();
                     }
                 },
                 tooltip: {
@@ -670,8 +694,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             case 5:
                 //*** test for used MxC constants
                 var MxC_used = MxC_utils.test_MxC_used(vLog.chartHeader, api); 
-
-                if (MxC_used) {
+                if (isAdmin || MxC_used) {
                     obtain_MxC(request_mode, from, to);
                 } else {
                     //*** call read_values
@@ -889,6 +912,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.ajax_get(url, success, fail);
 
         function success(data) {
+            data = ch_utils.convertToUTF8(data);
             vLog.chartHeader.global_js.code = data;
             //*** set/reset global object g
             header_utils.take_global_code(vLog.chartHeader);
@@ -915,6 +939,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.ajax_get(url, success, fail);
 
         function success(data) {
+            data = ch_utils.convertToUTF8(data);
             vLog.chartHeader.post_processing.code = data;
             //*** take post processing code postprocess
             if (typeof vLog.chartHeader.post_processing !== 'undefined') {
@@ -2299,7 +2324,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             ch_utils.buttonVisible('postcalcModal', false);
             ch_utils.buttonVisible('dtpickModal', false);
             ch_utils.buttonVisible('adHocCalcModal', false);
-            ch_utils.buttonVisible('adHocCalcResult', false);
 
             //draw chart
             var ctx = document.getElementById('canvas').getContext('2d');
@@ -2731,9 +2755,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
             parentEvent.indexOf('adHocCalc') !== 0) {
             if (ch_utils.isVisible('adHocCalcModal')) {
                 ch_utils.buttonVisible('adHocCalcModal', false);
-            }
-            if (ch_utils.isVisible('adHocCalcResult')) {
-                ch_utils.buttonVisible('adHocCalcResult', false);
             }
         }
     }; //window.onclick
@@ -3260,14 +3281,20 @@ document.addEventListener("DOMContentLoaded", function(event) {
     }; //onclick postcalcButton
 
     //---------------------------------------------------------------------
-    // Escape: close all modal windows
+    // Treatment of special keys
     //---------------------------------------------------------------------
     document.addEventListener("keydown", function(event) {
-        if (event.key === 'Escape') {
+         // Escape: close all modal windows
+         if (event.key === 'Escape') {
             ch_utils.buttonVisible('postcalcModal', false);
             ch_utils.buttonVisible('dtpickModal', false);
             ch_utils.buttonVisible('adHocCalcModal', false);
-            ch_utils.buttonVisible('adHocCalcResult', false);
+        } else
+         // Enter(Return): call adHocCalc.Execute()
+        if (event.key === 'Enter') {
+            if (ch_utils.isVisible('adHocCalcModal')) {
+                adHocCalc.Execute();
+            }
         }
     }); //keydown Escape
 }); //DOMContentLoaded

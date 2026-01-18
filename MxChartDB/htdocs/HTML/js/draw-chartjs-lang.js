@@ -326,12 +326,12 @@
             en: 'Calculation'
         },
         {//33
-            de: 'Breite',
-            en: 'Width'
+            de: '< - >',
+            en: '< - >'
         },
         {//34
-            de: 'Breite',
-            en: 'Width'
+            de: '> - <',
+            en: '> - <'
         },
         {//35
             de: ' > \u25A3 < ',

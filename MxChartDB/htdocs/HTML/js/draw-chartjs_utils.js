@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.8.0 2026-01-03/peb
+//h Version:      V3.8.0 2026-01-18/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //v               V3.4.0 2025-08-14/peb [+]annotation
@@ -25,7 +25,7 @@
 //h
 //h-------------------------------------------------------------------------------
 
-/*jshint esversion: 6 */
+/*jshint esversion: 9 */
 /*globals ch_utils, suntimes, SunCalc, config, usedYScales, data, ts_last, imagesDefaultPath */
 'use strict';
 
@@ -33,7 +33,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.8.0';
-var WRITTEN='2026-01-03/peb';
+var WRITTEN='2026-01-18/peb';
 
 //b common: common functions
 //--------------------------
@@ -101,8 +101,8 @@ var MxC_utils = {
         var MxC_array = MxC_input[MxC_name];
         //console.log('typeof MxC_array='+typeof MxC_array);
         if (!MxC_array) {
-            alert('MxC: unknown constant name' + MxC_name);
-            console.log('MxC: unknown constant name' + MxC_name);
+            alert('MxC: unknown constant name ' + MxC_name);
+            console.log('MxC: unknown constant name ' + MxC_name);
             console.log(JSON.stringify(MxC_input));
             return null;
         }
@@ -138,9 +138,9 @@ var MxC_utils = {
             if (ts === undefined) {
                 //return last value
                 if (returntype === 'array') {
-                    return MxC_name_data[len - 1];
+                    return MxC_name_data[0]; //MxC_name_data[len - 1];
                 } else {
-                    return return_number(MxC_name_data[len - 1]);
+                    return return_number(MxC_name_data[0]); //return_number(MxC_name_data[len - 1]);
                 }
             }
 
@@ -236,11 +236,11 @@ var header_utils = {
             usertime: ch_utils.userTime,
             round:    ch_utils.round,
             nvl:      ch_utils.nvl,
-            isVisible: function(x) {
+            isVisible: function(x0) {
                 var timeRange = header_utils.xRange();
                 var ts_first_disp = Math.floor(timeRange.min),
                     ts_last_disp = Math.ceil(timeRange.max);
-                if ( x >= ts_first_disp && x <= ts_last_disp) {
+                if ( x0 >= ts_first_disp && x0 <= ts_last_disp) {
                     return true;
                 } else {
                     return false;
@@ -285,13 +285,103 @@ var header_utils = {
                     }
                     return;
                 }
-                console.log('do redraw');
+                console.log('do redraw('+pos+')');
                 clearTimeout(imagesTimer);
                 window.myLine.update();
             },
             MxC: MxC_utils.MxC,
             MxC_data: MxC_utils.MxC_data,
-            usedYScales: usedYScales,
+            //usedYScales: usedYScales,
+            list: function(itemtype) {
+                //shows all items of object g with type, sorted
+                var keys = Object.keys(g).sort();
+                var keysarr = [];
+                var typeslist = {};
+                //check all items og object g
+                keys.forEach( function (key) {
+                    var n = 'g.'+key;
+                    /*jshint evil: true */
+                    var t = eval('typeof '+n);
+                    /*jshint evil: false */
+
+                    var o;
+                    if (t === 'object') {
+                        /*jshint evil: true */
+                        o = eval(n);
+                        /*jshint evil: false */
+                        if (o === null) {
+                            t = 'null';
+                        } else
+                        if (Array.isArray(o)) {
+                            t = 'array';
+                        }
+                    }
+
+                    if (t === 'object') {
+                        var keys2 = Object.keys(o).sort();
+                        //check all subobjects
+                        keys2.forEach( function (key2) {
+                            var n2 = n+'.'+key2;
+                            /*jshint evil: true */
+                            var t2 = eval('typeof '+n2);
+                            /*jshint evil: false */
+
+                            var o2;
+                            if (t2 === 'object') {
+                                /*jshint evil: true */
+                                o2 = eval(n2);
+                                /*jshint evil: false */
+                                if (o2 === null) {
+                                    t2 = 'null';
+                                } else
+                                if (Array.isArray(o2)) {
+                                    t2 = 'array';
+                                }
+                            }
+
+                            if (!itemtype || 
+                                t2.indexOf(itemtype) === 0) {
+                                keysarr.push([n2, t2]);
+                                typeslist[t2] = '1';
+                            }
+                        });
+                    } else {
+                        if (!itemtype || 
+                            t.indexOf(itemtype) === 0) {
+                            keysarr.push([n, t]);
+                            typeslist[t] = '1';
+                        }
+                    }
+                });
+
+                //add function parameters
+                var types = Object.keys(typeslist).sort();
+                var out = '';
+                types.forEach( function (type) {
+                    if (out) {out += '\n\n';}
+                    out += type+':';
+                    keysarr.forEach( function (key) {
+                        if (key[1] === type) {
+                            out += '\n    '+key[0];
+                            if (type === 'function') {
+                                var f_def = '(...)';
+                                if (['g.noNumber',
+                                     'g.notSet',
+                                     'g.show'].indexOf(key[0]) < 0) {
+                                    /*jshint evil: true */
+                                    f_def = eval(key[0]+'.toString();');
+                                    /*jshint evil: false */
+                                    f_def = f_def.replace(/\).*/sm, ")").
+                                                  replace(/^.*\(/sm, "(").
+                                                  replace('arg_list', '{arg_list}');
+                                }
+                                out += f_def;
+                            }
+                        }
+                    });
+                });
+                return out;
+            }, //list
         };
 
         if (!header.hasOwnProperty('global_js')) {
@@ -340,8 +430,8 @@ var header_utils = {
         };
         var pp_first = [
 "postprocess = function(pos) {\n",
-"    console.log('post_processing('+pos+')');\n",
-"    annotation.restrict_to_visible = true;\n",
+"    console.log('postprocess('+pos+')');\n",
+"    annotation_restrict_to_visible = true;\n",
 "    try {\n",
 "        ++pp_count;\n",
 "        //console.log('pos=' + pos + ' pp_count=' + pp_count);\n",
@@ -356,7 +446,7 @@ var header_utils = {
 "    } catch(err) {\n",
 "        alert(err.message);\n",
 "    }\n",
-"    annotation.restrict_to_visible = false;\n",
+"    annotation_restrict_to_visible = false;\n",
 "}\n",
         ].join('');
 
@@ -370,7 +460,8 @@ var header_utils = {
             try {
                 comm = pp_first;
                 comm += postcalc.abbrevs;
-                comm += ch_utils.convertToUTF8(header.post_processing.code);
+                //comm += ch_utils.convertToUTF8(header.post_processing.code);
+                comm += header.post_processing.code;
                 comm += pp_last;
                 //console.log(comm);
                 /*jshint evil: true */
@@ -526,7 +617,7 @@ var postcalc = {
         function exec_eval (form_calc) {
             //console.log('exec_eval form_calc='+form_calc);
             var comp, c = postcalc.abbrevs + form_calc;
-            annotation.restrict_to_visible = true;
+            annotation_restrict_to_visible = true;
             try {
                 /*jshint evil: true */
                 //console.log(c);
@@ -535,7 +626,7 @@ var postcalc = {
             } catch (err) {
                 comp = err.message;
             }
-            annotation.restrict_to_visible = false;
+            annotation_restrict_to_visible = false;
             return comp;
         }
 
@@ -852,6 +943,10 @@ var adHocCalc = {
             'For further information see:',
             '<input id="adHocCalcHelp" type="button" value="Help" onclick="adHocCalc.Help();" />',
             '',
+            '<input id="adHocCalcList" type="button" value="List" onclick="alert(g.list());" />',
+            '',
+            '<input id="adHocCalcList" type="button" value="MxC Constants" onclick="adHocCalc.MxC();" />',
+            '',
             '<p><label for="adHocCalcCode">Javascript code:</label></p>',
             '',
             '<div style="border:1px solid black;">',
@@ -879,6 +974,10 @@ var adHocCalc = {
 
     Help: function() {
         window.open('http:/ZAutomation/api/v1/load/modulemedia/MxChartDB/help_post_calc.html', '_blank');
+    },
+    MxC: function() {
+        var url = './MxC.html';
+        window.open(url, '_blank');
     },
     Break: function() {
         ch_utils.buttonVisible('adHocCalcModal', false);
@@ -913,12 +1012,13 @@ var adHocCalc = {
         sv = undefined;
         sv = postcalc.FILTER(sv_buf, 0, 'g.isVisible(x)', 'sv');
 
-        annotation.restrict_to_visible = true;
+        annotation_restrict_to_visible = true;
         try {
             /*jshint evil: true */
             var result = eval(postcalc.abbrevs + adHocCode);
             /*jshint evil: false */
-            if (typeof result !== 'undefined') {
+            if (typeof result !== 'undefined' &&
+                typeof result !== 'function') {
                 g.show(result);
             }
         } catch(err) {
@@ -926,7 +1026,7 @@ var adHocCalc = {
             console.log(err.message);
             console.log(adHocCode);
         }
-        annotation.restrict_to_visible = false;
+        annotation_restrict_to_visible = false;
         adHocCalc.Return();
     },
 }; //adHocCalc
@@ -1140,11 +1240,13 @@ var yScales = {
 
 //b annotation: adds or deletes an annotation to chart,js config
 //--------------------------------------------------------------
-var annotation = {
-    restrict_to_visible: false,
+var annotation_restrict_to_visible = false;
     //due to an issue in the annotation plugin 2.1.0 (chart.js 3.9.1)
     //(some label fragments remain visible)
     //we restrict annotation.line in post processing to the visible part
+var annotation = {
+    fixed: {},  
+    //all annotations fixed to a sensor label
 
     del: function(id) {
     //usage:
@@ -1153,7 +1255,7 @@ var annotation = {
         config.options.plugins.annotation.annotations[id] = undefined;
     }, //del
 
-    point: function(id, arg1) {
+    point: function(id, arg_list) {
     //usage:
     //    annotation.point(<unique annotation id>,   //for storing the annotation, mandatory
     //                     {xValue: <x value>,
@@ -1164,42 +1266,54 @@ var annotation = {
     //                      color: <color>,
     //                      drawTime: <drawTime>,
     //                      hide: <true|false>  //hide point at click
+    //                      fix: <sensor no>    //fix to sensor label
     //    });
         //console.log('annotation.point');
-        //console.log('annotation.point: pointStyle='+arg1.pointStyle+'/'+
-        //        arg1.usedYScale);
-        if (!arg1 || 
-            typeof arg1 !== 'object' ||
+        //console.log('annotation.point: pointStyle='+arg_list.pointStyle+'/'+
+        //        arg_list.usedYScale);
+        if (!arg_list || 
+            typeof arg_list !== 'object' ||
             typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.point({}) !');
             return;
         }
 
-        if (arg1.hide === undefined) {arg1.hide = true;}
+        if (arg_list.hide === undefined) {arg_list.hide = true;}
         var anno_config = {
-            drawTime: arg1.drawTime || 'afterDatasetsDraw',
+            drawTime: arg_list.drawTime || 'afterDatasetsDraw',
             type: 'point',
             backgroundColor: 'transparent',
-            borderColor: arg1.color,
+            borderColor: arg_list.color,
             borderWidth: 5,
-            pointStyle: arg1.pointStyle,
-            radius: arg1.radius,
+            pointStyle: arg_list.pointStyle,
+            radius: arg_list.radius,
             xScaleID: 'x',
-            yScaleID: yScales.yScaleID(arg1.usedYScale),
-            xValue: arg1.xValue,
-            yValue: arg1.yValue,
+            yScaleID: yScales.yScaleID(arg_list.usedYScale),
+            xValue: arg_list.xValue,
+            yValue: arg_list.yValue,
             click: function(e) { 
-                        if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
-                            window.myLine.update();
-                   }
+                        config.options.plugins.annotation.annotations[id+''].drawTime = null;
+                        window.myLine.update();
             },
         };
+        if (!arg_list.hide) {
+            anno_config.click = false;
+        }
         config.options.plugins.annotation.annotations[id+''] = anno_config;
+
+        // fix annotation to sensor label
+        if (arg_list.fix) {
+            if (typeof annotation.fixed[arg_list.fix] === 'undefined') {
+                annotation.fixed[arg_list.fix] = [id];
+            } else {
+                annotation.fixed[arg_list.fix].push(id);
+            }
+            //console.log(JSON.stringify(annotation.fixed));
+        }
     }, //point
 
-    label: function(id, arg1) {
+    label: function(id, arg_list) {
     //usage:
     //    annotation.label(<unique annotation id>,   //for storing the annotation, mandatory
     //                     {xValue: <x value>,
@@ -1212,8 +1326,8 @@ var annotation = {
     //                      hide: <true|false>  //hide point at click
     //    });
         //console.log('annotation.label');
-        if (!arg1 || 
-            typeof arg1 !== 'object' ||
+        if (!arg_list || 
+            typeof arg_list !== 'object' ||
             typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.label({}) !');
@@ -1228,31 +1342,32 @@ g.annotation.label('test', {content: ['line 1', 'line 2'],
 g.redraw();
          * */
 
-        if (arg1.hide === undefined) {arg1.hide = true;}
+        if (arg_list.hide === undefined) {arg_list.hide = true;}
         var anno_config = {
-            drawTime: arg1.drawTime || 'afterDatasetsDraw',
+            drawTime: arg_list.drawTime || 'afterDatasetsDraw',
             type: 'label',
-            xValue: arg1.xValue,
-            yValue: arg1.yValue,
-            color: arg1.color || 'black',
-            backgroundColor: arg1.backgroundColor || 'transparent',
-            content: arg1.content,
+            xValue: arg_list.xValue,
+            yValue: arg_list.yValue,
+            color: arg_list.color || 'black',
+            backgroundColor: arg_list.backgroundColor || 'transparent',
+            content: arg_list.content,
             font: {
                 size: 18
             },
             xScaleID: 'x',
-            yScaleID: yScales.yScaleID(arg1.usedYScale),
+            yScaleID: yScales.yScaleID(arg_list.usedYScale),
             click: function(e) { 
-                        if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
-                            window.myLine.update();
-                   }
+                        config.options.plugins.annotation.annotations[id+''].drawTime = null;
+                        window.myLine.update();
             },
         };
+        if (!arg_list.hide) {
+            anno_config.click = false;
+        }
         config.options.plugins.annotation.annotations[id+''] = anno_config;
     }, //label
 
-    image: function(id, arg1) {
+    image: function(id, arg_list) {
     //usage:
     //    annotation.image(<unique annotation id>,   //for storing the annotation, mandatory
     //                     {xValue: <x value>,
@@ -1267,47 +1382,48 @@ g.redraw();
     //                      hide: <true|false>  //hide point at click
     //    });
         //console.log('annotation.image');
-        if (!arg1 || 
-            typeof arg1 !== 'object' ||
+        if (!arg_list || 
+            typeof arg_list !== 'object' ||
             typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.image({}) !');
             return;
         }
 
-        if (arg1.hide === undefined) {arg1.hide = true;}
+        if (arg_list.hide === undefined) {arg_list.hide = true;}
         var anno_config = {
-            drawTime: arg1.drawTime || 'afterDatasetsDraw',
+            drawTime: arg_list.drawTime || 'afterDatasetsDraw',
             type: 'label',
-            xValue: arg1.xValue,
-            yValue: arg1.yValue,
-            width: arg1.width || 100,
-            height: arg1.height || 100,
+            xValue: arg_list.xValue,
+            yValue: arg_list.yValue,
+            width: arg_list.width || 100,
+            height: arg_list.height || 100,
             //content: img,
             borderWidth: 1,
             borderDash: [6, 6],
-            borderColor: arg1.borderColor || 'transparent',
-            backgroundColor: arg1.backgroundColor || 'transparent',
+            borderColor: arg_list.borderColor || 'transparent',
+            backgroundColor: arg_list.backgroundColor || 'transparent',
             xScaleID: 'x',
-            yScaleID: yScales.yScaleID(arg1.usedYScale),
+            yScaleID: yScales.yScaleID(arg_list.usedYScale),
             click: function(e) { 
-                        if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
-                            window.myLine.update();
-                   }
+                        config.options.plugins.annotation.annotations[id+''].drawTime = null;
+                        window.myLine.update();
             },
         };
+        if (!arg_list.hide) {
+            anno_config.click = false;
+        }
 
         //load image
         const img = new Image();
         var ignore_default = true;
-        img.src = images.addPath(arg1.image, ignore_default);
+        img.src = images.addPath(arg_list.image, ignore_default);
         ++images_pending;
 
         //check for error on image load
         img.onerror = function() {
             //console.log('onerror');
-            if (arg1.image !== 'placeholder') {
+            if (arg_list.image !== 'placeholder') {
                 img.src = images.addPath('placeholder');
             } else {
                 --images_pending;
@@ -1332,7 +1448,7 @@ g.annotation.image('test',
 g.redraw(9);
 */
 
-    line: function(id, arg1) {
+    line: function(id, arg_list) {
     //usage:
     //    annotation.line(<unique annotation id>,   //for storing the annotation, mandatory
     //                    {xMin: <x min value>,
@@ -1348,62 +1464,68 @@ g.redraw(9);
     //                     arrow_end: <true|false>,  //add arrow at line end
     //                     drawTime: <drawTime>,
     //                     hide: <true|false>  //hide line at click
+    //                     fix: <sensor no>    //fix to sensor label
     //    });
         //console.log('annotation.line');
-        if (!arg1 || 
-            typeof arg1 !== 'object' ||
+        if (!arg_list || 
+            typeof arg_list !== 'object' ||
             typeof id !== 'string'
            ) {
             alert('parameter error in function annotation.line({}) !');
             return;
         }
 
-        if (arg1.hide === undefined) {arg1.hide = true;}
-        if (!g.notSet(arg1.text) && typeof arg1.text === 'number') {
-            arg1.text = arg1.text+'';
+        if (arg_list.hide === undefined) {arg_list.hide = true;}
+        if (!g.notSet(arg_list.text) && typeof arg_list.text === 'number') {
+            arg_list.text = arg_list.text+'';
         }
+        id = id+'';
         var anno_config = {
-            drawTime: arg1.drawTime || 'afterDatasetsDraw',
+            drawTime: arg_list.drawTime || 'afterDatasetsDraw',
             type: 'line',
             borderColor: 'black',
             borderDash: [6, 6],
-            borderWidth: arg1.borderWidth || 1,
+            borderWidth: arg_list.borderWidth || 1,
             label: {
                 display: true,
-                backgroundColor: arg1.text_background,
+                backgroundColor: arg_list.text_background,
                 borderRadius: 0,
-                color: arg1.text_color,
-                content: arg1.text,
+                color: arg_list.text_color,
+                content: arg_list.text,
             },
             arrowHeads: {
                 start: {
-                    display: arg1.arrow_start,
+                    display: arg_list.arrow_start,
                     fill: true,
                     borderDash: [],
                     borderColor: 'black'
                 },
                 end: {
-                    display: arg1.arrow_end,
+                    display: arg_list.arrow_end,
                     fill: true,
                     borderDash: [],
                     borderColor: 'black'
                 }
             },
             xScaleID: 'x',
-            yScaleID: yScales.yScaleID(arg1.usedYScale),
-            xMin: arg1.xMin,
-            xMax: arg1.xMax,
-            yMin: arg1.yMin,
-            yMax: arg1.yMax,
+            yScaleID: yScales.yScaleID(arg_list.usedYScale),
+            xMin: arg_list.xMin,
+            xMax: arg_list.xMax,
+            yMin: arg_list.yMin,
+            yMax: arg_list.yMax,
             click: function(e) { 
-                        if (arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
-                            window.myLine.update();
-                   }
+                        config.options.plugins.annotation.annotations[id].drawTime = null;
+                        window.myLine.update();
             },
         };
-        
-        if (annotation.restrict_to_visible) {
+        if (!arg_list.hide) {
+            anno_config.click = false;
+        }
+
+        //annotation_restrict_to_visible:
+        //  due to a bug in annotation.box + annotation.line we have to restrict
+        //  this annotation to the visible part
+        if (annotation_restrict_to_visible) {
             //console.log(id+' '+anno_config.label.content);
             var x_first = g.FIRST() || null;
             var x_last = g.LAST() || null;
@@ -1425,11 +1547,22 @@ g.redraw(9);
                 return;
             }
         }        
+        
         //console.log('create line '+id);
-        config.options.plugins.annotation.annotations[id+''] = anno_config;
+        config.options.plugins.annotation.annotations[id] = anno_config;
+
+        // fix annotation to sensor label
+        if (arg_list.fix) {
+            if (typeof annotation.fixed[arg_list.fix] === 'undefined') {
+                annotation.fixed[arg_list.fix] = [id];
+            } else {
+                annotation.fixed[arg_list.fix].push(id);
+            }
+            //console.log(JSON.stringify(annotation.fixed));
+        }
     }, //line
 
-    box: function(id, arg1) {
+    box: function(id, arg_list) {
     //usage:
     //    annotation.box(<unique annotation id>, //mandatory
     //                   {xMin: <x min value>,
@@ -1442,35 +1575,39 @@ g.redraw(9);
     //                    drawTime: <drawTime>,
     //                    hide: <true|false>  //hide point at click
     //    });
-        //console.log('annotation.box: '+id+', '+arg1.usedYScale);
+        //console.log('annotation.box: '+id+', '+arg_list.usedYScale);
         if (typeof id !== 'string' ||
-            !arg1 || 
-            typeof arg1 !== 'object'
+            !arg_list || 
+            typeof arg_list !== 'object'
            ) {
             alert('parameter error in function annotation.box({}) !');
             return;
         }
 
         var anno_config = {
-            drawTime: arg1.drawTime || 'afterDatasetsDraw',
+            drawTime: arg_list.drawTime || 'afterDatasetsDraw',
             type: 'box',
-            xMin: arg1.xMin,
-            xMax: arg1.xMax,
-            yMin: arg1.yMin,
-            yMax: arg1.yMax,
+            xMin: arg_list.xMin,
+            xMax: arg_list.xMax,
+            yMin: arg_list.yMin,
+            yMax: arg_list.yMax,
             xScaleID: 'x',
-            yScaleID: yScales.yScaleID(arg1.usedYScale),
-            backgroundColor: arg1.backgroundColor,
-            borderWidth: arg1.borderWidth,
+            yScaleID: yScales.yScaleID(arg_list.usedYScale),
+            backgroundColor: arg_list.backgroundColor,
+            borderWidth: arg_list.borderWidth,
             click: function(e) { 
-                        if (!arg1.hide || arg1.hide === true) {
-                            config.options.plugins.annotation.annotations[id+''].drawTime = null;
-                            window.myLine.update();
-                   }
+                        config.options.plugins.annotation.annotations[id+''].drawTime = null;
+                        window.myLine.update();
             },
         };
+        if (!arg_list.hide) {
+            anno_config.click = false;
+        }
 
-        if (annotation.restrict_to_visible) {
+        if (annotation_restrict_to_visible) {
+        //annotation_restrict_to_visible:
+        //  due to a bug in annotation.box + annotation.line we have to restrict
+        //  this annotation to the visible part
             //console.log(id);
             var x_first = g.FIRST() || null;
             var x_last = g.LAST() || null;
@@ -1495,14 +1632,11 @@ g.redraw(9);
 
         //console.log('annotation.box: create '+id);
         config.options.plugins.annotation.annotations[id+''] = anno_config;
+        //console.log(config.options.plugins.annotation.annotations[id+'']);
+        //console.log(config.options.plugins.annotation.annotations);
     }, //annotation.box
 
-    horizontal: function(id,
-                         y_pos,
-                         text,
-                         text_color,
-                         text_background,
-                         usedYScale) {
+    horizontal: function(id, y_pos, text, text_color, text_background, usedYScale) {
         g.annotation.line(id,
            {xMin: null, xMax: null, yMin: y_pos, yMax: y_pos,
             text: text || g.round(y_pos, 2),
@@ -1513,12 +1647,7 @@ g.redraw(9);
         });
     }, //horizontal
 
-    vertical: function(id,
-                       x_pos,
-                       text,
-                       text_color,
-                       text_background,
-                       usedYScale) {
+    vertical: function(id, x_pos, text, text_color, text_background, usedYScale) {
         if (!x_pos) {
             x_pos = Date.now();
             if (!text) {
@@ -1557,13 +1686,8 @@ g.redraw(9);
         }
     }, //vertical
 
-    text: function(id,
-                   x_pos,
-                   y_pos,
-                   text,
-                   text_color,
-                   text_background,
-                   usedYScale) {
+    text: function(id, x_pos, y_pos, text, text_color, text_background, usedYScale, sensor_no) {
+    //adds a text to the chart at the special position
         g.annotation.line(id,
            {xMin: x_pos, xMax: x_pos, yMin: y_pos, yMax: y_pos,
             text: text || g.round(y_pos, 2),
@@ -1571,46 +1695,87 @@ g.redraw(9);
             text_background: text_background || 'lightGreen',
             usedYScale: usedYScale,
             hide: true,
+            fix: sensor_no
         });
     }, //text
+
+    sensor_value: function(arg_list) {
+        //fixes the sensor value as a black text to a sensor chart at the special position
+        //usage: 
+        //annotation.sensor_value({id: <id>,
+        //                        x_pos: <x_pos>, 
+        //                        sensor_no: <sensor_no>, 
+        //                        sensor_value: <sensor_value>, 
+        //                        text_color: <text_color>, 
+        //                        text_background: <text_background>});
+        var x_pos = arg_list.x_pos || g.x0;
+        var sensor_no = arg_list.sensor_no || g.ix;
+        var sensor_value = arg_list.sensor_value;
+        sensor_value = sensor_value === undefined ? g.x : sensor_value;
+        var id = arg_list.id || sensor_no+'_'+x_pos;
+        if (sensor_value !== null) {
+            g.annotation.line(id,
+               {xMin: x_pos, xMax: x_pos, 
+                yMin: sensor_value, yMax: sensor_value,
+                text: g.round(sensor_value, 2),
+                text_color: arg_list.text_color || 'black',
+                text_background: arg_list.text_background || 'transparent',
+                usedYScale: sensor_no,
+                hide: false,
+                fix: sensor_no
+            });
+        }
+    }, //sensor_value
 
     MxC_horizontals: function(MxC_name, label, usedYScale) {
     //draws horizontals for the MxC data Preis
      //console.log('annotation.MxC_horizontals '+ MxC_name + ' '+ label);
-     var arr = g.MxC_data.apply(null, [MxC_name]);
+
+     //read all entries for this name, sorted in ascending timstamp
+     var arr = g.MxC_data.apply(null, [MxC_name]).sort();
      //console.log(arr);
 
+     //evaluate entries:
+     var lines = [];
      for (var i = 0; i < arr.length; i++) {
          var xMin = arr[i][0];
          var xMax = arr[i][2];
-         var yMin = arr[i][4];
-         var yMax = arr[i][4];
+         var value = arr[i][4];
 
          var param = 
             {xMin: xMin,
              xMax: xMax,
-             yMin: yMin,
-             yMax: yMax,
-             text: label + ' ' + yMin,
+             yMin: value,
+             yMax: value,
+             text: label + ' ' + value,
              text_color: 'green',
              text_background: 'lightGreen',
              usedYScale: usedYScale,
          };
-         g.annotation.line(label + i, param);
+         if (i > 0) {
+             lines[i-1].xMax = xMin;
+         }
+         console.log(param);
+         lines.push(param);
+     }
+     
+     //display all lines
+     for (i = 0; i < lines.length; i++) {
+         g.annotation.line(label + i, lines[i]);
      }
     }, //MxC_horizontals
 
 }; //annotation
 
-//b images: functions onserning images
+//b images: functions conserning images
 //----------------------------------------------------------------------------------
 var imagesPathDefault = '';
 var images_pending = 0;
 var imagesTimer = 0;
 var images = {
     addPath: function (icon, ignore_default) {
-    var zwayIcons = '/smarthome/storage/img/icons/';
-    var modulemedia = '/ZAutomation/api/v1/load/modulemedia/' + 'MxChartDB' + '/';
+        var zwayIcons = '/smarthome/storage/img/icons/';
+        var modulemedia = '/ZAutomation/api/v1/load/modulemedia/' + 'MxChartDB' + '/';
         imagesPathDefault = imagesPathDefault || '';
 
         //no icon
@@ -1624,36 +1789,35 @@ var images = {
             def = '';
         }
 
+        var extension = icon.split('.').pop();
+
         //no path and no extension
         if (icon.indexOf('/') < 0 && icon.indexOf('.') < 0) {
-            return zwayIcons + icon + '.png';
-        }
+            icon =  zwayIcons + icon + '.png';
+        } else
 
-        var extension = icon.split('.').pop();
         //extension # .png
         if (extension !== 'png') {
-            return icon;
-        }
+            icon =  icon;
+        } else
 
         //htdocs no path
         if (icon.indexOf('/') < 0) {
-            return modulemedia + def +icon;
-        }
+            icon =  modulemedia + def +icon;
+        } else
 
         //htdocs relative path
         if (icon.indexOf('./') === 0) {
-            return modulemedia + def +icon;
-        }
+            icon =  modulemedia + def +icon;
+        } else
 
         //htdocs relative path
         if (icon.indexOf('../') === 0) {
-            return modulemedia + def +icon;
+            icon =  modulemedia + def +icon;
         }
 
         //anything else
-        if (icon.indexOf('/') >= 0) {
-            return icon;
-        }
+        return icon;
     } //addPath
 }; //images
 
@@ -1664,12 +1828,12 @@ var nightTimes = {
     annotations: function (pos) {
     //usage:
     //    nightTimes.annotations();
-        console.log('nightTimes.annotations ('+pos+')');
+        //console.log('nightTimes.annotations ('+pos+')');
 
         //delete old annotation boxes
         //console.log('delete old nights');
         nightTimes.nightBoxes.forEach(function (el, index) {
-            annotation.del('night_'+el);
+            annotation.del(el);
         });
         nightTimes.nightBoxes = [];
 
@@ -1686,10 +1850,11 @@ var nightTimes = {
         //console.log(g.usertime(day_first) +' - ' + g.usertime(day_last) + ', ' +
         //      days + ' days');
 
+        var min = 1000 *60;
         for (var i= 0; i < days; i++) {
             nightArray.push(
-                [nightTimes.sunset(day_first + i * day_length), 
-                 nightTimes.sunrise(day_first + (i+1) * day_length)]);
+                [Math.round(nightTimes.sunset(day_first + i * day_length)/min)*min, 
+                 Math.round(nightTimes.sunrise(day_first + (i+1) * day_length)/min)*min]);
         }
         //console.log(nightArray);
 
@@ -1713,10 +1878,10 @@ var nightTimes = {
 
         //add night backgrounds
         //console.log('add new nights');
-        annotation.restrict_to_visible = true;
+        annotation_restrict_to_visible = true;
         yScaleIDs.forEach(function(scaleid, ix1) {
             nightArray.forEach(function(night, ix) {
-                var id = 'night_'+scaleid+'_'+ix;
+                var id = 'night_'+scaleid+'_'+night[0];
                 //console.log('==== create night id='+id);
                 annotation.box(id, 
                                {xMin: night[0], 
@@ -1724,11 +1889,13 @@ var nightTimes = {
                                 backgroundColor: ch_utils.night.backColor || '#cccccc60',
                                 usedYScale: scaleid,
                                 borderWidth: 0,
-                                drawTime: 'beforeDatasetsDraw'});
+                                drawTime: 'beforeDatasetsDraw',
+                                hide: false});
                 nightTimes.nightBoxes.push(id);
             });
         });
-        annotation.restrict_to_visible = false;
+        annotation_restrict_to_visible = false;
+        //console.log(config.options.plugins.annotation.annotations);
     }, //annotations
 
     isNight: function (x0) {
