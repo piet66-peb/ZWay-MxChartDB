@@ -11,10 +11,9 @@ No internet service is required.
 This package uses [SQLite](https://www.sqlite.org) as database engine and 
 [Chart.js](https://www.chartjs.org/) as charting library.
 
-## Prerequisites
+## Preconditions
 
-SQLite with HTTP API. 
-Everything you need for installation is included in this package (Linux only).
+SQLite with HTTP API. Everything you need for installation is included in this package (Linux only).
 
 ## Links
 
@@ -27,13 +26,16 @@ Everything you need for installation is included in this package (Linux only).
 <del>Download and install the module and the API from the Z-Way App Store.
 </del>
 
-As the Z-Way management has been unresponsive, I have made my software 
-available on GitHub. The version in the Z-Way App Store is now out of date.
+Since the Z-Way Management has discontinued its support services, I have made my 
+software available on GitHub. The version in the Z-Way App Store is now out 
+of date.
 
 - Download the package with wget from this site:
 ```sh
+# run these commands in a terminal on the Z-Way server computer:
 url=https://github.com/piet66-peb/ZWay-MxChartDB/raw/refs/heads/main/download_MxChartDB.bash
-cd /tmp; wget -q -O - $url | sudo bash
+cd /tmp
+wget -q -O - $url | sudo bash
 
 ```
 - Restart Z-Way after the download to activate the package. 
@@ -43,14 +45,16 @@ cd /tmp; wget -q -O - $url | sudo bash
 
 - Download the package with wget from this site:
 ```sh
+# run these commands in a terminal on the Z-Way server computer:
 url=https://github.com/piet66-peb/ZWay-MxChartDB/raw/refs/heads/main/download_MxChartDB.bash
-cd /tmp; wget -q -O - $url | sudo bash
+cd /tmp
+wget -q -O - $url | sudo bash
 
 ```
 - If you have placed the HTTP_API in a different location, copy its contents there. 
 - check the template files **constants_template.js** and **constants_template\.p**y
 to see if you need to make any changes.
-- Then restart MxChartDB_API.py and Z-Way.
+- Then restart MxChartDB_API\.py and Z-Way.
 
 ### Remark
 

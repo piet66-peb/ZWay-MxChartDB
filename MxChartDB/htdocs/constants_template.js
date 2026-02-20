@@ -9,7 +9,7 @@ var constants = {
     // 1. globals for HTTP_API access:
     ip: '192.168.178.22',    
     //hostname: "db_server",
-    port: 5000,
+    port: 8082,
     username: 'username',
     password: 'secret',
 

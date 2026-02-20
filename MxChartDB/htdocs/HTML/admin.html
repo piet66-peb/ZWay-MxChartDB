@@ -95,6 +95,7 @@
             framing(2);
         }
       </script>
+      
       <script>
         function callMxC() {
             //TODO allgemein formulieren !!!!
@@ -104,29 +105,47 @@
       </script>
       <script>
         function myFunction() {
-          var input, filter, table, tr, td, i, txtValue, doDisp;
-          input = document.getElementById("myInput");
-          filter = input.value.toUpperCase();
-          table = document.getElementById("myTable");
-          tr = table.getElementsByTagName("tr");
-          for (i = 1; i < tr.length; i++) {
-              doDisp = 0;
-              for (j = 0; j < 6; j++) {
-                  td = tr[i].getElementsByTagName("td")[j];
-                  if (td) {
-                    txtValue = td.textContent || td.innerText;
-                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                      doDisp += 1;
+            var input, filter, table, tr, td, i, txtValue, doDisp;
+            input = document.getElementById("myInput");
+            filter = input.value.toUpperCase();
+            var filter_arr = [];
+            if (filter.indexOf('|') > 0) { // |=OR
+                filter_arr = filter.split("|");
+            } else
+            if (filter.indexOf(',') > 0) { // ,=AND
+                filter_arr = filter.split(",");
+            }
+            table = document.getElementById("myTable");
+            tr = table.getElementsByTagName("tr");
+            for (i = 1; i < tr.length; i++) {
+                doDisp = 0;
+                for (j = 0; j < 6; j++) {
+                    td = tr[i].getElementsByTagName("td")[j];
+                    if (td) {
+                        txtValue = td.textContent || td.innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            doDisp += 1;
+                        } else {
+                            for (var k = 0; k < filter_arr.length; k++) {
+                                if (txtValue.toUpperCase().indexOf(filter_arr[k]) > -1) {
+                                    doDisp += 1;
+                                }
+                            }
+                            if (filter.indexOf(',') > 0) {
+                                if (doDisp < filter_arr.length) {
+                                    doDisp = 0;
+                                }
+                            }
+                        }
                     }
-                  }   
-              }
-                  if (doDisp) {
+                }
+                if (doDisp) {
                     tr[i].style.display = "";
-                  } else {
+                } else {
                     tr[i].style.display = "none";
-                  }
-          }
-          input.focus();
+                }
+            }
+            input.focus();
         }
       </script>
 

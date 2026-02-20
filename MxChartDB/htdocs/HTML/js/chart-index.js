@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2025-11-12/peb
+//h Version:      V2.1.0 2026-02-10/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2025-11-12/peb';
+var WRITTEN='2026-02-10/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -110,6 +110,17 @@ document.addEventListener("DOMContentLoaded", function(event) {
        ch_utils.displayMessage(0, consts);
     }
     api = consts.api;
+
+    //TODO 2026-02-10 experimental:
+    //in case of remote access change IPv4 address to that of the url
+    //works only for 
+    //-ipv4 addresses (no hostname, no IPv6)
+    //-both servers on same computer
+    var ip_requested = window.location.hostname;
+    if (ip_requested !== consts.ip) {
+        //alert(window.location.hostname+' >> '+consts.api);
+        api = window.location.hostname+':'+consts.port;
+    }
 
     //display aspect ratio
     ch_utils.displayMessageDiv('AspectRatio', 0, window.innerWidth+' x '+window.innerHeight+', '+window.navigator.platform);

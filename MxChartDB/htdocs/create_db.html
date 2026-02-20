@@ -14,6 +14,10 @@
       in the network.<br><br>
       However, the included scripts are written for Debian-based Linux systems, 
       such as Raspberry Pi OS or Ubuntu.
+      <br><br>
+      Restriction for remote access:
+      If remote access to charts is to be possible, the API must be installed
+      on the same computer as the Z-Way server.
       <br>
 
       <h3>Installation Steps</h3>
@@ -74,7 +78,7 @@
       The parameterization is done with a text editor in the file <b>constants.py</b> 
       in the HTTP_API folder. Here you define: client-ip addresses, port, 
       API-username, password,...
-      At least the ip addresses have to be changed. If the default port 5000 is 
+      At least the ip addresses have to be changed. If the default port 8082 is 
       to be changed, an entry must be made in the MxChartDB_API.bash file as well.
       Copy or rename the file <b>constants_template.py</b> to do this.
 
@@ -95,7 +99,7 @@
 
       <h3 id="step5">5. User access of the API via HTTP</h3>
       A survey of all HTTP API commands can be displayed with 
-      <b>http//:&lt;db_server&gt;:5000/</b>.
+      <b>http//:&lt;db_server&gt;:8082/</b>.
       Also administration of the database is possible
 
       <h3 id="step6">6. Update the API</h3>
@@ -117,6 +121,16 @@
       username, password,...
 
       <br><br>To do this, copy the file <b>constants_template.js</b> to <b>constants.js</b>.
+
+      <h3 id="step9">9. Remote access</h3>
+      Steps to enable read access to charts:
+      <ul>
+          <li>In the firewall, enable port forwarding to the server computer for the ports 8083 
+              (Z-Way SmartUI) and 8082 (HTTP API).</li>
+          <li>In the HTT_API file <b>constants.py</b> add "*.*.*.*" to WHITELIST_GET to 
+              allow read access.</li>
+      </ul>
+
 
       <br><br>
 

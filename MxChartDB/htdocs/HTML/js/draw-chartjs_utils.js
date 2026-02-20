@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.8.0 2026-01-18/peb
+//h Version:      V3.8.0 2026-02-14/peb
 //v History:      V1.0.0 2024-12-16/peb first version
 //v               V3.1.2 2025-01-26/peb [+]post calc enhanced
 //v               V3.4.0 2025-08-14/peb [+]annotation
@@ -33,7 +33,7 @@
 //--------------
 var MODULE='chartjs_utils.js';
 var VERSION='V3.8.0';
-var WRITTEN='2026-01-18/peb';
+var WRITTEN='2026-02-14/peb';
 
 //b common: common functions
 //--------------------------
@@ -136,17 +136,18 @@ var MxC_utils = {
             //if no timestamp required
             len = MxC_name_data.length;
             if (ts === undefined) {
-                //return last value
+                //return first value
                 if (returntype === 'array') {
-                    return MxC_name_data[0]; //MxC_name_data[len - 1];
+                    return MxC_name_data[0];
                 } else {
-                    return return_number(MxC_name_data[0]); //return_number(MxC_name_data[len - 1]);
+                    return return_number(MxC_name_data[0]);
                 }
             }
 
             //else if timestamp required
             for (i = 0; i < MxC_name_data.length; i++) {
                 //take first match
+                //console.log(i);
                 if (MxC_name_data[i][0] > 0 &&
                     ts >= MxC_name_data[i][0] &&
                     (MxC_name_data[i][2] === null ||
@@ -167,7 +168,7 @@ var MxC_utils = {
             }
         //else if previuous MxC version == 1.0.0
         } else {
-            //console.log('1.0.0');
+            console.log('1.0.0');
             var ix_found, ret;
             if (ts === undefined) {
                 ix_found = 0;

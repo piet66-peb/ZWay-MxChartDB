@@ -13,7 +13,7 @@
 //h Resources:    
 //h Issues:       
 //h Authors:      peb piet66
-//h Version:      V3.7.0 2025-11-14/peb
+//h Version:      V3.9.0 2026-02-06/peb
 //v History:      V1.0.0 2022-03-23/peb first version
 //v               V1.1.0 2022-04-15/peb [+]handle broken connection and locked
 //v                                        database
@@ -35,8 +35,8 @@
 //b Constants
 //-----------
 //var MODULE='MxChartDB_init.js';
-//var VERSION='V3.7.0';
-//var WRITTEN='2025-11-14/peb';
+//var VERSION='V3.9.0';
+//var WRITTEN='2026-02-06/peb';
 
 //-----------
 //b Functions
@@ -588,6 +588,10 @@ var init = function (self) {
                 polling: globalData.polling_devs,
                 chartLabel: chartLabel,
             };
+            if (sensor.spanGaps && sensor.spanGaps_maxlength) {
+                //minutes >> milliseconds
+                item.spanGaps = sensor.spanGaps_maxlength * 60000;
+            }
             item.tooltip_metric = item.tooltip_metric.trim();
     
             //b check fill entry

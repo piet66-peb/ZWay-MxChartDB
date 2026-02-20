@@ -9,7 +9,7 @@
   "homepage": "https://github.com/piet66-peb?tab=repositories",
   "icon": "icon.png",
   "moduleName": "MxChartDB",
-  "version": "3.8.0",
+  "version": "3.9.0",
   "maturity": "stable",
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
     "interval": "month",
     "initialInterval": "day",
     "opacity": 60,
+    "spanGaps_maxlength": 60,
     "DBName": "MxChartDB",
     "COMMENT": "remaining defaults are defined in postRender.js"
   },
@@ -348,6 +349,11 @@
               "type": "boolean",
               "required": false,
               "default": false
+            },
+            "spanGaps_maxlength": {
+              "dependencies": "spanGaps",
+              "type": "integer",
+              "required": false
             },
             "fill": {
               "dependencies": "entrytype",
@@ -871,6 +877,16 @@
               },
               "type": "checkbox",
               "rightLabel": "__spanGaps__"
+            },
+            "spanGaps_maxlength": {
+              "dependencies": {
+                "spanGaps": [
+                  true
+                ]
+              },
+              "type": "integer",
+              "label": "__spanGaps_maxlength__",
+              "required": false
             },
             "fill": {
               "dependencies": {

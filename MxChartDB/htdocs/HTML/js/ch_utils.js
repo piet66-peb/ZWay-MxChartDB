@@ -13,7 +13,7 @@
 //h Resources:
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.4.0 2026-01-04/peb
+//h Version:      V3.4.0 2026-02-06/peb
 //v History:      V1.0.0 2022-01-02/peb first version
 //v               V3.3.1 2025-11-11/peb [x]ch_utils.notSet
 //v               V3.4.0 2026-01-03/peb [+]ch_utils.show
@@ -31,7 +31,7 @@
 //-----------
 var MODULE='ch_utils.js';
 var VERSION='V3.4.0';
-var WRITTEN='2026-01-04/peb';
+var WRITTEN='2026-02-06/peb';
 
 //-----------
 //b Functions
@@ -390,6 +390,7 @@ var ch_utils = {
     }, //ajax_post
 
     ajax_get: function (url, success, fail, no_data, async, timeout) {
+        //console.log('ajax_get: url='+url);
         var xhttp = new XMLHttpRequest();
         xhttp.ontimeout = function(e){
             alert('timeout');

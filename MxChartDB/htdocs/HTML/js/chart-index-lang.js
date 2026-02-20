@@ -210,8 +210,8 @@
             en: 'unmark all charts'
         },
         {//52
-            de: ' ⌫ ',
-            en: ' ⌫ '
+            de: ' X ',
+            en: ' X '
         },
         {//53
             de: 'MxC Konstanten',

@@ -24,7 +24,7 @@
 #h               https://www.sqlite.org/index.html
 #h Platforms:    Linux
 #h Authors:      peb piet66
-#h Version:      V2.4.0 2025-07-18/peb
+#h Version:      V2.5.0 2026-02-17/peb
 #v History:      V1.0.0 2022-03-14/peb first version
 #v               V2.2.0 2024-12-13/peb [+]enable WAL mode at connect
 #v               V2.3.0 2024-12-21/peb [+]treat_lock
@@ -73,8 +73,8 @@ from flask_cors import CORS
 import constants
 
 MODULE = 'MxChartDB_API.py'
-VERSION = 'V2.4.0'
-WRITTEN = '2025-07-18/peb'
+VERSION = 'V2.5.0'
+WRITTEN = '2026-02-17/peb'
 SQLITE = sqlite3.sqlite_version
 PYTHON = platform.python_version()
 FLASK = flask.__version__
@@ -281,13 +281,22 @@ def before_request():
     app.logger.debug('requested path: '+request.path)
     app.logger.debug('requested query_string: '+str(request.query_string))
 
-    host = ''.join(request.remote_addr)
+    host_remote = ''.join(request.remote_addr)
+    host_local = request.host.split(":")[0]
+    app.logger.info('++++ request from '+host_remote+' for '+request.host)
+
+    if len(host_local.split(".")) == 4 and host_remote not in ['127.0.0.1', host_local]:
+        part1 = host_local.split(".")
+        part2 = host_remote.split(".")
+        if part1[:3] != part2[:3]:
+            app.logger.warn('++++ remote request from '+host_remote+' for '+request.host)
+
     if request.method == 'GET':
-        if not wild_search(WHITELIST_GET, host):
-            return response_text_err('GET not allowed for '+host), FORBIDDEN
+        if not wild_search(WHITELIST_GET, host_remote):
+            return response_text_err('GET not allowed for '+host_remote), FORBIDDEN
     if request.method == 'POST':
-        if not wild_search(WHITELIST_POST, host):
-            return response_text_err('POST not allowed for '+host), FORBIDDEN
+        if not wild_search(WHITELIST_POST, host_remote):
+            return response_text_err('POST not allowed for '+host_remote), FORBIDDEN
     if request.path != escape(request.path):
         return response_text_err('invalid character'), BAD_REQUEST
 
@@ -1470,7 +1479,8 @@ def route_api_select_last(dbase, table):
         return response_text_err('ts = '+count+' is invalid'), BAD_REQUEST
     app.logger.debug('read last '+count+' entries from '+table)
 
-    sql = "SELECT * FROM "+table+" ORDER BY ts DESC LIMIT "+count+";"
+    sql_inner = "SELECT * FROM "+table+" ORDER BY ts DESC LIMIT "+count
+    sql = 'SELECT * FROM ('+sql_inner+') ORDER BY ts ASC;'
     app.logger.debug(sql)
     try:
         command = 'connect'
@@ -1508,7 +1518,7 @@ def route_api_select_next(dbase, table):
         return response_text_err('ts = '+ts_last+' is invalid'), BAD_REQUEST
     app.logger.debug('read all next entries from '+table+ ' beginning after ' +ts_last)
 
-    sql = "SELECT * FROM "+table+" WHERE ts > "+ts_last+";"
+    sql = "SELECT * FROM "+table+" WHERE ts > "+ts_last+" ORDER BY ts ASC;"
     app.logger.debug(sql)
     try:
         command = 'connect'
@@ -1556,9 +1566,9 @@ def route_api_select_range(dbase, table):
     app.logger.debug('read all entries from '+table+ ' between '+ts_from+' and '+ts_to)
 
     if ts_to == '0':
-        sql = "SELECT * FROM "+table+" WHERE ts >= "+ts_from+";"
+        sql = "SELECT * FROM "+table+" WHERE ts >= "+ts_from+" ORDER BY ts ASC;"
     else:
-        sql = "SELECT * FROM "+table+" WHERE ts >= "+ts_from+" AND ts <= "+ts_to+";"
+        sql = "SELECT * FROM "+table+" WHERE ts >= "+ts_from+" AND ts <= "+ts_to+" ORDER BY ts ASC;"
     app.logger.debug(sql)
     try:
         command = 'connect'

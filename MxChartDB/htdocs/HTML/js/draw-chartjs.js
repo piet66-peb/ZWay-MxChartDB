@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V3.7.0 2026-01-18/peb
+//h Version:      V3.9.0 2026-02-14/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.1.0 2022-09-04/peb [+]button showComplete
 //v               V1.2.1 2022-11-20/peb [+]isZoomActive
@@ -48,8 +48,8 @@
 //b Constants
 //-----------
 var MODULE = 'draw-chartjs.js';
-var VERSION = 'V3.7.0';
-var WRITTEN = '2026-01-18/peb';
+var VERSION = 'V3.9.0';
+var WRITTEN = '2026-02-14/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //-----------
@@ -532,6 +532,18 @@ document.addEventListener("DOMContentLoaded", function(event) {
         ch_utils.displayMessage(0, vars);
     }
     var api = vars.api;
+
+    //TODO 2026-02-10 experimental:
+    //in case of remote access change IPv4 address to that of the url
+    //works only for 
+    //-ipv4 addresses (no hostname, no IPv6)
+    //-both servers on same computer
+    var ip_requested = window.location.hostname;
+    if (ip_requested !== vars.ip) {
+        //alert(window.location.hostname+' >> '+vars.api);
+        api = window.location.hostname+':'+vars.port;
+    }
+
     var snapshots_possible = vars.snapshots_possible;
     var snapshotAdmin = vars.snapshots.admin_required;
 
@@ -1712,6 +1724,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             tooltips: [],
             cubicInterpolationMode: 'monotone'
         };
+        console.log(item);
 
         if (vLog.chartHeader.chartlineTypes[ix] === 'dotted') {
             var dotWidth = 3;
@@ -1989,27 +2002,35 @@ document.addEventListener("DOMContentLoaded", function(event) {
             else {startTime = Math.min(startTime, X[0]);}
             endTime = X[0];
 
+            //b preset values in globals g
+            //----------------------------
+            g.ix = ix;
             g.x0 = X[0];
             g.x0_prev = Xprev[0] || null;
             g.v0_prev = g.v0 || null;
             g.v0 = X[0];
 
+            for (var i = 1; i < chartLabelsLen; i++) {
+                g['x' + i] = X[i];
+                g['x' + i+ '_prev'] = Xprev[i] || null;
+                g['v' + i+ '_prev'] = g['v' + i] || null;
+            }
+
         //b else if sensor value
         //----------------------
         } else {
-            //current values:
+            //input sensor value:
             var x = X[ix];
+            var x_prev = Xprev[ix] || null;
+
+            //b preset values in globals g
+            //----------------------------
             g.ix = ix;
             g.x = x;
-            g.x_prev = Xprev[ix] || null;
-            //previous value:
+            g.x_prev = x_prev;
             g['v' + ix+ '_prev'] = g['v' + ix] || null;
             g.v = g['v' + ix] || null;
-/*            
-            if (x) {
-                console.log('g', g);
-            }
-*/
+
             //b correct value by formula
             //--------------------------
             //console.log(ip+'-'+ix);

@@ -1,5 +1,5 @@
-    var ixButtonTextBase = 11;
-    var ixTableHeader = 16;
+    var ixButtonTextBase = 12;
+    var ixTableHeader = 17;
     var messageFormats = [
         //message texts (0+...):
         {//0
@@ -46,8 +46,12 @@
             de: '{0} Zeilen an {1} übertragen',
             en: '{0} rows transmitted to {1}',
         },
+        {//11
+            de: 'Filter...',
+            en: 'Filter...',
+        },
 
-        //ixButtonTextBase button texts (11+...):
+        //ixButtonTextBase button texts (12+...):
         {//0
             de: 'Daten neu einlesen',
             en: 'Newly request data'
@@ -69,7 +73,7 @@
             en: 'duplicate current row'
         },
 
-        //ixTableHeader table header (16+...):
+        //ixTableHeader table header (17+...):
         {
             de: 'Name',
             en: 'Name'

@@ -126,9 +126,9 @@ function modulePostRender(control) {
     $(".objectClass").css('border-width', '5');
     $(".objectClass").css('border-color', 'grey');
 
-    $(".dataControl").css( "background-color", "#f8f8f8" );
+    $(".dataControl").css( "background-color", "#ffcc99" );
     $(".dataControl").css('border-width', '5');
-    $(".dataControl").css('border-color', 'grey');
+    $(".dataControl").css('border-color', '#grey');
 
     $(".nonnumericLabels").css( "background-color", "#e6e6ff" );
     $(".nonnumericLabels").css('border-width', '5');
@@ -140,7 +140,7 @@ function modulePostRender(control) {
 
     $(".store_value_set").css( "background-color", "#f8f8f8" );
     $(".store_value_set").css('border-width', '5');
-    $(".store_value_set").css('border-color', 'grey');
+    $(".store_value_set").css('border-color', '');
 
     $(".axes").css( "background-color", "#e6e6ff" );
     $(".axes").css('border-width', '5');

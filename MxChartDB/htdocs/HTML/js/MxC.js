@@ -12,7 +12,7 @@
 //h Resources:    see libraries
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V0.0.1 2025-11-17/peb
+//h Version:      V0.0.1 2026-02-11/peb
 //v History:      V0.0.1 2025-11-14/peb first version
 //h Copyright:    (C) piet66 2025
 //h License:      http://opensource.org/licenses/MIT
@@ -20,14 +20,14 @@
 //h-------------------------------------------------------------------------------
 
 /*jshint esversion: 6 */
-/*globals ch_utils, ixTableHeader */
+/*globals ch_utils, ixTableHeader, myFunction */
 'use strict';
 
 //b constants
 //-----------
 var MODULE = 'MxC.js';
 var VERSION = 'V0.0.1';
-var WRITTEN = '2025-11-17/peb';
+var WRITTEN = '2026-02-11/peb';
 console.log('Module: ' + MODULE + ' ' + VERSION + ' ' + WRITTEN);
 
 //b variables
@@ -286,7 +286,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     function printHTML(htmlText) {
         console.log('printHTML');
-        //console.log(htmlText);
 
         ch_utils.buttonText('request', 0);
         ch_utils.buttonVisible('request', true);
@@ -319,6 +318,13 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 console.log(lastFocusedRow);
             });
         });
+
+        var filterInput = document.getElementById("myInput");
+        filterInput.placeholder = ch_utils.buildMessage(11);
+        filterInput.focus();
+        if (filterInput.value.length > 0) {
+            myFunction();
+        }
     } //printHTML
 
     //b event listeners
@@ -453,7 +459,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
     function table_header(){ 
         var i = ixTableHeader;
-        var htmlText = '<table id="myTable" class="sortable">';
+        var htmlText = '<table id="myTable">';
         htmlText += '<tbody>';
         htmlText += '<tr>'+
                     '<th id="name">'+ch_utils.buildMessage(i+0)+'</th>'+
@@ -525,245 +531,4 @@ document.addEventListener("DOMContentLoaded", function(event) {
         if (!timeString) {return null;}
         return new Date(timeString).getTime();
     }
-
-
 }); //DOMContentLoaded
-
-
-/*
-[
-  {
-    "STROM_2021": [
-      [
-        null,
-        null,
-        null,
-        null,
-        0.59152968,
-        "number",
-        "5181,8/365/24"
-      ]
-    ],
-    "STROM_2022": [
-      [
-        null,
-        null,
-        null,
-        null,
-        0.534018265,
-        "number",
-        "4.678,0/365/24"
-      ]
-    ],
-    "STROM_2023": [
-      [
-        null,
-        null,
-        null,
-        null,
-        0.505719178,
-        "number",
-        "4.430,1/365/24"
-      ]
-    ],
-    "STROM_2024": [
-      [
-        null,
-        null,
-        null,
-        null,
-        0.497495446,
-        "number",
-        "4.370,0/366/24"
-      ]
-    ],
-    "grüün_Preis": [
-      [
-        1740524400000,
-        "02/26/2025 00:00:00",
-        null,
-        null,
-        24.45,
-        "number",
-        "Grundpreis: 108 €/J"
-      ]
-    ],
-    "Maingau_Preis": [
-      [
-        1679094000000,
-        "03/18/2023 00:00:00",
-        1735686000000,
-        "01/01/2025 00:00:00",
-        34.31,
-        "number",
-        "Grundpreis: 60 €/J"
-      ],
-      [
-        1735686000000,
-        "01/01/2025 00:00:00",
-        null,
-        null,
-        35.59,
-        "number",
-        "Grundpreis: 60 €/J"
-      ]
-    ],
-    "Oeltank_voll": [
-      [
-        null,
-        null,
-        null,
-        null,
-        132.5,
-        "number",
-        "cm bei vollem Tank"
-      ]
-    ],
-    "Oeltank_leer": [
-      [
-        null,
-        null,
-        null,
-        null,
-        10,
-        "number",
-        "cm bei leerem Tank"
-      ]
-    ],
-    "Oeltank_Liter_pro_cm": [
-      [
-        null,
-        null,
-        null,
-        null,
-        53.23,
-        "number",
-        "Liter/ cm"
-      ]
-    ],
-    "Hzg_Laufzeit_pro_Liter": [
-      [
-        null,
-        null,
-        null,
-        null,
-        0.343,
-        "number",
-        "Laufzeit/ Liter"
-      ]
-    ],
-    "Oelstand": [
-      [
-        1762902000000,
-        "11/12/2025 00:00:00",
-        null,
-        null,
-        43.14,
-        "number",
-        "Ölstand [cm] um 00:00"
-      ]
-    ]
-  }
-]
-
-[
-  [
-    "Hzg_Laufzeit_pro_Liter",
-    "0.343",
-    "",
-    "",
-    "Laufzeit/ Liter",
-    "number"
-  ],
-  [
-    "Maingau_Preis",
-    "34.31",
-    "2023-03-18T00:00",
-    "2025-01-01T00:00",
-    "Grundpreis: 60 €/J",
-    "number"
-  ],
-  [
-    "Maingau_Preis",
-    "35.59",
-    "2025-01-01T00:00",
-    "",
-    "Grundpreis: 60 €/J",
-    "number"
-  ],
-  [
-    "Oelstand",
-    "43.14",
-    "2025-11-12T00:00",
-    "",
-    "Ölstand [cm] um 00:00",
-    "number"
-  ],
-  [
-    "Oeltank_Liter_pro_cm",
-    "53.23",
-    "",
-    "",
-    "Liter/ cm",
-    "number"
-  ],
-  [
-    "Oeltank_leer",
-    "10",
-    "",
-    "",
-    "cm bei leerem Tank",
-    "number"
-  ],
-  [
-    "Oeltank_voll",
-    "132.5",
-    "",
-    "",
-    "cm bei vollem Tank",
-    "number"
-  ],
-  [
-    "STROM_2021",
-    "0.59152968",
-    "",
-    "",
-    "5181,8/365/24",
-    "number"
-  ],
-  [
-    "STROM_2022",
-    "0.534018265",
-    "",
-    "",
-    "4.678,0/365/24",
-    "number"
-  ],
-  [
-    "STROM_2023",
-    "0.505719178",
-    "",
-    "",
-    "4.430,1/365/24",
-    "number"
-  ],
-  [
-    "STROM_2024",
-    "0.497495446",
-    "",
-    "",
-    "4.370,0/366/24",
-    "number"
-  ],
-  [
-    "grüün_Preis",
-    "24.45",
-    "2025-02-26T00:00",
-    "",
-    "Grundpreis: 108 €/J",
-    "number"
-  ]
-]
-*/
-
-

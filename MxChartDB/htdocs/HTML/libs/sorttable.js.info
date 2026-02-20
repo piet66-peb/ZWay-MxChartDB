@@ -20,3 +20,29 @@
 #h Key:                 
 #h Comment:             
 #h
+
+To make a table of your choice sortable, there are three steps:
+
+    Download the Javascript library zip file
+    Unpack the zip file to find a file, sorttable.js, and add that file to your webspace
+    Include sorttable.js in your web page by putting a link to it in the HEAD of that page, like so:
+
+    <script src="sorttable.js"></script>
+
+    Mark your table as a sortable one by giving it a class of "sortable":
+
+    <table class="sortable">
+
+    Note that the library's JavaScript file is called sorttable (two Ts), but the class you add to the table is sortable (one T).
+
+And that's all you need. Your table will now have column sorting available by clicking the headers. For niceness, you might want to add the following styles to your stylesheet, or make up some of your own based on this:
+
+
+/* Sortable tables */
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
+
