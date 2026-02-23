@@ -12,7 +12,7 @@
 //h Resources:    
 //h Platforms:    independent
 //h Authors:      peb piet66
-//h Version:      V2.1.0 2026-02-10/peb
+//h Version:      V2.1.0 2026-02-23/peb
 //v History:      V1.0.0 2022-04-01/peb taken from MxChartJS
 //v               V1.0.1 2022-07-09/peb [-]isAdmin functions for index.html
 //v                                     [+]isAdmin:refresh index on new focus
@@ -32,7 +32,7 @@
 //-----------
 var MODULE='chart-index.js';
 var VERSION='V2.1.0';
-var WRITTEN='2026-02-10/peb';
+var WRITTEN='2026-02-23/peb';
 console.log('Module: '+MODULE+' '+VERSION+' '+WRITTEN);
 
 //------- data definitions -------------------------
@@ -800,35 +800,37 @@ function deleteChart(chartId, api) {
     var ts = Date.now();
     var url;
     drop_value_table();
+    drop_header_table();
+    select_index_table();
 
     function drop_value_table() {
-       //console.log('dropping table '+chartIdDisp);
+       console.log('dropping table '+chartIdDisp);
        url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'/drop_table';
-       ch_utils.ajax_post(url, undefined, drop_header_table, fail);
+       ch_utils.ajax_post(url, undefined, success, fail);
     }
    function drop_header_table() {
-       //console.log('dropping table '+chartIdDisp+'_Header');
+       console.log('dropping table '+chartIdDisp+'_Header');
        url = 'http://'+api+'/'+chartIdDB+'/'+chartIdBase+'_Header/drop_table';
-       ch_utils.ajax_post(url, undefined, select_index_table, fail);
+       ch_utils.ajax_post(url, undefined, success, fail);
     }
    function select_index_table() {
        var I = tableNameIndex;
-       //console.log('selecting table '+I);
+       console.log('selecting table '+I);
        url = 'http://'+api+'/'+IndexDBName+'/'+I+'/select_next';
        ch_utils.ajax_get(url, correct_index, fail);
     }
    function correct_index(data) {
        delete indexBuffer[chartId];
-       //console.log('indexBuffer', indexBuffer);
+       console.log('indexBuffer', indexBuffer);
        var I = tableNameIndex;
-       //console.log('insert table '+I);
+       console.log('insert table '+I);
        url = 'http://'+api+'/'+IndexDBName+'/'+I+'/insert';
        ch_utils.ajax_post(url, JSON.stringify({"ts": ts, "val": indexBuffer}), 
                                delete_old_index, fail);
     }
    function delete_old_index() {
        var I = tableNameIndex;
-       //console.log('clear table '+I);
+       console.log('clear table '+I);
        url = 'http://'+api+'/'+IndexDBName+'/'+I+'/delete_prev?ts='+ts;
        ch_utils.ajax_post(url, undefined, refresh_window, fail);
     }
@@ -837,6 +839,9 @@ function deleteChart(chartId, api) {
        window.location.reload();
     }
 
+    function success(data) {
+        console.log('success');
+    } //success
     function fail(status, responseText) {
        var mess = ch_utils.buildMessage(24, chartIdDisp, status, responseText);
        console.log('url='+url);
